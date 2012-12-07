@@ -2,7 +2,7 @@
 RubyJS Alpha 0.7.2
 Copyright (c) 2012 Sebastian Burkhard
 All rights reserved.
-http://www.rubyjs.org/license
+http://www.rubyjs.org/LICENSE.txt
 ###
 
 root = global ? window
