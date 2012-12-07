@@ -1,0 +1,5 @@
+/spec/javascripts/*
+/tmp/*
+/playground/*
+/benchmark/*
+/doc/*
