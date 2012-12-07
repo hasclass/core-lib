@@ -2,29 +2,14 @@
 
 /*
 RubyJS Alpha 0.7.2
-Copyright (c) 2012 FundExplorer GmbH
+Copyright (c) 2012 Sebastian Burkhard
 All rights reserved.
-
 http://www.rubyjs.org/license
-
-Open Source License
-------------------------------------------------------------------------------------------
-This version of RubyJS is licensed under the terms of the Open Source AGPL 3.0 license.
-
-http://www.gnu.org/licenses/agpl-3.0.html
-
-
-Alternate Licensing
-------------------------------------------------------------------------------------------
-Commercial and OEM Licenses are available for an alternate download of RubyJS.
-This is the appropriate option if you are creating proprietary applications and you are
-not prepared to distribute and share the source code of your application under the
-AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
 */
 
 
 (function() {
-  var $args, $exec, $execute, CharTable, Coerce, CoerceProto, RStrProto, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, toString, _ref, _slice_, _toString_,
+  var $args, $args$single, $block$args, $block$multi, $block$single, $blockCallback, $exec, $execute, CharTable, Coerce, CoerceProto, RStrProto, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, toString, _ref, _slice_, _toString_,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -360,6 +345,8 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
   })();
 
   CoerceProto = Coerce.prototype;
+
+  R.CoerceProto = Coerce.prototype;
 
   RubyJS.Object = (function() {
 
@@ -914,6 +901,45 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     }
   };
 
+  $blockCallback = function(thisArg, block) {
+    if (block && (block.call != null)) {
+      if (block.length !== 1) {
+        return $block$multi;
+      } else {
+        return $block$single;
+      }
+    } else {
+      return $block$args;
+    }
+  };
+
+  $args$single = function(args) {
+    if (args.length !== 1) {
+      return _slice_.call(args);
+    } else {
+      return args[0];
+    }
+  };
+
+  $block$args = function(thisArg, block, args) {
+    return CoerceProto.single_block_args(args, block);
+  };
+
+  $block$multi = function(thisArg, block, args) {
+    args = args.length > 1 ? _slice_.call(args) : args[0];
+    if (R.Array.isNativeArray(args)) {
+      return block.apply(thisArg, args);
+    } else {
+      return block.call(thisArg, args);
+    }
+  };
+
+  $block$single = function(thisArg, block, _arguments) {
+    var args;
+    args = _arguments[0];
+    return block.call(thisArg, args);
+  };
+
   RubyJS.Enumerable = (function() {
 
     function Enumerable() {}
@@ -924,11 +950,11 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
 
     Enumerable.prototype.all = function(block) {
       return this.catch_break(function(breaker) {
-        var block_given;
-        block_given = block && (block.call != null);
+        var callback;
+        callback = $blockCallback(this, block);
         this.each(function() {
           var result;
-          result = block_given ? $execute(this, block, arguments) : $args(arguments, block);
+          result = callback(this, block, arguments);
           if (R.falsey(result)) {
             return breaker["break"](false);
           }
@@ -941,11 +967,11 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
 
     Enumerable.prototype.any = function(block) {
       return this.catch_break(function(breaker) {
-        var block_given;
-        block_given = block && (block.call != null);
+        var callback;
+        callback = $blockCallback(this, block);
         this.each(function(args) {
           var result;
-          result = block_given ? $execute(this, block, arguments) : args;
+          result = callback(this, block, arguments);
           if (!R.falsey(result)) {
             return breaker["break"](true);
           }
@@ -957,16 +983,17 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     Enumerable.prototype['any?'] = Enumerable.prototype.any;
 
     Enumerable.prototype.collect_concat = function(block) {
-      var ary;
+      var ary, callback;
       if (block == null) {
         block = null;
       }
       if (!(block && (block.call != null))) {
         return this.to_enum('collect_concat');
       }
+      callback = $blockCallback(this, block);
       ary = [];
       this.each(function() {
-        return ary.push($execute(this, block, arguments));
+        return ary.push(callback(this, block, arguments));
       });
       return new R.Array(ary).flatten(1);
     };
@@ -974,7 +1001,7 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     Enumerable.prototype.flat_map = Enumerable.prototype.collect_concat;
 
     Enumerable.prototype.count = function(block) {
-      var counter;
+      var callback, counter;
       counter = 0;
       if (block === void 0) {
         this.each(function() {
@@ -987,8 +1014,11 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
           }
         });
       } else if (block.call != null) {
-        this.each(function(el) {
-          if (!R.falsey($execute(this, block, arguments))) {
+        callback = $blockCallback(this, block);
+        this.each(function() {
+          var result;
+          result = callback(this, block, arguments);
+          if (!R.falsey(result)) {
             return counter += 1;
           }
         });
@@ -1003,7 +1033,7 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     };
 
     Enumerable.prototype.cycle = function(n, block) {
-      var cache, i, many, _results, _results1;
+      var cache, callback, i, many, _results, _results1;
       if (arguments.length > 2) {
         throw R.ArgumentError["new"]();
       }
@@ -1014,8 +1044,8 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
         }
       }
       if (!(n === null || n === void 0)) {
-        many = CoerceProto.to_int(n);
-        if (many.lteq(0)) {
+        many = CoerceProto.to_int_native(n);
+        if (many <= 0) {
           return null;
         }
       } else {
@@ -1024,23 +1054,24 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
       if (!block) {
         return this.to_enum('cycle', n);
       }
+      callback = $blockCallback(this, block);
       cache = new R.Array([]);
       this.each(function() {
         var args;
         args = $args(arguments, block);
         cache.append(args);
-        return $execute(this, block, arguments);
+        return callback(this, block, arguments);
       });
       if (cache.empty()) {
         return null;
       }
-      if (many) {
+      if (many > 0) {
         i = 0;
-        many = many.minus(1);
+        many -= 1;
         _results = [];
-        while (many.gt(i)) {
+        while (many > i) {
           _results.push(cache.each(function() {
-            $execute(this, block, arguments);
+            callback(this, block, arguments);
             return i += 1;
           }));
         }
@@ -1049,7 +1080,7 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
         _results1 = [];
         while (true) {
           _results1.push(cache.each(function() {
-            return $execute(this, block, arguments);
+            return callback(this, block, arguments);
           }));
         }
         return _results1;
@@ -1073,16 +1104,16 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     };
 
     Enumerable.prototype.drop_while = function(block) {
-      var ary, dropping;
+      var ary, callback, dropping;
       if (!(block && (block.call != null))) {
         return this.to_enum('drop_while');
       }
+      callback = $blockCallback(this, block);
       ary = [];
       dropping = true;
       this.each(function() {
         var args;
-        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        if (!(dropping && $execute(this, block, arguments))) {
+        if (!(dropping && callback(this, block, arguments))) {
           dropping = false;
           args = $args(arguments);
           return ary.push(args);
@@ -1186,6 +1217,7 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     };
 
     Enumerable.prototype.find = function(ifnone, block) {
+      var callback;
       if (block == null) {
         block = null;
       }
@@ -1193,11 +1225,10 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
         block = ifnone;
         ifnone = null;
       }
+      callback = $blockCallback(this, block);
       return this.catch_break(function(breaker) {
         this.each(function() {
-          var args;
-          args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-          if (!R.falsey($execute(this, block, arguments))) {
+          if (!R.falsey(callback(this, block, arguments))) {
             return breaker["break"]($args(arguments));
           }
         });
@@ -1208,13 +1239,14 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     Enumerable.prototype.detect = Enumerable.prototype.find;
 
     Enumerable.prototype.find_all = function(block) {
-      var ary;
+      var ary, callback;
       if (!(block && (block.call != null))) {
         return this.to_enum('find_all');
       }
       ary = [];
+      callback = $blockCallback(this, block);
       this.each(function() {
-        if (!R.falsey($execute(this, block, arguments))) {
+        if (!R.falsey(callback(this, block, arguments))) {
           return ary.push($args(arguments));
         }
       });
@@ -1224,7 +1256,7 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     Enumerable.prototype.select = Enumerable.prototype.find_all;
 
     Enumerable.prototype.find_index = function(value) {
-      var block, idx;
+      var block, callback, idx;
       if (arguments.length === 0) {
         return this.to_enum('find_index');
       }
@@ -1237,9 +1269,10 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
         };
       }
       idx = 0;
+      callback = $blockCallback(this, block);
       return this.catch_break(function(breaker) {
         this.each(function() {
-          if ($execute(this, block, arguments)) {
+          if (callback(this, block, arguments)) {
             breaker["break"](new R.Fixnum(idx));
           }
           return idx += 1;
@@ -1487,12 +1520,12 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     };
 
     Enumerable.prototype.none = function(block) {
-      var block_given;
-      block_given = block && (block.call != null);
       return this.catch_break(function(breaker) {
+        var callback;
+        callback = $blockCallback(this, block);
         this.each(function(args) {
           var result;
-          result = block_given ? $execute(this, block, arguments) : args;
+          result = callback(this, block, arguments);
           if (!R.falsey(result)) {
             return breaker["break"](false);
           }
@@ -1504,13 +1537,14 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
     Enumerable.prototype['none?'] = Enumerable.prototype.none;
 
     Enumerable.prototype.one = function(block) {
-      var block_given, counter;
+      var counter;
       counter = 0;
-      block_given = block && (block.call != null);
       return this.catch_break(function(breaker) {
+        var callback;
+        callback = $blockCallback(this, block);
         this.each(function(args) {
           var result;
-          result = block_given ? $execute(this, block, arguments) : args;
+          result = callback(this, block, arguments);
           if (!R.falsey(result)) {
             counter += 1;
           }
@@ -1841,213 +1875,6 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
       }
     };
 
-    EnumerableArray.prototype.any = function(block) {
-      var block_given, idx, item, len;
-      block_given = block && (block.call != null);
-      len = this.__native__.length;
-      idx = -1;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        if (block_given) {
-          item = this.__apply_block__(block, item);
-        }
-        if (R.truthy(item)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    EnumerableArray.prototype.all = function(block) {
-      var block_given, idx, item;
-      block_given = block && (block.call != null);
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        if (block_given) {
-          item = this.__apply_block__(block, item);
-        }
-        if (R.falsey(item)) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    EnumerableArray.prototype.collect_concat = function(block) {
-      var ary, idx, item;
-      if (block == null) {
-        block = null;
-      }
-      if (!(block && (block.call != null))) {
-        return this.to_enum('collect_concat');
-      }
-      ary = [];
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        ary.push(this.__apply_block__(block, item));
-      }
-      return new R.Array(ary).flatten(1);
-    };
-
-    EnumerableArray.prototype.count = function(block) {
-      var counter, idx, len;
-      counter = 0;
-      idx = -1;
-      len = this.__size__();
-      if (block === void 0) {
-        counter = len;
-      } else if (block === null) {
-        while (++idx < len) {
-          if (this.__native__[idx] === null) {
-            counter += 1;
-          }
-        }
-      } else if (block.call != null) {
-        while (++idx < len) {
-          if (!R.falsey(this.__apply_block__(block, this.__native__[idx]))) {
-            counter += 1;
-          }
-        }
-      } else {
-        while (++idx < len) {
-          if (R(this.__native__[idx])['=='](block)) {
-            counter += 1;
-          }
-        }
-      }
-      return new R.Fixnum(counter);
-    };
-
-    EnumerableArray.prototype.cycle = function(n, block) {
-      var cache, i, idx, item, len, many, _results, _results1;
-      if (arguments.length > 2) {
-        throw R.ArgumentError["new"]();
-      }
-      if (!block) {
-        if (n && (n.call != null)) {
-          block = n;
-          n = null;
-        }
-      }
-      if (n === null || n === void 0) {
-        many = null;
-      } else {
-        many = CoerceProto.to_int_native(n);
-        if (many <= 0) {
-          return null;
-        }
-      }
-      if (!block) {
-        return this.to_enum('cycle', n);
-      }
-      idx = -1;
-      cache = [];
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        cache.push(item);
-        this.__apply_block__(block, item);
-      }
-      if (cache.length === 0) {
-        return null;
-      }
-      if (many === null) {
-        _results = [];
-        while (true) {
-          idx = -1;
-          len = cache.length;
-          _results.push((function() {
-            var _results1;
-            _results1 = [];
-            while (++idx < len) {
-              _results1.push(this.__apply_block__(block, cache[idx]));
-            }
-            return _results1;
-          }).call(this));
-        }
-        return _results;
-      } else {
-        i = 0;
-        many = many - 1;
-        _results1 = [];
-        while (many > i) {
-          idx = -1;
-          len = cache.length;
-          _results1.push((function() {
-            var _results2;
-            _results2 = [];
-            while (++idx < len) {
-              this.__apply_block__(block, cache[idx]);
-              _results2.push(i += 1);
-            }
-            return _results2;
-          }).call(this));
-        }
-        return _results1;
-      }
-    };
-
-    EnumerableArray.prototype.drop = function(n) {
-      var ary, idx, len;
-      this.__ensure_args_length(arguments, 1);
-      n = CoerceProto.to_int_native(n);
-      if (n < 0) {
-        throw R.ArgumentError["new"]();
-      }
-      ary = [];
-      len = this.__native__.length;
-      idx = -1;
-      while (++idx < len) {
-        if (n <= idx) {
-          ary.push(this.__native__[idx]);
-        }
-      }
-      return new R.Array(ary);
-    };
-
-    EnumerableArray.prototype.drop_while = function(block) {
-      var idx, result;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('drop_while');
-      }
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        result = this.__apply_block__(block, this.__native__[idx]);
-        if (R.falsey(result)) {
-          break;
-        }
-      }
-      return new R.Array(this.__native__.slice(idx), false);
-    };
-
-    EnumerableArray.prototype.each_cons = function() {
-      var args, ary, block, idx, item, n;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      block = this.__extract_block(args);
-      if (!(block && (block.call != null))) {
-        return this.to_enum.apply(this, ['each_cons'].concat(__slice.call(args)));
-      }
-      this.__ensure_args_length(args, 1);
-      n = CoerceProto.to_int_native(args[0]);
-      if (!(n > 0)) {
-        throw R.ArgumentError["new"]();
-      }
-      ary = [];
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        ary.push(item);
-        if (ary.length > n) {
-          ary.shift();
-        }
-        if (ary.length === n) {
-          this.__apply_block__(block, ary.slice(0));
-        }
-      }
-      return null;
-    };
-
     EnumerableArray.prototype.each_entry = function(block) {
       var idx;
       if (arguments.length > 1) {
@@ -2061,37 +1888,6 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
         this.__apply_block__(block, this.__native__[idx]);
       }
       return this;
-    };
-
-    EnumerableArray.prototype.each_slice = function(n, block) {
-      var ary, idx, item;
-      if (!n) {
-        throw R.ArgumentError["new"]();
-      }
-      n = CoerceProto.to_int_native(n);
-      if (n <= 0) {
-        throw R.ArgumentError["new"]();
-      }
-      if (block && !(block.call != null)) {
-        throw R.ArgumentError["new"]();
-      }
-      if (block === void 0) {
-        return this.to_enum('each_slice', n);
-      }
-      ary = [];
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        ary.push(item);
-        if (ary.length === n) {
-          this.__apply_block__(block, ary.slice(0));
-          ary = [];
-        }
-      }
-      if (ary.length !== 0) {
-        block(ary.slice(0));
-      }
-      return null;
     };
 
     EnumerableArray.prototype.each_with_index = function(block) {
@@ -2356,169 +2152,6 @@ AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
         return this.to_enum('minmax_by');
       }
       return R([this.min_by(block), this.max_by(block)]);
-    };
-
-    EnumerableArray.prototype.none = function(block) {
-      var block_given, idx, item;
-      block_given = block && (block.call != null);
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        if (block_given) {
-          item = this.__apply_block__(block, item);
-        }
-        if (!R.falsey(item)) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    EnumerableArray.prototype.one = function(block) {
-      var block_given, cnt, idx, item;
-      block_given = block && (block.call != null);
-      cnt = 0;
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        if (block_given) {
-          item = this.__apply_block__(block, item);
-        }
-        if (!R.falsey(item)) {
-          cnt += 1;
-        }
-        if (cnt > 1) {
-          return false;
-        }
-      }
-      return cnt === 1;
-    };
-
-    EnumerableArray.prototype.partition = function(block) {
-      var idx, item, left, right;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('partition');
-      }
-      left = [];
-      right = [];
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        if (this.__apply_block__(block, item)) {
-          left.push(item);
-        } else {
-          right.push(item);
-        }
-      }
-      return new R.Array([new R.Array(left), new R.Array(right)]);
-    };
-
-    EnumerableArray.prototype.reject = function(block) {
-      var ary, idx, item;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('reject');
-      }
-      ary = [];
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        if (R.falsey(this.__apply_block__(block, item))) {
-          ary.push(item);
-        }
-      }
-      return new R.Array(ary);
-    };
-
-    EnumerableArray.prototype.slice_before = function() {
-      var arg, args, arr, block, has_init, idx, len;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      block = this.__extract_block(args);
-      arg = R(args[0]);
-      if (block) {
-        has_init = !(arg === void 0);
-      } else {
-        block = function(elem) {
-          return arg['==='](elem);
-        };
-      }
-      arr = this.__native__;
-      idx = -1;
-      len = arr.length;
-      return R.Enumerator.create(function(yielder) {
-        var accumulator, elem, start_new;
-        accumulator = null;
-        while (++idx < len) {
-          elem = arr[idx];
-          start_new = has_init ? block(elem, arg.dup()) : block(elem);
-          if (start_new) {
-            if (accumulator) {
-              yielder["yield"](accumulator);
-            }
-            accumulator = R([elem]);
-          } else {
-            accumulator || (accumulator = new R.Array([]));
-            accumulator.append(elem);
-          }
-        }
-        if (accumulator) {
-          return yielder["yield"](accumulator);
-        }
-      });
-    };
-
-    EnumerableArray.prototype.sort_by = function(block) {
-      var ary, idx, item, len;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('sort_by');
-      }
-      idx = -1;
-      len = this.__native__.length;
-      ary = nativeArray(len);
-      while (++idx < len) {
-        item = this.__native__[idx];
-        ary[idx] = new R.Enumerable.SortedElement(item, this.__apply_block__(block, item));
-      }
-      ary = new R.Array(ary);
-      return ary.sort().map(function(se) {
-        return se.value;
-      });
-    };
-
-    EnumerableArray.prototype.take = function(n) {
-      var ary, idx, len;
-      this.__ensure_args_length(arguments, 1);
-      n = CoerceProto.to_int_native(n);
-      if (n < 0) {
-        throw R.ArgumentError["new"]();
-      }
-      ary = [];
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        if (ary.length === n) {
-          break;
-        }
-        ary.push(this.__native__[idx]);
-      }
-      return new R.Array(ary);
-    };
-
-    EnumerableArray.prototype.take_while = function(block) {
-      var ary, idx, item, len;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('take_while');
-      }
-      ary = [];
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        if (R.falsey(block(item))) {
-          break;
-        }
-        ary.push(item);
-      }
-      return new R.Array(ary);
     };
 
     EnumerableArray.prototype.collectConcat = EnumerableArray.prototype.collect_concat;

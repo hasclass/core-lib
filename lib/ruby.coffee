@@ -1,28 +1,10 @@
 ###
 RubyJS Alpha 0.7.2
-Copyright (c) 2012 FundExplorer GmbH
+Copyright (c) 2012 Sebastian Burkhard
 All rights reserved.
-
 http://www.rubyjs.org/license
-
-Open Source License
-------------------------------------------------------------------------------------------
-This version of RubyJS is licensed under the terms of the Open Source AGPL 3.0 license.
-
-http://www.gnu.org/licenses/agpl-3.0.html
-
-
-Alternate Licensing
-------------------------------------------------------------------------------------------
-Commercial and OEM Licenses are available for an alternate download of RubyJS.
-This is the appropriate option if you are creating proprietary applications and you are
-not prepared to distribute and share the source code of your application under the
-AGPL v3 license. Please visit http://www.rubyjs.org/license for more details.
-
 ###
 
-
-# Establish the root object, `window` in the browser, or `global` on the server.
 root = global ? window
 
 # TODO: link rubyjs/_r directly to RubyJS.RubyJS.prototype.box
