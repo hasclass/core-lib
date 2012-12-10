@@ -4,13 +4,19 @@ RubyJS is a port of the Ruby core-lib and provides many methods for Array, Strin
 
 See [RubyJS Homepage](http://www.rubyjs.org) for more details. It is licensed under MIT.
 
-## NPM Module
+## MIT License
+
+RubyJS is licensed under the MIT License.
+
+## NPM Module: rubyjs
 
 RubyJS can be installed as an npm module.
 
 ```
 $ npm install rubyjs
 ```
+
+Then simply require rubyjs which will add the R and RubyJS to the global object.
 
 ```javascript
 require('rubyjs');
@@ -52,9 +58,9 @@ https://github.com/joyent/node/issues/2479#issuecomment-7082186
 
 
 
-## API Docs
+## API Docs on rubyjs.org/doc
 
-You can quickly search and jump through the documentation by using the fuzzy finder dialog:
+You can quickly search and jump through the [online documentation](http://rubyjs.org/doc) by using the fuzzy finder dialog:
 
 Open fuzzy finder dialog: `Ctrl-T`
 
