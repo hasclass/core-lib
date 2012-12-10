@@ -1,0 +1,32 @@
+{
+  "name": "rubyjs",
+  "version": "0.7.2",
+  "description": "JavaScript standard library (String, Array, etc) based on Ruby core-lib.",
+  "keywords": [],
+  "author": "Sebastian Burkhard <info@rubyjs.org>",
+  "repository": "git://github.com/rubyjs/core-lib.git",
+  "main": "index",
+  "homepage": "http://rubyjs.org",
+  "contributors": [
+    {
+      "name": "Sebastian Burkhard"
+    }
+  ],
+  "bugs": {
+    "url": "https://github.com/rubyjs/core-lib/issues",
+    "email": "info@rubyjs.org"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/rubyjs/core-lib/raw/master/LICENSE"
+    }
+  ],
+  "scripts": {
+
+  }
+}

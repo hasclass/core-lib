@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+lib/
+spec/
+tmp/
+Gemfile
+Gemfile.lock
+Guardfile
+*.log
+.git/
+Rakefile
+
