@@ -4,6 +4,19 @@ RubyJS is a port of the Ruby core-lib and provides many methods for Array, Strin
 
 See [RubyJS Homepage](http://www.rubyjs.org) for more details. It is licensed under MIT.
 
+## NPM Module
+
+RubyJS can be installed as an npm module.
+
+```
+$ npm install rubyjs
+```
+
+```javascript
+require('rubyjs');
+R.puts("hello");
+```
+
 ## Contribute/Develop
 
 RubyJS is currently implemented in CoffeeScript 1.3.3. CoffeeScript 1.4.0 doesn't work as of now. It's on the roadmap to move away from CoffeeScript to plain JS.

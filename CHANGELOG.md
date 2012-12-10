@@ -1,3 +1,7 @@
+### 2012-12-10
+
+- Created npm module
+
 # 0.7.2 bugfix release for Enumerable
 
 ### 2012-12-05
