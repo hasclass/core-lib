@@ -4,6 +4,7 @@ fs     = require 'fs'
 appFiles  = [
   # omit src/ and .coffee to make the below lines a little shorter
   'ruby'
+  'corelib/block'
   'corelib/kernel'
   'corelib/coerce'
   'corelib/object'

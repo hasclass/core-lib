@@ -1,4 +1,3 @@
-toString = Object.prototype.toString
 
 class RubyJS.Kernel
 

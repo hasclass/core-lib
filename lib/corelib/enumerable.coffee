@@ -1,48 +1,3 @@
-# @private
-$args  = CoerceProto.single_block_args
-
-# @private
-$exec  = (cntxt, block, _arguments) ->
-  if block.length > 1 and (R.Array.isNativeArray(_arguments))
-    block.apply(cntxt, _arguments)
-  else
-    block.call(cntxt, _arguments)
-
-
-# @private
-$execute = (cntxt, block, _arguments) ->
-  args = $args(_arguments, block)
-  if block.length != 1 and R.Array.isNativeArray(args)
-    block.apply(cntxt, args)
-  else
-    block.call(cntxt, args)
-
-# Methods to handle block arguments. Oddly named, to be replaced later.
-
-$blockCallback = (thisArg, block) ->
-  if block && block.call? #block_given
-    return if block.length != 1 then $block$multi else $block$single
-  else
-    return $block$args
-
-$args$single = (args) ->
-  if args.length != 1 then _slice_.call(args) else args[0]
-
-$block$args = (thisArg, block, args) ->
-  CoerceProto.single_block_args(args, block)
-
-$block$multi = (thisArg, block, args) ->
-  args = if args.length > 1 then _slice_.call(args) else args[0]
-  if R.Array.isNativeArray(args)
-    block.apply(thisArg, args)
-  else
-    block.call(thisArg, args)
-
-$block$single = (thisArg, block, _arguments) ->
-  args = _arguments[0]
-  block.call(thisArg, args)
-
-
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
 # However for performance reasons they are typically re-implemented in them
@@ -64,11 +19,10 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).all()                          # => false
   #
   all: (block) ->
-
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
 
       true
@@ -87,15 +41,11 @@ class RubyJS.Enumerable
   #
   any: (block) ->
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
-      @each (args) ->
-        result = callback(this, block, arguments)
+      callback = Block.create(block, this)
+      @each ->
+        result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
-
       false
-
-
-  'any?': @prototype.any
 
 
   # Returns a new array with the concatenated results of running block once
@@ -110,10 +60,10 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     ary = []
     @each ->
-      ary.push(callback(this, block, arguments))
+      ary.push(callback.invoke(arguments))
 
     new R.Array(ary).flatten(1)
 
@@ -137,9 +87,9 @@ class RubyJS.Enumerable
     else if block is null
       @each (el) -> counter += 1 if el is null
     else if block.call?
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
       @each (el) ->
@@ -190,13 +140,13 @@ class RubyJS.Enumerable
 
     return @to_enum('cycle', n) unless block
 
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
 
     cache = new R.Array([])
     @each ->
-      args = $args(arguments, block)
+      args = callback.args(arguments)
       cache.append args
-      callback(this, block, arguments)
+      callback.invoke(arguments)
 
     return null if cache.empty()
 
@@ -206,12 +156,12 @@ class RubyJS.Enumerable
       while many > i
         # OPTIMIZE use normal arrays and for el in cache
         cache.each ->
-          callback(this, block, arguments)
+          callback.invoke(arguments)
           i += 1
     else
       while true                                 # cycle(() -> ... )
         cache.each ->
-          callback(this, block, arguments)
+          callback.invoke(arguments)
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -246,16 +196,15 @@ class RubyJS.Enumerable
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
 
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
 
     ary = []
     dropping = true
 
-    @each  ->
-      unless dropping && callback(this, block, arguments)
+    @each ->
+      unless dropping && callback.invoke(arguments)
         dropping = false
-        args = $args(arguments)
-        ary.push(args)
+        ary.push(callback.args(arguments))
 
     new R.Array(ary)
 
@@ -280,13 +229,18 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() unless n > 0
 
     # TODO: use callback
-    # callback = $blockCallback(this, block)
-
+    callback = Block.create(block, this)
+    len = block.length
     ary = []
     @each ->
-      ary.push($args(arguments))
+      ary.push(BlockMulti.prototype.args(arguments))
       ary.shift() if ary.length > n
-      $exec(this, block, ary.slice(0)) if ary.length is n
+      if ary.length is n
+        if len > 1
+          block.apply(this, ary.slice(0))
+        else
+          block.call(this, ary.slice(0))
+
 
     null
 
@@ -299,9 +253,16 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
+    # hard code BlockMulti because each_entry converts multiple
+    # yields into an array
+    callback = new BlockMulti(block, this)
+    len = block.length
     @each ->
-      args = $args(arguments)
-      $exec(this, block, args)
+      args = callback.args(arguments)
+      if len > 1 and R.Array.isNativeArray(args)
+        block.apply(this, args)
+      else
+        block.call(this, args)
 
     this
 
@@ -325,15 +286,26 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    ary = []
+    callback = Block.create(block, this)
+    len      = block.length
+    ary      = []
+
     @each ->
-      ary.push( $args(arguments) )
+      ary.push( BlockMulti.prototype.args(arguments) )
       if ary.length == n
-        $exec(this, block, ary.slice(0))
+        args = ary.slice(0)
+        if len > 1
+          block.apply(this, args)
+        else
+          block.call(this, args)
         ary = []
 
     unless ary.length == 0
-      $exec(this, block, ary.slice(0))
+      args = ary.slice(0)
+      if len > 1
+        block.apply(this, args)
+      else
+        block.call(this, args)
 
     null
 
@@ -364,9 +336,11 @@ class RubyJS.Enumerable
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     idx = 0
     @each ->
-      val = block.call(this, $args(arguments), idx)
+      val = callback.invokeSplat(callback.args(arguments), idx)
       idx += 1
       val
     this
@@ -382,11 +356,13 @@ class RubyJS.Enumerable
   #     #=> [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
   #
   each_with_object: (obj, block) ->
-    #throw RubyJS.ArgumentError.new() if block == undefined
     return @to_enum('each_with_object', obj) unless block && block.call?
 
+    callback = Block.create(block, this)
+
     @each ->
-      block.apply(this, [$args(arguments), obj])
+      args = BlockMulti.prototype.args(arguments)
+      callback.invokeSplat(args, obj)
 
     obj
 
@@ -407,11 +383,11 @@ class RubyJS.Enumerable
       block  = ifnone
       ifnone = null
 
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     @catch_break (breaker) ->
       @each ->
-        unless R.falsey(callback(this, block, arguments))
-          breaker.break($args(arguments))
+        unless R.falsey(callback.invoke(arguments))
+          breaker.break(callback.args(arguments))
 
       ifnone?()
 
@@ -432,10 +408,10 @@ class RubyJS.Enumerable
     return @to_enum('find_all') unless block && block.call?
 
     ary = []
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     @each ->
-      unless R.falsey(callback(this, block, arguments))
-        ary.push($args(arguments))
+      unless R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
 
     new R.Array(ary)
 
@@ -462,10 +438,10 @@ class RubyJS.Enumerable
       block = (el) -> R(el)['=='](value) or el is value
 
     idx = 0
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     @catch_break (breaker) ->
       @each ->
-        breaker.break(new R.Fixnum(idx)) if callback(this, block, arguments)
+        breaker.break(new R.Fixnum(idx)) if callback.invoke(arguments)
         idx += 1
 
       null
@@ -554,13 +530,13 @@ class RubyJS.Enumerable
   inject: (init, sym, block) ->
     [init, sym, block] = @__inject_args__(init, sym, block)
 
+    callback = Block.create(block, this)
     @each ->
       if init is undefined
-        init = $args(arguments)
+        init = callback.args(arguments)
       else
-        args = arguments
-        args = if args.length != 1 then _slice_.call(args) else args[0]
-        init = block.call(this, init, args)
+        args = BlockMulti.prototype.args(arguments)
+        init = callback.invokeSplat(init, args)
 
     init
 
@@ -577,11 +553,13 @@ class RubyJS.Enumerable
   #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
   #
   grep: (pattern, block) ->
-    ary = new R.Array([])
-    pattern = R(pattern)
+    ary      = new R.Array([])
+    pattern  = R(pattern)
+    callback = Block.create(block, this)
     if block
       @each (el) ->
-        ary.append($execute(this, block, arguments)) if pattern['==='](el)
+        if pattern['==='](el)
+          ary.append(callback.invoke(arguments))
     else
       @each (el) ->
         ary.append(el) if pattern['==='](el)
@@ -599,10 +577,12 @@ class RubyJS.Enumerable
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
 
+    callback = Block.create(block, this)
+
     h = {}
     @each ->
-      args = $args(arguments, block)
-      key  = $execute(this, block, arguments)
+      args = callback.args(arguments)
+      key  = callback.invoke(arguments)
 
       h[key] ||= new R.Array([])
       h[key].append(args)
@@ -631,13 +611,11 @@ class RubyJS.Enumerable
   map: (block) ->
     return @to_enum('map') unless block?.call?
 
+    callback = Block.create(block, this)
+
     arr = []
-    if block.length != 1
-      @each ->
-        arr.push($execute(this, block, arguments))
-    else
-      @each (el) ->
-        arr.push(block.apply(this, arguments))
+    @each ->
+      arr.push(callback.invoke(arguments))
 
     new R.Array(arr, false)
 
@@ -665,16 +643,16 @@ class RubyJS.Enumerable
 
     block ||= RubyJS.Comparable.cmp
 
-    # Following Optimization won't complain if:
-    # [1,2,'3']
-    #
-    # optimization for elements that are arrays
-    #
-    if @__samesame__?()
-      arr = @__native__
-      if arr.length < 65535
-        _max = Math.max.apply(Math, arr)
-        return _max if _max isnt NaN
+    # # Following Optimization won't complain if:
+    # # [1,2,'3']
+    # #
+    # # optimization for elements that are arrays
+    # #
+    # if @__samesame__?()
+    #   arr = @__native__
+    #   if arr.length < 65535
+    #     _max = Math.max.apply(Math, arr)
+    #     return _max if _max isnt NaN
 
     @each (item) ->
       if max is undefined
@@ -798,9 +776,9 @@ class RubyJS.Enumerable
   #
   none: (block) ->
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each (args) ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
       true
 
@@ -822,9 +800,9 @@ class RubyJS.Enumerable
     counter  = 0
 
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each (args) ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
         breaker.break(false) if counter > 1
       counter is 1
@@ -838,10 +816,12 @@ class RubyJS.Enumerable
     left  = []
     right = []
 
-    @each ->
-      args = $args(arguments)
+    callback = Block.create(block, this)
 
-      if $exec(this, block, args)
+    @each ->
+      args = BlockMulti.prototype.args(arguments)
+
+      if callback.invokeSplat(args)
         left.push(args)
       else
         right.push(args)
@@ -853,10 +833,12 @@ class RubyJS.Enumerable
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     ary = []
     @each ->
-      if R.falsey($execute(this, block, arguments))
-        ary.push($args(arguments))
+      if R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
 
     new R.Array(ary)
 
@@ -904,12 +886,15 @@ class RubyJS.Enumerable
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     ary = []
     @each (value) ->
-      ary.push new R.Enumerable.SortedElement(value, $execute(this, block, arguments))
+      ary.push new R.Enumerable.SortedElement(value, callback.invoke(arguments))
+
     ary = new R.Array(ary)
 
-    ary.sort().map (se) -> se.value
+    ary.sort(R.Comparable.cmpstrict).map (se) -> se.value
 
 
   take: (n) ->
@@ -921,7 +906,7 @@ class RubyJS.Enumerable
     @catch_break (breaker) ->
       @each ->
         breaker.break() if arr.length is n
-        arr.push($args(arguments))
+        arr.push(BlockMulti.prototype.args(arguments))
 
     new R.Array(arr)
 
@@ -934,7 +919,7 @@ class RubyJS.Enumerable
     @catch_break (breaker) ->
       @each ->
         breaker.break() if R.falsey block.apply(this, arguments)
-        ary.push($args(arguments))
+        ary.push(BlockMulti.prototype.args(arguments))
 
     new R.Array(ary)
 
@@ -944,7 +929,7 @@ class RubyJS.Enumerable
 
     @each ->
       # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
-      ary.push($args(arguments))
+      ary.push(BlockMulti.prototype.args(arguments))
       null
 
     new RubyJS.Array(ary)

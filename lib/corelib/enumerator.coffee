@@ -43,10 +43,12 @@ class RubyJS.Enumerator extends RubyJS.Object
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     idx = 0
     @each ->
-      args = $args(arguments)
-      val = block.call(this, args, idx)
+      args = BlockMulti.prototype.args(arguments)
+      val  = callback.invokeSplat(args, idx)
       idx += 1
       val
 
