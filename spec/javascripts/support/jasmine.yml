@@ -1,0 +1,12 @@
+src_dir: spec/javascripts
+
+src_files:
+  - ruby.js
+  - corelib/string/fixtures/classes.js
+  - corelib/numeric/fixtures/classes.js
+  - corelib/enumerable/fixtures/classes.js
+
+spec_dir: spec/javascripts
+
+spec_files:
+  - '**/*_spec.js'
