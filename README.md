@@ -35,10 +35,10 @@ RubyJS is currently implemented in CoffeeScript 1.3.3. CoffeeScript 1.4.0 doesn'
 coffee> R('hello world').capitalize()
 "Hello World"
 coffee> R('hello world').capitalize().toNative()
-'Hello world'
+'Hello World'
 ```
 
-- Setup development environment:
+- Set up development environment:
 
 ```
 $ bundle install
@@ -64,7 +64,7 @@ You can quickly search and jump through the [online documentation](http://rubyjs
 
 Open fuzzy finder dialog: `Ctrl-T`
 
-In frame mode you can toggle the list naviation frame on the left side:
+In frame mode you can toggle the list navigation frame on the left side:
 
 Toggle list view: `Ctrl-L`
 
@@ -94,7 +94,7 @@ You can focus and blur the search input:
     R.String
     R.Array
 
-`R` additionaly includes R.Kernel, so methods defined there can be used with R.
+`R` additionally includes R.Kernel, so methods defined there can be used with R.
 
     R.puts('hello world')
 
@@ -152,7 +152,7 @@ Mathematic operations like +, -, * with RubyJS numerics is expensive as for ever
 ## Aliases
 
 Where Ruby methods conflict with JavaScript naming the following aliases are used.
-You can also use the old names through property the brackets, e.g. `['==']`.
+You can also use the JS names quoted inside of brackets, e.g. `['==']`.
 
     str.equals('foo')
     str['==']('foo')
