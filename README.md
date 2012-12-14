@@ -8,6 +8,18 @@ See [RubyJS Homepage](http://www.rubyjs.org) for more details. It is licensed un
 
 RubyJS is licensed under the MIT License.
 
+## rubyjs-rails Gem
+
+There's a Rails [asset-pipeline gem for RubyJS(https://github.com/rubyjs/rubyjs-rails).
+
+```ruby
+# in Gemfile
+gem 'rubyjs-rails'
+# In your application.js manifest:
+//= require ruby
+```
+
+
 ## NPM Module: rubyjs
 
 RubyJS can be installed as an npm module.
@@ -189,3 +201,12 @@ You can also use the JS names quoted inside of brackets, e.g. `['==']`.
     R['$;']    : $;
     R['$,']    : $,
 
+## Roadmap 0.8
+
+- @to_enum returns Arrays not Enumerators.
+- upto, downto, times to yield primitives
+
+## Contributors
+
+- typos [jeanlange](https://github.com/jeanlange)
+- rubyjs-rails gem [PikachuEXE](https://github.com/PikachuEXE)
