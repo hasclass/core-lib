@@ -515,18 +515,13 @@ class RubyJS.Array extends RubyJS.Object
   each: (block) ->
     # block = R.string_to_proc(block)
     if block && block.call?
-      idx = -1
 
-      if (block.length > 1)
-        while ++idx < @__native__.length
-          el = @__native__[idx]
-          if R.Array.isNativeArray(el)
-            block.apply(this, el)
-          else
-            block(el)
-      else
-        while ++idx < @__native__.length
-          block(@__native__[idx])
+      if block.length > 0 # 'if' needed for to_a
+        block = Block.supportMultipleArgs(block)
+
+      idx = -1
+      while ++idx < @__native__.length
+        block(@__native__[idx])
 
       this
     else
@@ -1199,23 +1194,13 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum('reverse_each') unless block && block.call?
 
     if block && block.call?
-      # Inline Javascript because coffeescript does not allow
-      # for (;;). and the normal for in is slow as it creates
-      # a new array.
 
-      arr = this.__native__
-      idx = arr.length
+      if block.length > 0 # if needed for to_a
+        block = Block.supportMultipleArgs(block)
 
-      if block.length > 1
-        while idx--
-          el = arr[idx]
-          if R.Array.isNativeArray(el)
-            block.apply(this, el)
-          else
-            block(el)
-      else
-        while idx--
-          block(arr[idx])
+      idx = @__native__.length
+      while idx--
+        block(@__native__[idx])
 
       this
     else
@@ -1576,6 +1561,10 @@ class RubyJS.Array extends RubyJS.Object
   #
   union: (other) ->
     @plus(other).uniq()
+
+
+  to_a: ->
+    @dup()
 
 
   # find a better way for this.

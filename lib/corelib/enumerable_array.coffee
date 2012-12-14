@@ -57,13 +57,6 @@ class RubyJS.EnumerableArray
     initial
 
 
-  __apply_block__: (block, item) ->
-    if block.length != 1 && (item.is_array? || R.Array.isNativeArray(item))
-      block.apply(this, item)
-    else
-      block.call(this, item)
-
-
   # any: (block) ->
   #   callback = $blockCallback(this, block)
   #   len = @__native__.length
@@ -215,9 +208,10 @@ class RubyJS.EnumerableArray
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
+    block = Block.supportMultipleArgs(block)
     idx = -1
     while ++idx < @__native__.length
-      @__apply_block__(block, @__native__[idx])
+      block(@__native__[idx])
 
     this
 
@@ -272,11 +266,13 @@ class RubyJS.EnumerableArray
       block  = ifnone
       ifnone = null
 
+    block = Block.supportMultipleArgs(block)
+
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      unless R.falsey(@__apply_block__(block, item))
+      unless R.falsey(block(item))
         return item
 
     ifnone?()
@@ -285,12 +281,14 @@ class RubyJS.EnumerableArray
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
 
+    block = Block.supportMultipleArgs(block)
+
     ary = []
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      unless R.falsey(@__apply_block__(block, item))
+      unless R.falsey(block(item))
         ary.push(item)
 
     new R.Array(ary)
@@ -301,16 +299,17 @@ class RubyJS.EnumerableArray
     value = @box(value)
 
     if value.call?
-      block = value
+      block = Block.supportMultipleArgs(value)
     else
       # OPTIMIZE: sorting
       block = (el) -> R(el)['=='](value) or el is value
+
 
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      return R(idx) if @__apply_block__(block, item)
+      return R(idx) if block(item)
     null
 
 
@@ -335,12 +334,14 @@ class RubyJS.EnumerableArray
     ary = new R.Array([])
     pattern = R(pattern)
 
+    block = Block.supportMultipleArgs(block)
+
     idx = -1
     len = @__native__.length
     if block
       while ++idx < len
         item = @__native__[idx]
-        ary.append(@__apply_block__(block, item)) if pattern['==='](item)
+        ary.append(block(item)) if pattern['==='](item)
     else
       while ++idx < len
         item = @__native__[idx]
@@ -351,13 +352,14 @@ class RubyJS.EnumerableArray
 
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
+    block = Block.supportMultipleArgs(block)
 
     hsh = {}
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      key  = @__apply_block__(block, item)
+      key  = block(item)
 
       hsh[key] ||= new R.Array([])
       hsh[key].append(item)

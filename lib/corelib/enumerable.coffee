@@ -617,7 +617,7 @@ class RubyJS.Enumerable
     @each ->
       arr.push(callback.invoke(arguments))
 
-    new R.Array(arr, false)
+    new R.Array(arr)
 
 
   # @alias #map

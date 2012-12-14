@@ -17,6 +17,21 @@ class Block
     else
       new BlockArgs(block, thisArg)
 
+  # if block has multiple arguments, returns a wrapper
+  # function that applies arguments to block instead of passing.
+  # Otherwise it returns the block itself.
+  #
+  @supportMultipleArgs: (block) ->
+    if block.length is 1
+      block
+    else
+      (item) ->
+        if typeof item is 'object' && R.Array.isNativeArray(item)
+          block.apply(this, item)
+        else
+          block(item)
+
+
   invoke: () ->
     throw "Calling #invoke on an abstract Block instance"
 
