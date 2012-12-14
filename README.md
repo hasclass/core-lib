@@ -33,9 +33,9 @@ RubyJS is currently implemented in CoffeeScript 1.3.3. CoffeeScript 1.4.0 doesn'
 ```
 /path/to/rubyjs $ coffee -r ./ruby.coffee
 coffee> R('hello world').capitalize()
-"Hello World"
+"Hello world"
 coffee> R('hello world').capitalize().toNative()
-'Hello World'
+'Hello world'
 ```
 
 - Set up development environment:
