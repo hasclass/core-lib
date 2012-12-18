@@ -1,103 +1,84 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/methods', __FILE__)
 
-describe "Time#localtime" do
-  it "converts self to local time, modifying the receiver" do
+describe "Time#localtime", ->
+  it "converts self to local time, modifying the receiver", ->
     # Testing with America/Regina here because it doesn't have DST.
     with_timezone("CST", -6) do
       t = Time.gm(2007, 1, 9, 12, 0, 0)
       t.localtime
-      t.should == Time.local(2007, 1, 9, 6, 0, 0)
-    end
-  end
+      t.should == R.Time.local(2007, 1, 9, 6, 0, 0)
 
-  it "returns self" do
+  it "returns self", ->
     t = Time.gm(2007, 1, 9, 12, 0, 0)
     t.localtime.should equal(t)
-  end
 
-  ruby_version_is "1.9" do
-    it "converts time to the UTC offset specified as an Integer number of seconds" do
+  describe "1.9", ->
+    it "converts time to the UTC offset specified as an Integer number of seconds", ->
       t = Time.gm(2007, 1, 9, 12, 0, 0)
       t.localtime(3630)
-      t.should == Time.new(2007, 1, 9, 13, 0, 30, 3630)
+      t.should == R.Time.new(2007, 1, 9, 13, 0, 30, 3630)
       t.utc_offset.should == 3630
-    end
 
-    describe "with an argument that responds to #to_int" do
-      it "coerces using #to_int" do
+    describe "with an argument that responds to #to_int", ->
+      it "coerces using #to_int", ->
         o = mock('integer')
         o.should_receive(:to_int).and_return(3630)
         t = Time.gm(2007, 1, 9, 12, 0, 0)
         t.localtime(o)
-        t.should == Time.new(2007, 1, 9, 13, 0, 30, 3630)
+        t.should == R.Time.new(2007, 1, 9, 13, 0, 30, 3630)
         t.utc_offset.should == 3630
-      end
-    end
 
-    it "returns a Time with a UTC offset of the specified number of Rational seconds" do
+    it "returns a Time with a UTC offset of the specified number of Rational seconds", ->
       t = Time.gm(2007, 1, 9, 12, 0, 0)
       t.localtime(Rational(7201, 2))
-      t.should == Time.new(2007, 1, 9, 13, 0, Rational(1, 2), Rational(7201, 2))
+      t.should == R.Time.new(2007, 1, 9, 13, 0, Rational(1, 2), Rational(7201, 2))
       t.utc_offset.should eql(Rational(7201, 2))
-    end
 
-    describe "with an argument that responds to #to_r" do
-      it "coerces using #to_r" do
+    describe "with an argument that responds to #to_r", ->
+      it "coerces using #to_r", ->
         o = mock('rational')
         o.should_receive(:to_r).and_return(Rational(7201, 2))
         t = Time.gm(2007, 1, 9, 12, 0, 0)
         t.localtime(o)
-        t.should == Time.new(2007, 1, 9, 13, 0, Rational(1, 2), Rational(7201, 2))
+        t.should == R.Time.new(2007, 1, 9, 13, 0, Rational(1, 2), Rational(7201, 2))
         t.utc_offset.should eql(Rational(7201, 2))
-      end
-    end
 
-    it "returns a Time with a UTC offset specified as +HH:MM" do
+    it "returns a Time with a UTC offset specified as +HH:MM", ->
       t = Time.gm(2007, 1, 9, 12, 0, 0)
       t.localtime("+01:00")
-      t.should == Time.new(2007, 1, 9, 13, 0, 0, 3600)
+      t.should == R.Time.new(2007, 1, 9, 13, 0, 0, 3600)
       t.utc_offset.should == 3600
-    end
 
-    it "returns a Time with a UTC offset specified as -HH:MM" do
+    it "returns a Time with a UTC offset specified as -HH:MM", ->
       t = Time.gm(2007, 1, 9, 12, 0, 0)
       t.localtime("-01:00")
-      t.should == Time.new(2007, 1, 9, 11, 0, 0, -3600)
+      t.should == R.Time.new(2007, 1, 9, 11, 0, 0, -3600)
       t.utc_offset.should == -3600
-    end
 
-    describe "with an argument that responds to #to_str" do
-      it "coerces using #to_str" do
+    describe "with an argument that responds to #to_str", ->
+      it "coerces using #to_str", ->
         o = mock('string')
         o.should_receive(:to_str).and_return("+01:00")
         t = Time.gm(2007, 1, 9, 12, 0, 0)
         t.localtime(o)
-        t.should == Time.new(2007, 1, 9, 13, 0, 0, 3600)
+        t.should == R.Time.new(2007, 1, 9, 13, 0, 0, 3600)
         t.utc_offset.should == 3600
-      end
-    end
 
-    it "raises ArgumentError if the String argument is not of the form (+|-)HH:MM" do
-      t = Time.now
-      lambda { t.localtime("3600") }.should raise_error(ArgumentError)
-    end
+    it "raises ArgumentError if the String argument is not of the form (+|-)HH:MM", ->
+      t = R.Time.now
+      expect( ->  t.localtime("3600") ).toThrow('ArgumentError')
 
-    it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding" do
-      t = Time.now
-      lambda { t.localtime("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
-    end
+    it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding", ->
+      t = R.Time.now
+      expect( ->  t.localtime("-01:00".encode("UTF-16LE")) ).toThrow('ArgumentError')
 
-    it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds" do
-      t = Time.new
+    it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds", ->
+      t = R.Time.new
       t.localtime(-86400 + 1).utc_offset.should == (-86400 + 1)
-      lambda { t.localtime(-86400) }.should raise_error(ArgumentError)
-    end
+      expect( ->  t.localtime(-86400) ).toThrow('ArgumentError')
 
-    it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds" do
-      t = Time.new
+    it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds", ->
+      t = R.Time.new
       t.localtime(86400 - 1).utc_offset.should == (86400 - 1)
-      lambda { t.localtime(86400) }.should raise_error(ArgumentError)
-    end
-  end
-end
+      expect( ->  t.localtime(86400) ).toThrow('ArgumentError')

@@ -5,6 +5,7 @@ src_files:
   - corelib/string/fixtures/classes.js
   - corelib/numeric/fixtures/classes.js
   - corelib/enumerable/fixtures/classes.js
+  - corelib/time/fixtures/classes.js
 
 spec_dir: spec/javascripts
 

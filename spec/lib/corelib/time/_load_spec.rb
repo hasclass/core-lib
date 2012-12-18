@@ -1,10 +1,10 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/methods', __FILE__)
 
-describe "Time#_load" do
+describe "Time#_load", ->
   ruby_bug("http://redmine.ruby-lang.org/issues/show/627", "1.8.7") do
-    it "loads a time object in the new format" do
-      t = Time.local(2000, 1, 15, 20, 1, 1)
+    it "loads a time object in the new format", ->
+      t = R.Time.local(2000, 1, 15, 20, 1, 1)
       t = t.gmtime
 
       high =               1 << 31 |
@@ -19,11 +19,9 @@ describe "Time#_load" do
                    t.usec
 
       Time._load([high, low].pack("VV")).should == t
-    end
-  end
 
-  it "loads a time object in the old UNIX timestamp based format" do
-    t = Time.local(2000, 1, 15, 20, 1, 1, 203)
+  it "loads a time object in the old UNIX timestamp based format", ->
+    t = R.Time.local(2000, 1, 15, 20, 1, 1, 203)
     timestamp = t.to_i
 
     high = timestamp & ((1 << 31) - 1)
@@ -31,27 +29,20 @@ describe "Time#_load" do
     low =  t.usec
 
     Time._load([high, low].pack("VV")).should == t
-  end
 
-  ruby_version_is ''...'1.9' do
-    it "loads MRI's marshaled time format" do
+  describe ''...'1.9', ->
+    it "loads MRI's marshaled time format", ->
       t = Marshal.load("\004\bu:\tTime\r\320\246\e\200\320\001\r\347")
       t.utc
 
       t.to_s.should == "Fri Oct 22 16:57:48 UTC 2010"
-    end
-  end
 
-  ruby_version_is '1.9' do
-    it "loads MRI's marshaled time format" do
+  describe '1.9', ->
+    it "loads MRI's marshaled time format", ->
       t = Marshal.load("\004\bu:\tTime\r\320\246\e\200\320\001\r\347")
       t.utc
 
       t.to_s.should == "2010-10-22 16:57:48 UTC"
-    end
-  end
-end
 
-describe "Time._load" do
+describe "Time._load", ->
   it "needs to be reviewed for spec completeness"
-end

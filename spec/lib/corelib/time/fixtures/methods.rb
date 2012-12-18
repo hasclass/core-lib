@@ -7,7 +7,6 @@ def with_timezone(name, offset = nil, daylight_saving_zone = "")
 
     zone << offset.to_s
     zone << ":00:00"
-  end
   zone << daylight_saving_zone
 
   old = ENV["TZ"]
@@ -17,5 +16,3 @@ def with_timezone(name, offset = nil, daylight_saving_zone = "")
     yield
   ensure
     ENV["TZ"] = old
-  end
-end
