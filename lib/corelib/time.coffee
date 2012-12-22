@@ -98,16 +98,27 @@ class RubyJS.Time extends RubyJS.Object
   @new: (year, month, day, hour, min, sec, utc_offset) ->
     if arguments.length == 0
       return new R.Time(new Date())
+    if year is null
+      throw R.TypeError.new()
+
+    month ||= 1
+    day   ||= 1
+    hour  ||= 0
+    min   ||= 0
+    sec   ||= 0
+
+    if month > 12 || day > 31 || hour > 24 || min > 59 || sec > 59 || month < 0 || day < 0   || hour < 0  || min < 0  || sec < 0
+       throw R.ArgumentError.new()
 
     # utc_offset is in seconds
     if utc_offset?
       # utc_offset in seconds is the desired offset.
       utc_offset = @_parse_utc_offset(utc_offset)
       # First get the local date for the specified params
-      date = new Date(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0)
+      date = new Date(year, month - 1, day, hour, min, sec)
       date = @_local_to_offset(date, utc_offset)
     else
-      date = new Date(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0)
+      date = new Date(year, month - 1, day, hour, min, sec)
       utc_offset = @_local_timezone()
 
     new R.Time(date, utc_offset)
@@ -297,8 +308,10 @@ class RubyJS.Time extends RubyJS.Object
   #
   '+': (other) ->
     `if (other == null) throw R.TypeError.new();`
-    if typeof other != 'number' || !R(other).is_numeric?
-      if other.to_f?
+
+    tpcast = R(other)
+    if typeof other != 'number' || !tpcast.is_numeric?
+      if !tpcast.is_time? && other.to_f?
         other = other.to_f()
       else
         throw R.TypeError.new()
@@ -364,6 +377,7 @@ class RubyJS.Time extends RubyJS.Object
 
   sunday: ->
     @wday().to_native() is 0
+
 
 
 
@@ -559,6 +573,10 @@ class RubyJS.Time extends RubyJS.Object
     new R.String(out)
 
 
+  succ: ->
+    R.Time.at(@to_i().succ())
+
+
   # Returns the value of time as an integer number of seconds since the Epoch.
   #
   # @example
@@ -568,6 +586,18 @@ class RubyJS.Time extends RubyJS.Object
   #
   to_i: ->
     R(@__native__.getTime() / 1000).to_i()
+
+
+  # Returns the value of time as a floating point number of seconds since the
+  # Epoch.
+  #
+  # t = R.Time.now()
+  # "%10.5f" % t.to_f   #=> "1270968744.77658"
+  # t.to_i              #=> 1270968744
+  # Note that IEEE 754 double is not accurate enough to represent number of nanoseconds from the Epoch.
+  #
+  to_f: ->
+    new R.Float(@to_i() + ((@valueOf() % 1000) / 1000))
 
 
   to_s: @prototype.inspect
