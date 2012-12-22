@@ -81,13 +81,11 @@ class RubyJS.Time extends RubyJS.Object
   #
   constructor: (@__native__, utc_offset) ->
     if utc_offset?
-      utc_offset = R(utc_offset)
-      if utc_offset.is_fixnum?
-        @__utc_offset__ = utc_offset.valueOf()
+      @__utc_offset__ = utc_offset
+      @_tzdate = R.Time._offset_to_local(@__native__, @__utc_offset__)
     else
+      @_tzdate = @__native__
       @__utc_offset__ = R.Time._local_timezone()
-    # time zone adjusted date
-    @_tzdate = R.Time._offset_to_local(@__native__, @__utc_offset__)
 
 
   @now: ->
@@ -182,13 +180,13 @@ class RubyJS.Time extends RubyJS.Object
 
     seconds = R(seconds)
     if seconds.is_time?
-      time = seconds
-      secs = time.to_i() * 1000
-      new R.Time(new Date(secs + microseconds), time.utc_offset())
+      secs = seconds.to_i()
+      msecs = secs * 1000 + microseconds / 1000
+      new R.Time(new Date(msecs), time.utc_offset())
     else if seconds.is_numeric?
-      seconds = seconds.to_i().__native__ * 1000
-      date = new Date(seconds + microseconds)
-      new R.Time(date, @_local_timezone())
+      secs = seconds.valueOf()
+      msecs = secs * 1000 + microseconds / 1000
+      new R.Time(new Date(msecs), @_local_timezone())
     else
       throw R.TypeError.new()
 
@@ -250,8 +248,8 @@ class RubyJS.Time extends RubyJS.Object
 
 
   '<=>': (other) ->
-    secs = @__native__.valueOf()
-    other = other.__native__.valueOf()
+    secs = @valueOf()
+    other = other.valueOf()
     if secs < other
       -1
     else if secs > other
@@ -263,7 +261,51 @@ class RubyJS.Time extends RubyJS.Object
 
 
   '==': (other) ->
+    other = R(other)
+    return false unless other.is_time?
     @['<=>'](other) is 0
+
+
+  # Difference—Returns a new time that represents the difference between two
+  # times, or subtracts the given number of seconds in numeric from time.
+  #
+  # t = Time.now       #=> 2007-11-19 08:23:10 -0600
+  # t2 = t + 2592000   #=> 2007-12-19 08:23:10 -0600
+  # t2 - t             #=> 2592000.0
+  # t2 - 2592000       #=> 2007-11-19 08:23:10 -0600
+  #
+  '-': (other) ->
+    `if (other == null) throw R.TypeError.new();`
+    other = R(other)
+
+    if other.is_numeric?
+      tmstmp = @valueOf() - (other.valueOf() * 1000)
+      return new R.Time(new Date(tmstmp), @__utc_offset__)
+    else if other.is_time?
+      new R.Float((@valueOf() - other.valueOf()) / 1000)
+    else
+      throw R.TypeError.new()
+
+
+  # Addition—Adds some number of seconds (possibly fractional) to time and
+  # returns that value as a new time.
+  #
+  # @example
+  #
+  #     t = Time.now()       #=> 2007-11-19 08:22:21 -0600
+  #     t + (60 * 60 * 24)   #=> 2007-11-20 08:22:21 -0600
+  #
+  '+': (other) ->
+    `if (other == null) throw R.TypeError.new();`
+    if typeof other != 'number' || !R(other).is_numeric?
+      if other.to_f?
+        other = other.to_f()
+      else
+        throw R.TypeError.new()
+
+    tmstmp = @valueOf() + other.valueOf() * 1000
+    new R.Time(new Date(tmstmp), @__utc_offset__)
+
 
   # Returns a canonical string representation of time.
   #
@@ -528,6 +570,9 @@ class RubyJS.Time extends RubyJS.Object
     R(@__native__.getTime() / 1000).to_i()
 
 
+  to_s: @prototype.inspect
+
+
   __tz_delta__: ->
     @__utc_offset__ + R.Time._local_timezone()
 
@@ -551,9 +596,9 @@ class RubyJS.Time extends RubyJS.Object
   # @todo implement
   #
   tv_usec: ->
-    throw R.NotImplementedError.new()
-    # time zone adjusted date
-    # R(@__native__.getTime() / 1000).to_i()
+    # valueOf is milliseconds since epochs.
+    # get the milliseconds only and convert to microsecs
+    new R.Fixnum((@_tzdate.valueOf() % 1000)*1000)
 
 
   usec: @prototype.tv_usec
@@ -634,3 +679,5 @@ class RubyJS.Time extends RubyJS.Object
   # ---- Aliases --------------------------------------------------------------
 
   @__add_default_aliases__(@prototype)
+
+  eql: @prototype['==']

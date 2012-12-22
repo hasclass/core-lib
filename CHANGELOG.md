@@ -1,3 +1,12 @@
+### 2012-12-14
+
+- rails asset pipeline gem: github.com/rubyjs/rubyjs-rails thanks to github.com/PikachuEXE
+- Block.supportMultipleArgs
+
+### 2012-12-13
+
+- Add Block classes to handle different block arities
+
 ### 2012-12-10
 
 - Created npm module

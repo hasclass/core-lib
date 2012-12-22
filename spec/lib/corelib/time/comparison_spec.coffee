@@ -1,8 +1,8 @@
 describe "Time#<=>", ->
   it "returns 1 if the first argument is a point in time after the second argument", ->
     expect(R.Time.now().cmp(R.Time.at(0))).toEqual 1
-    expect(R.Time.at(0, 100).cmp(R.Time.at(0, 0))).toEqual 1
-    expect(R.Time.at(1202778512, 100).cmp(R.Time.at(1202778512, 99))).toEqual 1
+    expect(R.Time.at(0, 1000).cmp(R.Time.at(0, 0))).toEqual 1
+    expect(R.Time.at(1202778512, 10000).cmp(R.Time.at(1202778512, 9900))).toEqual 1
 
   it "returns 0 if time is the same as other", ->
     expect(R.Time.at(1202778513).cmp(R.Time.at(1202778513))).toEqual 0
@@ -10,8 +10,8 @@ describe "Time#<=>", ->
 
   it "returns -1 if the first argument is a point in time before the second argument", ->
     expect(R.Time.at(0).cmp(R.Time.now())).toEqual -1
-    expect(R.Time.at(0, 0).cmp(R.Time.at(0, 100))).toEqual -1
-    expect(R.Time.at(100, 100).cmp(R.Time.at(101, 100))).toEqual -1
+    expect(R.Time.at(0, 0).cmp(R.Time.at(0, 1000))).toEqual -1
+    expect(R.Time.at(100, 10000).cmp(R.Time.at(101, 10000))).toEqual -1
 
   xdescribe "1.9", ->
     # it "returns 1 if the first argument is a fraction of a microsecond after the second argument", ->
