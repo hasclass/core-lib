@@ -10,12 +10,17 @@ RubyJS is licensed under the MIT License.
 
 ## rubyjs-rails Gem
 
-There's a Rails [asset-pipeline gem for RubyJS(https://github.com/rubyjs/rubyjs-rails).
+There's a Rails [asset-pipeline gem for RubyJS](https://github.com/rubyjs/rubyjs-rails).
+
+Gemfile:
 
 ```ruby
-# in Gemfile
 gem 'rubyjs-rails'
-# In your application.js manifest:
+```
+
+In your application.js manifest:
+
+``` js
 //= require ruby
 ```
 
@@ -24,13 +29,13 @@ gem 'rubyjs-rails'
 
 RubyJS can be installed as an npm module.
 
-```
+``` sh
 $ npm install rubyjs
 ```
 
 Then simply require rubyjs which will add the R and RubyJS to the global object.
 
-```javascript
+``` js
 require('rubyjs');
 R.puts("hello");
 ```
@@ -42,7 +47,7 @@ RubyJS is currently implemented in CoffeeScript 1.3.3. CoffeeScript 1.4.0 doesn'
 - Clone repository
 - Run the coffee console loading the rubyjs files:
 
-```
+``` sh
 /path/to/rubyjs $ coffee -r ./ruby.coffee
 coffee> R('hello world').capitalize()
 "Hello world"
@@ -52,7 +57,7 @@ coffee> R('hello world').capitalize().toNative()
 
 - Set up development environment:
 
-```
+``` sh
 $ bundle install
 $ cake build_tests            # compiles all test files
 $ bundle exec guard           # automatically compile coffeescript
@@ -98,39 +103,48 @@ You can focus and blur the search input:
 
 `RubyJS` is the official namespace of all classes and mixins. `R` is an alias to `RubyJS`. In the documentation both versions are used interchangeably.
 
-    RubyJS('foo')
-    RubyJS.String
-    RubyJS.Array
-    // Equivalent to:
-    R('foo')
-    R.String
-    R.Array
+``` js
+RubyJS('foo')
+RubyJS.String
+RubyJS.Array
+// Equivalent to:
+R('foo')
+R.String
+R.Array
+```
 
 `R` additionally includes R.Kernel, so methods defined there can be used with R.
 
-    R.puts('hello world')
+``` js
+R.puts('hello world')
+```
 
 ## String
 
 RubyJS.String wraps a native String primitive.
 
-    R('foo')
-    new R.String('foo')
-    R.String.new('foo')
-    R.$String(1) // Emulates Ruby String(1)
+``` js
+R('foo')
+new R.String('foo')
+R.String.new('foo')
+R.$String(1) // Emulates Ruby String(1)
+```
 
 Destructive methods have a _bang suffix.
 
-    str = R('foo')
-    str.capitalize()      //=> 'Foo'
-    str                   //=> 'foo'
-    str.capitalize_bang() //=> 'Foo'
-    str                   //=> 'Foo'
+``` js
+str = R('foo')
+str.capitalize()      //=> 'Foo'
+str                   //=> 'foo'
+str.capitalize_bang() //=> 'Foo'
+str                   //=> 'Foo'
+```
 
 Create multiple R.Strings with `R.w` equivalent to Ruby `%w[]`.
 
-    words = R.w('foo bar baz')
-
+``` js
+words = R.w('foo bar baz')
+```
 
 ## Array
 
@@ -140,10 +154,11 @@ RubyJS.Array wraps a native JavaScript array. Members are not directly accessibl
 
 Array includes optimized versions of RubyJS.Enumerable methods.
 
-     R([1,2,3])           // => an R.Array of Number primitives
-     R([1,2,3], true)     // => an R.Array of R.Fixnums
-     new R.Array([1,2,3])
-
+``` js
+R([1,2,3])           // => an R.Array of Number primitives
+R([1,2,3], true)     // => an R.Array of R.Fixnums
+new R.Array([1,2,3])
+```
 
 ## Enumerable, Enumerator
 
