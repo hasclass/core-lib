@@ -11,11 +11,9 @@ class RubyJS.Kernel
   # TODO: find a better name for box.
   # TODO: handle the case when calling R(true, -> ), R({}, -> )
   box: (obj, recursive, block) ->
-    # obj == null is equivalent to obj === null or obj === undefined
-    # However CoffeeScript does not have the == operator.
     # R(null) should simply return null. At a later point maybe an
     # instance of NilClass
-    `if (obj == null) return obj;`
+    return obj unless obj?
 
     # typeof with JS primitive is very fast. Handle primitives first
     # for performance reasons.
