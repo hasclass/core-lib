@@ -43,7 +43,7 @@ class RubyJS.Enumerator extends RubyJS.Object
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     idx = 0
     @each ->

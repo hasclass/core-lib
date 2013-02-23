@@ -1,8 +1,8 @@
 argify = -> arguments
 
-describe "Block", ->
+describe "R.blockify", ->
   describe "block with 1 arg", ->
-    beforeEach -> @block = R.Block.create((a) -> a)
+    beforeEach -> @block = R.blockify((a) -> a)
 
     it "yields argument if invoked with one argument", ->
       expect( @block.invoke(argify('a')) ).toEqual 'a'
@@ -11,7 +11,7 @@ describe "Block", ->
       expect( @block.invoke(argify('a', 'b', 'c')) ).toEqual 'a'
 
   describe "block with n args", ->
-    beforeEach -> @block = R.Block.create((a, b) -> [a,b])
+    beforeEach -> @block = R.blockify((a, b) -> [a,b])
 
     it "yields argument if invoked with one argument", ->
       expect( @block.invoke(argify('a')) ).toEqual ['a', undefined]
@@ -42,7 +42,7 @@ describe "Block", ->
       expect( @block.args(argify( )) ).toEqual undefined
 
   describe "non-block", ->
-    beforeEach -> @block = R.Block.create(argify(1,2))
+    beforeEach -> @block = R.blockify(argify(1,2))
 
     it "yields argument if invoked with one argument", ->
       expect( @block.invoke(argify('a')) ).toEqual 'a'

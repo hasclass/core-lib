@@ -20,7 +20,7 @@ class RubyJS.Enumerable
   #
   all: (block) ->
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each ->
         result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
@@ -41,7 +41,7 @@ class RubyJS.Enumerable
   #
   any: (block) ->
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each ->
         result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
@@ -60,7 +60,7 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     ary = []
     @each ->
       ary.push(callback.invoke(arguments))
@@ -87,7 +87,7 @@ class RubyJS.Enumerable
     else if block is null
       @each (el) -> counter += 1 if el is null
     else if block.call?
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
@@ -140,7 +140,7 @@ class RubyJS.Enumerable
 
     return @to_enum('cycle', n) unless block
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     cache = new R.Array([])
     @each ->
@@ -196,7 +196,7 @@ class RubyJS.Enumerable
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     ary = []
     dropping = true
@@ -229,7 +229,7 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() unless n > 0
 
     # TODO: use callback
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     len = block.length
     ary = []
     @each ->
@@ -286,7 +286,7 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     len      = block.length
     ary      = []
 
@@ -336,7 +336,7 @@ class RubyJS.Enumerable
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     idx = 0
     @each ->
@@ -358,7 +358,7 @@ class RubyJS.Enumerable
   each_with_object: (obj, block) ->
     return @to_enum('each_with_object', obj) unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     @each ->
       args = BlockMulti.prototype.args(arguments)
@@ -383,7 +383,7 @@ class RubyJS.Enumerable
       block  = ifnone
       ifnone = null
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @catch_break (breaker) ->
       @each ->
         unless R.falsey(callback.invoke(arguments))
@@ -408,7 +408,7 @@ class RubyJS.Enumerable
     return @to_enum('find_all') unless block && block.call?
 
     ary = []
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @each ->
       unless R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
@@ -438,7 +438,7 @@ class RubyJS.Enumerable
       block = (el) -> R(el)['=='](value) or el is value
 
     idx = 0
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @catch_break (breaker) ->
       @each ->
         breaker.break(new R.Fixnum(idx)) if callback.invoke(arguments)
@@ -530,7 +530,7 @@ class RubyJS.Enumerable
   inject: (init, sym, block) ->
     [init, sym, block] = @__inject_args__(init, sym, block)
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @each ->
       if init is undefined
         init = callback.args(arguments)
@@ -555,7 +555,7 @@ class RubyJS.Enumerable
   grep: (pattern, block) ->
     ary      = new R.Array([])
     pattern  = R(pattern)
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     if block
       @each (el) ->
         if pattern['==='](el)
@@ -577,7 +577,7 @@ class RubyJS.Enumerable
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     h = {}
     @each ->
@@ -611,7 +611,7 @@ class RubyJS.Enumerable
   map: (block) ->
     return @to_enum('map') unless block?.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     arr = []
     @each ->
@@ -776,7 +776,7 @@ class RubyJS.Enumerable
   #
   none: (block) ->
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each (args) ->
         result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
@@ -800,7 +800,7 @@ class RubyJS.Enumerable
     counter  = 0
 
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each (args) ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
@@ -816,7 +816,7 @@ class RubyJS.Enumerable
     left  = []
     right = []
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     @each ->
       args = BlockMulti.prototype.args(arguments)
@@ -833,7 +833,7 @@ class RubyJS.Enumerable
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     ary = []
     @each ->
@@ -886,7 +886,7 @@ class RubyJS.Enumerable
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     ary = []
     @each (value) ->

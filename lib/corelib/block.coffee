@@ -94,3 +94,4 @@ class BlockSingle
     @block.apply(@thisArg, arguments)
 
 R.Block = Block
+R.blockify = Block.create
