@@ -9,7 +9,6 @@ appFiles  = [
   'corelib/coerce'
   'corelib/object'
 
-  # 'corelib/nil_class'
   'corelib/breaker'
   'corelib/base'
 
