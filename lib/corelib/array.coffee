@@ -103,34 +103,38 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- Javascript primitives --------------------------------------------------
 
+  # Returns native array.
+  #
+  # @return Array
   valueOf: ->
     @__native__
 
 
+  # Returns native array.
+  #
+  # @param [boolean] recursive if set to true array and its elements are unboxed
+  # @return Array
+  #
   to_native: (recursive = false) ->
     if recursive
-      for el in @__native__
+      # explicitly coded for performance reasons
+      [idx,len,ary] = @__iter_vars__()
+      while (++idx < len)
+        el = @__native__[idx]
         el = el.to_native(true) if el && el.to_native?
-        el
+        ary[idx] = el
+      ary
     else
       # Clone array to avoid confusion
       @__native__.slice(0)
 
 
-  # TODO: remove legacy behaviour
-  unbox: (recursive = false) ->
-    if recursive
-      for el in @__native__
-        el = el.unbox(true) if el && el.unbox?
-        el
-    else
-      @__native__.slice(0)
-
+  # @private
+  unbox: @prototype.to_native
 
   to_native_clone: -> @__native__.slice(0)
 
   # ---- Instance methods -----------------------------------------------------
-
 
   '==': (other) ->
     return true if this is other

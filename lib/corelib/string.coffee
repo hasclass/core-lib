@@ -57,7 +57,7 @@ class RubyJS.String extends RubyJS.Object
 
   # ---- Javascript primitives --------------------------------------------------
 
-  to_native:  ->
+  to_native: ->
     @__native__
 
 
@@ -67,7 +67,7 @@ class RubyJS.String extends RubyJS.Object
   toString: -> @to_native()
 
 
-  unbox: -> @toString()
+  unbox: -> @__native__
 
 
   # ---- Instance methods -----------------------------------------------------

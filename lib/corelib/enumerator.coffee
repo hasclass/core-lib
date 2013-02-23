@@ -57,7 +57,7 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   iterator: () ->
-    @to_a().unbox()
+    @to_a().to_native()
 
   native_array: () ->
     @arr ||= @iterator()

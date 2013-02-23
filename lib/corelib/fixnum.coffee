@@ -152,7 +152,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   '**': (other) ->
     other = @box(other)
-    val   = @box Math.pow(@to_native(), other.unbox())
+    val   = @box Math.pow(@to_native(), other.to_native())
     if other.is_float? then val.to_f() else val.to_i()
 
   # Returns fix modulo other. See numeric.divmod for more information.
@@ -204,7 +204,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   to_s: (base = 10) ->
     base = @box(base)
     throw RubyJS.ArgumentError.new() if base.lt(2) || base.gt(36)
-    @box("#{@to_native().toString(base.unbox())}")
+    @box("#{@to_native().toString(base.to_native())}")
 
 
   # ---- Aliases --------------------------------------------------------------

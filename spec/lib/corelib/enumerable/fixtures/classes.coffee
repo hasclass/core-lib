@@ -50,6 +50,7 @@ class EnumerableSpecs.ComparesByVowelCount
     @vowels['<=>'] other.vowels
 
   unbox: -> @value
+  to_native: -> @value
 
 class EnumerableSpecs.Empty extends RubyJS.Object
   @include RubyJS.Enumerable

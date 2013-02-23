@@ -151,11 +151,11 @@ class RubyJS.Kernel
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Float(+stripped.unbox().replace(/_/g, ''))
+        new RubyJS.Float(+stripped.to_native().replace(/_/g, ''))
       else
         throw RubyJS.ArgumentError.new()
     else if obj.rubyjs?
-      new RubyJS.Float(obj.unbox())
+      new RubyJS.Float(obj.to_native())
     else # is not a R object
       new RubyJS.Float(obj)
 
@@ -169,12 +169,12 @@ class RubyJS.Kernel
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Fixnum(Math.floor(+stripped.unbox().replace(/_/g, '')))
+        new RubyJS.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')))
       else
         throw RubyJS.ArgumentError.new()
     else if obj.rubyjs?
       # throw RubyJS.TypeError.new() unless obj.to_i?
-      new RubyJS.Fixnum(Math.floor(obj.unbox()))
+      new RubyJS.Fixnum(Math.floor(obj.to_native()))
     else # is not a R object
       new RubyJS.Fixnum(Math.floor(obj))
 
@@ -184,7 +184,6 @@ class RubyJS.Kernel
 
   $Range: (start,end,exclusive) ->
     RubyJS.Range.new(start,end,exclusive)
-
 
   puts: (obj) -> console.log(obj)
 
