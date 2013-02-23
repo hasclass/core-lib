@@ -47,7 +47,104 @@ if typeof(exports) != 'undefined'
 
 
 
-toString = Object.prototype.toString
+# TODO: create BlockNone class that coerces multiple yield arguments into array.
+
+# @abstract
+class Block
+  # Block.create returns a different implementation of Block (BlockMulti,
+  # BlockSingle) depending on the arity of block.
+  #
+  # If no block is given returns a BlockArgs callback, that returns
+  # a single block argument.
+  #
+  @create: (block, thisArg) ->
+    if block && block.call? #block_given
+      if block.length != 1
+        new BlockMulti(block, thisArg)
+      else
+        new BlockSingle(block, thisArg)
+    else
+      new BlockArgs(block, thisArg)
+
+  # if block has multiple arguments, returns a wrapper
+  # function that applies arguments to block instead of passing.
+  # Otherwise it returns the block itself.
+  #
+  @supportMultipleArgs: (block) ->
+    if block.length is 1
+      block
+    else
+      (item) ->
+        if typeof item is 'object' && R.Array.isNativeArray(item)
+          block.apply(this, item)
+        else
+          block(item)
+
+
+  invoke: () ->
+    throw "Calling #invoke on an abstract Block instance"
+
+  # Use invokeSplat applies the arguments to the block.
+  #
+  # E.g.
+  #
+  #     each_with_object: (obj) ->
+  #        @each (el) ->
+  #          callback.invokeSplat(el, obj)
+  #
+  invokeSplat: ->
+    throw "Calling #invokeSplat on an abstract Block instance"
+
+  # @abstract
+  args: () ->
+    throw "Calling #args on an abstract Block instance"
+
+# @private
+class BlockArgs
+  constructor: (@block, @thisArg) ->
+
+  invoke: (args) ->
+    CoerceProto.single_block_args(args, @block)
+
+# @private
+class BlockMulti
+  constructor: (@block, @thisArg) ->
+
+  args: (args) ->
+    if args.length > 1 then _slice_.call(args) else args[0]
+
+  # @param args array or arguments
+  invoke: (args) ->
+    if args.length > 1
+      @block.apply(@thisArg, args)
+    else
+      args = args[0]
+      if typeof args is 'object' && R.Array.isNativeArray(args)
+        @block.apply(@thisArg, args)
+      else
+        @block.call(@thisArg, args)
+
+
+  invokeSplat: ->
+    @block.apply(@thisArg, arguments)
+
+
+# for blocks with arity 1
+# @private
+class BlockSingle
+  constructor: (@block, @thisArg) ->
+
+  args: (args) ->
+    args[0]
+
+  invoke: (args) ->
+    @block.call(@thisArg, args[0])
+
+  invokeSplat: ->
+    @block.apply(@thisArg, arguments)
+
+
+
 
 class RubyJS.Kernel
 
@@ -61,11 +158,9 @@ class RubyJS.Kernel
   # TODO: find a better name for box.
   # TODO: handle the case when calling R(true, -> ), R({}, -> )
   box: (obj, recursive, block) ->
-    # obj == null is equivalent to obj === null or obj === undefined
-    # However CoffeeScript does not have the == operator.
     # R(null) should simply return null. At a later point maybe an
     # instance of NilClass
-    `if (obj == null) return obj;`
+    return obj unless obj?
 
     # typeof with JS primitive is very fast. Handle primitives first
     # for performance reasons.
@@ -720,51 +815,6 @@ class RubyJS.Comparable
   gt:   @prototype['>']
   gteq: @prototype['>=']
 
-# @private
-$args  = CoerceProto.single_block_args
-
-# @private
-$exec  = (cntxt, block, _arguments) ->
-  if block.length > 1 and (R.Array.isNativeArray(_arguments))
-    block.apply(cntxt, _arguments)
-  else
-    block.call(cntxt, _arguments)
-
-
-# @private
-$execute = (cntxt, block, _arguments) ->
-  args = $args(_arguments, block)
-  if block.length != 1 and R.Array.isNativeArray(args)
-    block.apply(cntxt, args)
-  else
-    block.call(cntxt, args)
-
-# Methods to handle block arguments. Oddly named, to be replaced later.
-
-$blockCallback = (thisArg, block) ->
-  if block && block.call? #block_given
-    return if block.length != 1 then $block$multi else $block$single
-  else
-    return $block$args
-
-$args$single = (args) ->
-  if args.length != 1 then _slice_.call(args) else args[0]
-
-$block$args = (thisArg, block, args) ->
-  CoerceProto.single_block_args(args, block)
-
-$block$multi = (thisArg, block, args) ->
-  args = if args.length > 1 then _slice_.call(args) else args[0]
-  if R.Array.isNativeArray(args)
-    block.apply(thisArg, args)
-  else
-    block.call(thisArg, args)
-
-$block$single = (thisArg, block, _arguments) ->
-  args = _arguments[0]
-  block.call(thisArg, args)
-
-
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
 # However for performance reasons they are typically re-implemented in them
@@ -786,11 +836,10 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).all()                          # => false
   #
   all: (block) ->
-
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
 
       true
@@ -809,15 +858,11 @@ class RubyJS.Enumerable
   #
   any: (block) ->
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
-      @each (args) ->
-        result = callback(this, block, arguments)
+      callback = Block.create(block, this)
+      @each ->
+        result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
-
       false
-
-
-  'any?': @prototype.any
 
 
   # Returns a new array with the concatenated results of running block once
@@ -832,10 +877,10 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     ary = []
     @each ->
-      ary.push(callback(this, block, arguments))
+      ary.push(callback.invoke(arguments))
 
     new R.Array(ary).flatten(1)
 
@@ -859,9 +904,9 @@ class RubyJS.Enumerable
     else if block is null
       @each (el) -> counter += 1 if el is null
     else if block.call?
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
       @each (el) ->
@@ -912,13 +957,13 @@ class RubyJS.Enumerable
 
     return @to_enum('cycle', n) unless block
 
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
 
     cache = new R.Array([])
     @each ->
-      args = $args(arguments, block)
+      args = callback.args(arguments)
       cache.append args
-      callback(this, block, arguments)
+      callback.invoke(arguments)
 
     return null if cache.empty()
 
@@ -928,12 +973,12 @@ class RubyJS.Enumerable
       while many > i
         # OPTIMIZE use normal arrays and for el in cache
         cache.each ->
-          callback(this, block, arguments)
+          callback.invoke(arguments)
           i += 1
     else
       while true                                 # cycle(() -> ... )
         cache.each ->
-          callback(this, block, arguments)
+          callback.invoke(arguments)
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -968,16 +1013,15 @@ class RubyJS.Enumerable
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
 
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
 
     ary = []
     dropping = true
 
-    @each  ->
-      unless dropping && callback(this, block, arguments)
+    @each ->
+      unless dropping && callback.invoke(arguments)
         dropping = false
-        args = $args(arguments)
-        ary.push(args)
+        ary.push(callback.args(arguments))
 
     new R.Array(ary)
 
@@ -1002,13 +1046,18 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() unless n > 0
 
     # TODO: use callback
-    # callback = $blockCallback(this, block)
-
+    callback = Block.create(block, this)
+    len = block.length
     ary = []
     @each ->
-      ary.push($args(arguments))
+      ary.push(BlockMulti.prototype.args(arguments))
       ary.shift() if ary.length > n
-      $exec(this, block, ary.slice(0)) if ary.length is n
+      if ary.length is n
+        if len > 1
+          block.apply(this, ary.slice(0))
+        else
+          block.call(this, ary.slice(0))
+
 
     null
 
@@ -1021,9 +1070,16 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
+    # hard code BlockMulti because each_entry converts multiple
+    # yields into an array
+    callback = new BlockMulti(block, this)
+    len = block.length
     @each ->
-      args = $args(arguments)
-      $exec(this, block, args)
+      args = callback.args(arguments)
+      if len > 1 and R.Array.isNativeArray(args)
+        block.apply(this, args)
+      else
+        block.call(this, args)
 
     this
 
@@ -1047,15 +1103,26 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    ary = []
+    callback = Block.create(block, this)
+    len      = block.length
+    ary      = []
+
     @each ->
-      ary.push( $args(arguments) )
+      ary.push( BlockMulti.prototype.args(arguments) )
       if ary.length == n
-        $exec(this, block, ary.slice(0))
+        args = ary.slice(0)
+        if len > 1
+          block.apply(this, args)
+        else
+          block.call(this, args)
         ary = []
 
     unless ary.length == 0
-      $exec(this, block, ary.slice(0))
+      args = ary.slice(0)
+      if len > 1
+        block.apply(this, args)
+      else
+        block.call(this, args)
 
     null
 
@@ -1086,9 +1153,11 @@ class RubyJS.Enumerable
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     idx = 0
     @each ->
-      val = block.call(this, $args(arguments), idx)
+      val = callback.invokeSplat(callback.args(arguments), idx)
       idx += 1
       val
     this
@@ -1104,11 +1173,13 @@ class RubyJS.Enumerable
   #     #=> [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
   #
   each_with_object: (obj, block) ->
-    #throw RubyJS.ArgumentError.new() if block == undefined
     return @to_enum('each_with_object', obj) unless block && block.call?
 
+    callback = Block.create(block, this)
+
     @each ->
-      block.apply(this, [$args(arguments), obj])
+      args = BlockMulti.prototype.args(arguments)
+      callback.invokeSplat(args, obj)
 
     obj
 
@@ -1129,11 +1200,11 @@ class RubyJS.Enumerable
       block  = ifnone
       ifnone = null
 
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     @catch_break (breaker) ->
       @each ->
-        unless R.falsey(callback(this, block, arguments))
-          breaker.break($args(arguments))
+        unless R.falsey(callback.invoke(arguments))
+          breaker.break(callback.args(arguments))
 
       ifnone?()
 
@@ -1154,10 +1225,10 @@ class RubyJS.Enumerable
     return @to_enum('find_all') unless block && block.call?
 
     ary = []
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     @each ->
-      unless R.falsey(callback(this, block, arguments))
-        ary.push($args(arguments))
+      unless R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
 
     new R.Array(ary)
 
@@ -1184,10 +1255,10 @@ class RubyJS.Enumerable
       block = (el) -> R(el)['=='](value) or el is value
 
     idx = 0
-    callback = $blockCallback(this, block)
+    callback = Block.create(block, this)
     @catch_break (breaker) ->
       @each ->
-        breaker.break(new R.Fixnum(idx)) if callback(this, block, arguments)
+        breaker.break(new R.Fixnum(idx)) if callback.invoke(arguments)
         idx += 1
 
       null
@@ -1276,13 +1347,13 @@ class RubyJS.Enumerable
   inject: (init, sym, block) ->
     [init, sym, block] = @__inject_args__(init, sym, block)
 
+    callback = Block.create(block, this)
     @each ->
       if init is undefined
-        init = $args(arguments)
+        init = callback.args(arguments)
       else
-        args = arguments
-        args = if args.length != 1 then _slice_.call(args) else args[0]
-        init = block.call(this, init, args)
+        args = BlockMulti.prototype.args(arguments)
+        init = callback.invokeSplat(init, args)
 
     init
 
@@ -1299,11 +1370,13 @@ class RubyJS.Enumerable
   #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
   #
   grep: (pattern, block) ->
-    ary = new R.Array([])
-    pattern = R(pattern)
+    ary      = new R.Array([])
+    pattern  = R(pattern)
+    callback = Block.create(block, this)
     if block
       @each (el) ->
-        ary.append($execute(this, block, arguments)) if pattern['==='](el)
+        if pattern['==='](el)
+          ary.append(callback.invoke(arguments))
     else
       @each (el) ->
         ary.append(el) if pattern['==='](el)
@@ -1321,10 +1394,12 @@ class RubyJS.Enumerable
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
 
+    callback = Block.create(block, this)
+
     h = {}
     @each ->
-      args = $args(arguments, block)
-      key  = $execute(this, block, arguments)
+      args = callback.args(arguments)
+      key  = callback.invoke(arguments)
 
       h[key] ||= new R.Array([])
       h[key].append(args)
@@ -1353,15 +1428,13 @@ class RubyJS.Enumerable
   map: (block) ->
     return @to_enum('map') unless block?.call?
 
-    arr = []
-    if block.length != 1
-      @each ->
-        arr.push($execute(this, block, arguments))
-    else
-      @each (el) ->
-        arr.push(block.apply(this, arguments))
+    callback = Block.create(block, this)
 
-    new R.Array(arr, false)
+    arr = []
+    @each ->
+      arr.push(callback.invoke(arguments))
+
+    new R.Array(arr)
 
 
   # @alias #map
@@ -1387,16 +1460,16 @@ class RubyJS.Enumerable
 
     block ||= RubyJS.Comparable.cmp
 
-    # Following Optimization won't complain if:
-    # [1,2,'3']
-    #
-    # optimization for elements that are arrays
-    #
-    if @__samesame__?()
-      arr = @__native__
-      if arr.length < 65535
-        _max = Math.max.apply(Math, arr)
-        return _max if _max isnt NaN
+    # # Following Optimization won't complain if:
+    # # [1,2,'3']
+    # #
+    # # optimization for elements that are arrays
+    # #
+    # if @__samesame__?()
+    #   arr = @__native__
+    #   if arr.length < 65535
+    #     _max = Math.max.apply(Math, arr)
+    #     return _max if _max isnt NaN
 
     @each (item) ->
       if max is undefined
@@ -1520,9 +1593,9 @@ class RubyJS.Enumerable
   #
   none: (block) ->
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each (args) ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
       true
 
@@ -1544,9 +1617,9 @@ class RubyJS.Enumerable
     counter  = 0
 
     @catch_break (breaker) ->
-      callback = $blockCallback(this, block)
+      callback = Block.create(block, this)
       @each (args) ->
-        result = callback(this, block, arguments)
+        result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
         breaker.break(false) if counter > 1
       counter is 1
@@ -1560,10 +1633,12 @@ class RubyJS.Enumerable
     left  = []
     right = []
 
-    @each ->
-      args = $args(arguments)
+    callback = Block.create(block, this)
 
-      if $exec(this, block, args)
+    @each ->
+      args = BlockMulti.prototype.args(arguments)
+
+      if callback.invokeSplat(args)
         left.push(args)
       else
         right.push(args)
@@ -1575,10 +1650,12 @@ class RubyJS.Enumerable
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     ary = []
     @each ->
-      if R.falsey($execute(this, block, arguments))
-        ary.push($args(arguments))
+      if R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
 
     new R.Array(ary)
 
@@ -1626,12 +1703,15 @@ class RubyJS.Enumerable
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     ary = []
     @each (value) ->
-      ary.push new R.Enumerable.SortedElement(value, $execute(this, block, arguments))
+      ary.push new R.Enumerable.SortedElement(value, callback.invoke(arguments))
+
     ary = new R.Array(ary)
 
-    ary.sort().map (se) -> se.value
+    ary.sort(R.Comparable.cmpstrict).map (se) -> se.value
 
 
   take: (n) ->
@@ -1643,7 +1723,7 @@ class RubyJS.Enumerable
     @catch_break (breaker) ->
       @each ->
         breaker.break() if arr.length is n
-        arr.push($args(arguments))
+        arr.push(BlockMulti.prototype.args(arguments))
 
     new R.Array(arr)
 
@@ -1656,7 +1736,7 @@ class RubyJS.Enumerable
     @catch_break (breaker) ->
       @each ->
         breaker.break() if R.falsey block.apply(this, arguments)
-        ary.push($args(arguments))
+        ary.push(BlockMulti.prototype.args(arguments))
 
     new R.Array(ary)
 
@@ -1666,7 +1746,7 @@ class RubyJS.Enumerable
 
     @each ->
       # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
-      ary.push($args(arguments))
+      ary.push(BlockMulti.prototype.args(arguments))
       null
 
     new RubyJS.Array(ary)
@@ -1808,13 +1888,6 @@ class RubyJS.EnumerableArray
         initial = block.call(this, initial, args)
 
     initial
-
-
-  __apply_block__: (block, item) ->
-    if block.length != 1 && (item.is_array? || R.Array.isNativeArray(item))
-      block.apply(this, item)
-    else
-      block.call(this, item)
 
 
   # any: (block) ->
@@ -1968,9 +2041,10 @@ class RubyJS.EnumerableArray
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
+    block = Block.supportMultipleArgs(block)
     idx = -1
     while ++idx < @__native__.length
-      @__apply_block__(block, @__native__[idx])
+      block(@__native__[idx])
 
     this
 
@@ -2025,11 +2099,13 @@ class RubyJS.EnumerableArray
       block  = ifnone
       ifnone = null
 
+    block = Block.supportMultipleArgs(block)
+
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      unless R.falsey(@__apply_block__(block, item))
+      unless R.falsey(block(item))
         return item
 
     ifnone?()
@@ -2038,12 +2114,14 @@ class RubyJS.EnumerableArray
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
 
+    block = Block.supportMultipleArgs(block)
+
     ary = []
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      unless R.falsey(@__apply_block__(block, item))
+      unless R.falsey(block(item))
         ary.push(item)
 
     new R.Array(ary)
@@ -2054,16 +2132,17 @@ class RubyJS.EnumerableArray
     value = @box(value)
 
     if value.call?
-      block = value
+      block = Block.supportMultipleArgs(value)
     else
       # OPTIMIZE: sorting
       block = (el) -> R(el)['=='](value) or el is value
+
 
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      return R(idx) if @__apply_block__(block, item)
+      return R(idx) if block(item)
     null
 
 
@@ -2088,12 +2167,14 @@ class RubyJS.EnumerableArray
     ary = new R.Array([])
     pattern = R(pattern)
 
+    block = Block.supportMultipleArgs(block)
+
     idx = -1
     len = @__native__.length
     if block
       while ++idx < len
         item = @__native__[idx]
-        ary.append(@__apply_block__(block, item)) if pattern['==='](item)
+        ary.append(block(item)) if pattern['==='](item)
     else
       while ++idx < len
         item = @__native__[idx]
@@ -2104,13 +2185,14 @@ class RubyJS.EnumerableArray
 
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
+    block = Block.supportMultipleArgs(block)
 
     hsh = {}
     idx = -1
     len = @__native__.length
     while ++idx < len
       item = @__native__[idx]
-      key  = @__apply_block__(block, item)
+      key  = block(item)
 
       hsh[key] ||= new R.Array([])
       hsh[key].append(item)
@@ -2433,10 +2515,12 @@ class RubyJS.Enumerator extends RubyJS.Object
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
+    callback = Block.create(block, this)
+
     idx = 0
     @each ->
-      args = $args(arguments)
-      val = block.call(this, args, idx)
+      args = BlockMulti.prototype.args(arguments)
+      val  = callback.invokeSplat(args, idx)
       idx += 1
       val
 
@@ -2626,8 +2710,8 @@ class RubyJS.Array extends RubyJS.Object
 
 
   '==': (other) ->
-    return true  if this is other
-    `if (other == null) return false;`
+    return true if this is other
+    return false unless other?
 
     other = R(other)
     unless other.is_array?
@@ -2695,7 +2779,7 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
   #
   '<=>': (other) ->
-    `if (other == null) return null;`
+    return null unless other?
     try
       other = CoerceProto.to_ary(other)
     catch e
@@ -3008,18 +3092,13 @@ class RubyJS.Array extends RubyJS.Object
   each: (block) ->
     # block = R.string_to_proc(block)
     if block && block.call?
-      idx = -1
 
-      if (block.length > 1)
-        while ++idx < @__native__.length
-          el = @__native__[idx]
-          if R.Array.isNativeArray(el)
-            block.apply(this, el)
-          else
-            block(el)
-      else
-        while ++idx < @__native__.length
-          block(@__native__[idx])
+      if block.length > 0 # 'if' needed for to_a
+        block = Block.supportMultipleArgs(block)
+
+      idx = -1
+      while ++idx < @__native__.length
+        block(@__native__[idx])
 
       this
     else
@@ -3692,23 +3771,13 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum('reverse_each') unless block && block.call?
 
     if block && block.call?
-      # Inline Javascript because coffeescript does not allow
-      # for (;;). and the normal for in is slow as it creates
-      # a new array.
 
-      arr = this.__native__
-      idx = arr.length
+      if block.length > 0 # if needed for to_a
+        block = Block.supportMultipleArgs(block)
 
-      if block.length > 1
-        while idx--
-          el = arr[idx]
-          if R.Array.isNativeArray(el)
-            block.apply(this, el)
-          else
-            block(el)
-      else
-        while idx--
-          block(arr[idx])
+      idx = @__native__.length
+      while idx--
+        block(@__native__[idx])
 
       this
     else
@@ -4069,6 +4138,10 @@ class RubyJS.Array extends RubyJS.Object
   #
   union: (other) ->
     @plus(other).uniq()
+
+
+  to_a: ->
+    @dup()
 
 
   # find a better way for this.
@@ -7847,12 +7920,716 @@ class RubyJS.Float extends RubyJS.Numeric
 
 
 
+###
+
+new RubyJS.Time(new Date(), 3600)
+
+JS Date objects have no support for timezones. R.Time emulates timezones using
+a second fake object that is offset by the user defined utc_offset.
+
+
+@example If local timezone is ICT (+07:00)
+
+    t = R.Time.new(2012,12,24,12,0,0, "+01:00")
+    t.__native__
+    # => Mon Dec 24 2012 18:00:00 GMT+0700 (ICT)
+    # t.__native__ has the correct timestamp for the local time.
+    #              2012-12-24 12:00 (CET) - "+01:00 (CET)"
+    #              2012-12-24 11:00 (UCT) + "+07:00 (ICT)"
+    #              2012-12-24 18:00 (ICT)
+    #
+    t._tzdate
+    # => Mon Dec 24 2012 12:00:00 GMT+0700 (ICT)
+    #
+    # t._tzdate holds the wrong timestamp but is useful to work with native JS
+    # methods.
+    #
+    t.hour()      # => 12 (internally uses _tzdate.getHours())
+
+###
+
+
 class RubyJS.Time extends RubyJS.Object
+  # Internally uses a Date object and an offset to UTC
+  #
+  # new Date(2012,11,18,16,0,0)
+  # new Date(2012,11,18, 8, 0, 0, 7*3600) # UTC
+  #
+  #
+  #     new Time(Date, utc_offset_in_seconds)
+  #     Time.new(y,m,d,h,m,s,utc_offset_in_seconds)
+  #     Time.now() # in timezone
+  #     Time.at() # local_time
   @include RubyJS.Comparable
 
-  @new: () ->
-    new RubyJS.Time()
+  @LOCALE:
+    'DAYS':         ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    'DAYS_SHORT':   ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    'MONTHS':       [null, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    'MONTHS_SHORT': [null, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    'AM': 'AM'
+    'PM': 'PM'
+    'AM_LOW': 'am'
+    'PM_LOW': 'pm'
 
-  constructor: () ->
+  @TIME_ZONES =
+      'UTC': 0,
+      # ISO 8601
+      # 'Z': 0,
+      # RFC 822
+      'UT':   0, 'GMT': 0,
+      'EST': -5, 'EDT': -4,
+      'CST': -6, 'CDT': -5,
+      'MST': -7, 'MDT': -6,
+      'PST': -8, 'PDT': -7
+      # Skip military zones
+      # Following definition of military zones is original one.
+      # See RFC 1123 and RFC 2822 for the error in RFC 822.
+      # 'A' => +1, 'B' => +2, 'C' => +3, 'D' => +4,  'E' => +5,  'F' => +6,
+      # 'G' => +7, 'H' => +8, 'I' => +9, 'K' => +10, 'L' => +11, 'M' => +12,
+      # 'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6,
+      # 'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
 
 
+  # ---- Constructors & Typecast ----------------------------------------------
+
+  # when passing utc_offset @__native__ has to be in that timezone as well.
+  # utc_offset is in seconds
+  #
+  # e.g. to create a GMT date:
+  #
+  #     new R.Time(new Date(), 3600)
+  #
+  #
+  constructor: (@__native__, utc_offset) ->
+    if utc_offset?
+      @__utc_offset__ = utc_offset
+      @_tzdate = R.Time._offset_to_local(@__native__, @__utc_offset__)
+    else
+      @_tzdate = @__native__
+      @__utc_offset__ = R.Time._local_timezone()
+
+
+  @now: ->
+    R.Time.new()
+
+
+  # new → time click to toggle source
+  # new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, utc_offset=nil) → time
+  #
+  @new: (year, month, day, hour, min, sec, utc_offset) ->
+    if arguments.length == 0
+      return new R.Time(new Date())
+    if year is null
+      throw R.TypeError.new()
+
+    month ||= 1
+    day   ||= 1
+    hour  ||= 0
+    min   ||= 0
+    sec   ||= 0
+
+    if month > 12 || day > 31 || hour > 24 || min > 59 || sec > 59 || month < 0 || day < 0   || hour < 0  || min < 0  || sec < 0
+       throw R.ArgumentError.new()
+
+    # utc_offset is in seconds
+    if utc_offset?
+      # utc_offset in seconds is the desired offset.
+      utc_offset = @_parse_utc_offset(utc_offset)
+      # First get the local date for the specified params
+      date = new Date(year, month - 1, day, hour, min, sec)
+      date = @_local_to_offset(date, utc_offset)
+    else
+      date = new Date(year, month - 1, day, hour, min, sec)
+      utc_offset = @_local_timezone()
+
+    new R.Time(date, utc_offset)
+
+
+  @_local_to_offset: (date, utc_offset) ->
+    # utc_offset is the desired offset in seconds
+    # Adjust the local date to the UTC date
+    date = date.valueOf() + R.Time._local_timezone() * 1000
+    # remove the utc_offset:
+    date = date - utc_offset * 1000
+    new Date(date)
+
+
+  @_offset_to_local: (date, utc_offset) ->
+    date = date.valueOf() - R.Time._local_timezone() * 1000
+    date += utc_offset * 1000
+    new Date(date)
+
+
+  # @private
+  # "+01:30" => 90min * 60 sec
+  @_parse_utc_offset: (offset) ->
+    return null unless offset?
+    offset = R(offset)
+    secs = null
+    if offset.is_string? or offset.to_str?
+      offset = offset.to_str().to_native()
+      # msg: "+HH:MM" or "-HH:MM" expected for utc_offset
+      return throw R.ArgumentError.new() unless offset.match(/[\+|-]\d\d:\d\d/)
+      # strip +/-HH:MM into parts and calculate seconds:
+      sign = if offset[0] is '-' then -1 else 1
+      [hour, mins] = offset.split(':')
+      mins = parseInt(mins)
+      hour = parseInt(hour.slice(1))
+      secs = sign * (hour * 60 + mins) * 60
+    else if offset.is_fixnum? or offset.to_int?
+      secs = offset.to_int()
+      return throw R.ArgumentError.new() if Math.abs(secs) >= 86400
+
+    else
+      throw R.TypeError.new()
+
+    Math.floor(secs)
+
+
+  # Creates a new time object with the value given by time, the given number
+  # of seconds_with_frac, or seconds and microseconds_with_frac from the
+  # Epoch. seconds_with_frac and microseconds_with_frac can be Integer, Float,
+  # Rational, or other Numeric. non-portable feature allows the offset to be
+  # negative on some systems.
+  #
+  # @example
+  #     R.Time.at(0)            #=> 1969-12-31 18:00:00 -0600
+  #     R.Time.at(Time.at(0))   #=> 1969-12-31 18:00:00 -0600
+  #     R.Time.at(946702800)    #=> 1999-12-31 23:00:00 -0600
+  #     R.Time.at(-284061600)   #=> 1960-12-31 00:00:00 -0600
+  #     R.Time.at(946684800.2).usec() #=> 200000
+  #     R.Time.at(946684800, 123456.789).nsec() #=> 123456789
+  #
+  @at: (seconds, microseconds) ->
+    throw R.TypeError.new() if seconds is null
+    if microseconds != undefined
+      if microseconds is null or R(microseconds).is_string?
+        throw R.TypeError.new()
+      else
+        microseconds = CoerceProto.to_num_native(microseconds)
+    else
+      microseconds = 0
+
+    seconds = R(seconds)
+    if seconds.is_time?
+      secs = seconds.to_i()
+      msecs = secs * 1000 + microseconds / 1000
+      new R.Time(new Date(msecs), time.utc_offset())
+    else if seconds.is_numeric?
+      secs = seconds.valueOf()
+      msecs = secs * 1000 + microseconds / 1000
+      new R.Time(new Date(msecs), @_local_timezone())
+    else
+      throw R.TypeError.new()
+
+
+  @local: (year, month, day, hour, min, sec) ->
+    # date = new Date(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0)
+    R.Time.new(year, month, day, hour, min, sec, @_local_timezone())
+
+
+  # Creates a time based on given values, interpreted as UTC (GMT). The year
+  # must be specified. Other values default to the minimum value for that
+  # field (and may be nil or omitted). Months may be specified by numbers from
+  # 1 to 12, or by the three-letter English month names. Hours are specified
+  # on a 24-hour clock (0..23). Raises an ArgumentError if any values are out
+  # of range. Will also accept ten arguments in the order output by Time#to_a.
+  # sec_with_frac and usec_with_frac can have a fractional part.
+  #
+  # @example
+  #     R.Time.utc(2000,"jan",1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
+  #     R.Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
+  #
+  # @alias #gm
+  # @todo unsupported c-style syntax R.Time.gm(1, 15, 20, 1, 1, 2000, 'ignored', 'ignored', 'ignored', 'ignored')
+  #
+  @utc: (year, month, day, hour, min, sec) ->
+    date = new Date(Date.UTC(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0))
+    new RubyJS.Time(date, 0)
+
+
+  # @alias #utc
+  #
+  @gm: @utc
+
+
+  # Synonym for Time.new. Returns a Time object initialized to the current
+  # system time.
+  #
+  @now: ->
+    RubyJS.Time.new()
+
+
+  # @private
+  #
+  # ICT: (+07:00) -> 420 * 60 -> 25200
+  # GMT: (+01:00) ->  60 * 60 -> 3600
+  # UCT: (+00:00) ->          -> 0
+  #
+  @_local_timezone: ->
+    new Date().getTimezoneOffset() * -60
+
+
+  # ---- RubyJSism ------------------------------------------------------------
+
+
+  is_time: -> true
+
+
+  # ---- Javascript primitives --------------------------------------------------
+
+
+  '<=>': (other) ->
+    secs = @valueOf()
+    other = other.valueOf()
+    if secs < other
+      -1
+    else if secs > other
+      1
+    else
+      0
+
+  cmp: @prototype['<=>']
+
+
+  '==': (other) ->
+    other = R(other)
+    return false unless other.is_time?
+    @['<=>'](other) is 0
+
+
+  # Difference—Returns a new time that represents the difference between two
+  # times, or subtracts the given number of seconds in numeric from time.
+  #
+  # t = Time.now       #=> 2007-11-19 08:23:10 -0600
+  # t2 = t + 2592000   #=> 2007-12-19 08:23:10 -0600
+  # t2 - t             #=> 2592000.0
+  # t2 - 2592000       #=> 2007-11-19 08:23:10 -0600
+  #
+  '-': (other) ->
+    throw R.TypeError.new() unless other?
+    other = R(other)
+
+    if other.is_numeric?
+      tmstmp = @valueOf() - (other.valueOf() * 1000)
+      return new R.Time(new Date(tmstmp), @__utc_offset__)
+    else if other.is_time?
+      new R.Float((@valueOf() - other.valueOf()) / 1000)
+    else
+      throw R.TypeError.new()
+
+
+  # Addition—Adds some number of seconds (possibly fractional) to time and
+  # returns that value as a new time.
+  #
+  # @example
+  #
+  #     t = Time.now()       #=> 2007-11-19 08:22:21 -0600
+  #     t + (60 * 60 * 24)   #=> 2007-11-20 08:22:21 -0600
+  #
+  '+': (other) ->
+    throw R.TypeError.new() unless other?
+
+    tpcast = R(other)
+    if typeof other != 'number' || !tpcast.is_numeric?
+      if !tpcast.is_time? && other.to_f?
+        other = other.to_f()
+      else
+        throw R.TypeError.new()
+
+    tmstmp = @valueOf() + other.valueOf() * 1000
+    new R.Time(new Date(tmstmp), @__utc_offset__)
+
+
+  # Returns a canonical string representation of time.
+  #
+  # Time.now.asctime   #=> "Wed Apr  9 08:56:03 2003"
+  #
+  # @alias #ctime
+  #
+  asctime: ->
+    @strftime("%a %b %e %H:%M:%S %Y")
+
+
+  # @alias #asctime
+  ctime: @prototype.asctime
+
+
+  dup: ->
+    new R.Time(new Date(@__native__), @__utc_offset__)
+
+
+  year: ->
+    # getYear() returns 2 or 3 digit year
+    new R.Fixnum(@_tzdate.getFullYear())
+
+
+  # @alias #mon
+  month: ->
+    new R.Fixnum(@_tzdate.getMonth() + 1)
+
+
+  mon: @prototype.month
+
+
+  monday: ->
+    @wday().to_native() is 1
+
+
+  tuesday: ->
+    @wday().to_native() is 2
+
+
+  wednesday: ->
+    @wday().to_native() is 3
+
+
+  thursday: ->
+    @wday().to_native() is 4
+
+
+  friday: ->
+    @wday().to_native() is 5
+
+
+  saturday: ->
+    @wday().to_native() is 6
+
+
+  sunday: ->
+    @wday().to_native() is 0
+
+
+
+
+  # Returns the day of the month (1..n) for time.
+  #
+  # @example
+  #     t = Time.now()   #=> 2007-11-19 08:27:03 -0600
+  #     t.day()          #=> 19
+  #     t.mday()         #=> 19
+  #
+  # @alias #mday
+  #
+  day: ->
+    new R.Fixnum(@_tzdate.getDate())
+
+
+  # @alias #day
+  mday: @prototype.day
+
+
+  # Returns a new new_time object representing time in UTC.
+  #
+  # @example
+  #     t = R.Time.local(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
+  #     t.gmt()                              #=> false
+  #     y = t.getgm()                        #=> 2000-01-02 02:15:01 UTC
+  #     y.gmt())                             #=> true
+  #     t == y                               #=> true
+  #
+  # @alias #getutc
+  #
+  getgm: ->
+    new R.Time(@__native__, 0)
+
+
+  getutc: @prototype.getgm
+
+
+  # Returns true if time represents a time in UTC (GMT).
+  #
+  # @example
+  #
+  #     t = Time.now()                      #=> 2007-11-19 08:15:23 -0600
+  #     t.utc(                              #=> false
+  #     t = Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
+  #     t.utc()                             #=> true
+  #
+  #     t = Time.now()                      #=> 2007-11-19 08:16:03 -0600
+  #     t.gmt()                             #=> false
+  #     t = Time.gm(2000,1,1,20,15,1)       #=> 2000-01-01 20:15:01 UTC
+  #     t.gmt()                             #=> true
+  #
+  # @alias #is_utc
+  #
+  gmt: ->
+    @__utc_offset__ == 0
+
+
+  # @alias #gmt
+  is_utc: @prototype.gmt
+
+
+  # Returns the offset in seconds between the timezone of time and UTC.
+  #
+  # @offset
+  #     t = R.Time.gm(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
+  #     t.gmt_offset()                    #=> 0
+  #     l = t.getlocal()                  #=> 2000-01-01 14:15:01 -0600
+  #     l.gmt_offset()                    #=> -21600
+  #
+  # @alias #gmtoff, #utc_offset
+  #
+  # @return R.Fixnum offset in seconds
+  #
+  gmt_offset: ->
+    new R.Fixnum(@__utc_offset__)
+
+
+  # @alias #gmt_offset
+  gmtoff:     @prototype.gmt_offset
+
+
+  # @alias #gmt_offset
+  utc_offset: @prototype.gmt_offset
+
+
+  # Converts time to UTC (GMT), modifying the receiver.
+  #
+  # t = Time.now   #=> 2007-11-19 08:18:31 -0600
+  # t.gmt?         #=> false
+  # t.gmtime       #=> 2007-11-19 14:18:31 UTC
+  # t.gmt?         #=> true
+  #
+  gmtime: ->
+    @_tzdate = new Date(@__native__ - @__utc_offset__ * 1000)
+    @__utc_offset__ = 0
+    this
+
+
+  hour: ->
+    new R.Fixnum(@_tzdate.getHours())
+
+
+  hour12: ->
+    new R.Fixnum(@_tzdate.getHours() % 12)
+
+
+  inspect: ->
+    if @gmt()
+      @strftime('%Y-%m-%d %H:%M:%S UTC')
+    else
+      @strftime('%Y-%m-%d %H:%M:%S %z')
+
+  # Returns the minute of the hour (0..59) for time.
+  #
+  # @example
+  #
+  #     t = R.Time.now()   #=> 2007-11-19 08:25:51 -0600
+  #     t.min()            #=> 25
+  #
+  min: ->
+    new R.Fixnum(@_tzdate.getMinutes())
+
+
+  # Returns the second of the minute (0..60)[Yes, seconds really can range
+  # from zero to 60. This allows the system to inject leap seconds every now
+  # and then to correct for the fact that years are not really a convenient
+  # number of hours long.] for time.
+  #
+  # @example
+  #
+  #     t = R.Time.now()   #=> 2007-11-19 08:25:02 -0600
+  #     t.sec()            #=> 2
+  #
+  sec: ->
+    new R.Fixnum(@_tzdate.getSeconds())
+
+
+  # @todo: implement %N
+  strftime: (format) ->
+    locale = RubyJS.Time.LOCALE
+
+    fill = @_rjust
+
+    self = this
+    out = format.replace /%(.)/g, (_, flag) ->
+      switch flag
+        when 'a' then locale.DAYS_SHORT[self.wday()]
+        when 'A' then locale.DAYS[self.wday()]
+        when 'b' then locale.MONTHS_SHORT[self.month()]
+        when 'B' then locale.MONTHS[self.month()]
+        when 'C' then self.year() % 100
+        when 'd' then fill(self.day())
+        when 'D' then self.strftime('%m/%d/%y')
+        when 'e' then fill(self.day(), ' ') # TODO write spec for this
+        when 'F' then self.strftime('%Y-%m-%d')
+        when 'h' then locale.MONTHS_SHORT[self.month()]
+        when 'H' then fill(self.hour())
+        when 'I' then fill(self.hour12())
+        when 'j'
+          jtime = new Date(self.year(), 0, 1).getTime()
+          Math.ceil((self._tzdate.getTime() - jtime) / (1000*60*60*24))
+        when 'k' then self.hour().to_s().rjust(2, ' ')
+        # when 'L' then pad(Math.floor(d.getTime() % 1000), 3)
+        when 'l' then fill(self.hour12(), ' ')
+        when 'm' then fill(self.month())
+        when 'M' then fill(self.min())
+        when 'n' then "\n"
+        when 'N' then throw R.NotImplementedError.new()
+        when 'p'
+          if self.hour() < 12 then locale.AM     else locale.PM
+        when 'P'
+          if self.hour() < 12 then locale.AM_LOW else locale.PM_LOW
+        when 'r' then self.strftime('%I:%M:%S %p')
+        when 'R' then self.strftime('%H:%M')
+        when 'S' then fill(self.sec())
+        # when 's' then Math.floor((d.getTime() - msDelta) / 1000)
+        when 't' then "\t"
+        when 'T' then self.strftime('%H:%M:%S')
+        when 'u'
+          day = self.wday().to_native()
+          if day == 0 then 7 else day
+        when 'v' then self.strftime('%e-%b-%Y')
+        when 'w' then self.wday()
+        when 'y' then self.year().to_s().slice(-2, 2)
+        when 'Y' then self.year()
+        when 'x' then self.strftime('%m/%d/%y')
+        when 'X' then self.strftime('%H:%M:%S')
+        when 'z' then self._offset_str()
+        when 'Z' then self.zone()
+        else flag
+
+    new R.String(out)
+
+
+  succ: ->
+    R.Time.at(@to_i().succ())
+
+
+  # Returns the value of time as an integer number of seconds since the Epoch.
+  #
+  # @example
+  #     t = R.Time.now()
+  #     "%10.5f" % t.to_f   #=> "1270968656.89607"
+  #     t.to_i              #=> 1270968656
+  #
+  to_i: ->
+    R(@__native__.getTime() / 1000).to_i()
+
+
+  # Returns the value of time as a floating point number of seconds since the
+  # Epoch.
+  #
+  # t = R.Time.now()
+  # "%10.5f" % t.to_f   #=> "1270968744.77658"
+  # t.to_i              #=> 1270968744
+  # Note that IEEE 754 double is not accurate enough to represent number of nanoseconds from the Epoch.
+  #
+  to_f: ->
+    new R.Float(@to_i() + ((@valueOf() % 1000) / 1000))
+
+
+  to_s: @prototype.inspect
+
+
+  __tz_delta__: ->
+    @__utc_offset__ + R.Time._local_timezone()
+
+  # Return 0 if local timezone matches gmt_offset.
+  # otherwise the difference to UTC
+  __utc_delta__: ->
+    @gmt_offset() + R.Time._local_timezone()
+
+
+  tv_sec: @prototype.to_i
+
+
+  # Returns just the number of microseconds for time.
+  #
+  # @example
+  #     t = Time.now        #=> 2007-11-19 08:03:26 -0600
+  #     "%10.6f" % t.to_f   #=> "1195481006.775195"
+  #     t.usec              #=> 775195
+  #
+  # @alias #usec
+  # @todo implement
+  #
+  tv_usec: ->
+    # valueOf is milliseconds since epochs.
+    # get the milliseconds only and convert to microsecs
+    new R.Fixnum((@_tzdate.valueOf() % 1000)*1000)
+
+
+  usec: @prototype.tv_usec
+
+
+  # Returns an integer representing the day of the week, 0..6, with Sunday == 0.
+  #
+  # @example
+  #     t = Time.now()   #=> 2007-11-20 02:35:35 -0600
+  #     t.wday()         #=> 2
+  #     t.sunday()      #=> false
+  #     t.monday()      #=> false
+  #     t.tuesday()     #=> true
+  #     t.wednesday()   #=> false
+  #     t.thursday()    #=> false
+  #     t.friday()      #=> false
+  #     t.saturday()    #=> false
+  #
+  wday: ->
+    # time zone adjusted date
+    new R.Fixnum(@_tzdate.getDay())
+
+
+  # Returns an integer representing the day of the year, 1..366.
+  #
+  # @example
+  #     t = Time.now()   #=> 2007-11-19 08:32:31 -0600
+  #     t.yday()         #=> 323
+  yday: ->
+    ytd    = new Date(@year(),0,0)
+    secs   = @__native__.getTime() + @gmt_offset() * 1000 - ytd.getTime()
+    R(Math.floor(secs / 86400000)) # 24 * 60 * 60 * 1000
+
+
+  valueOf: ->
+    @__native__.valueOf()
+
+
+  # Returns the name of the time zone used for time. As of Ruby 1.8, returns
+  # “UTC” rather than “GMT” for UTC times.
+  #
+  # @example
+  #     t = R.Time.gm(2000, "jan", 1, 20, 15, 1)
+  #     t.zone()   #=> "UTC"
+  #     t = Time.local(2000, "jan", 1, 20, 15, 1)
+  #     t.zone()   #=> "CST"
+  # zone: ->
+  #   t = Math.floor(@gmt_offset() / 60 * 60)
+  #   for own zone, i in R.Time.TIME_ZONES
+  #     return R(zone) if t == i
+  #   null
+  #
+  # @todo implement
+  zone: ->
+    if @gmt()
+      new R.String('UTC')
+    else
+      throw R.NotImplementedError.new("Time#zone only supports UTC/GMT")
+
+  # ---- Private methods ------------------------------------------------------
+
+  _rjust: (fixnum, str = '0') ->
+    new R.String(fixnum + "").rjust(2, str)
+
+
+  _offset_str: ->
+    mins = @gmt_offset() / 60
+    if mins == 0
+      return '+0000'
+
+    sign = if mins > 0 then '+' else '-'
+    mins = Math.abs(mins)
+    hour = @_rjust(Math.ceil(mins / 60))
+    mins = @_rjust(mins % 60)
+    (sign+hour+mins)
+
+
+  # ---- Aliases --------------------------------------------------------------
+
+  @__add_default_aliases__(@prototype)
+
+  eql: @prototype['==']
