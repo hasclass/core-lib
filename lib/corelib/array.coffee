@@ -2,7 +2,57 @@
 #
 # @todo No proper support for handling recursive arrays. (e.g. a = [], a.push(a)).
 #   Look for ArraySpecs.recursive_array in the specs.
-# @todo #taint, #trust, #freeze does nothing
+#
+# @todo The methods #taint, #trust, #freeze do nothing
+#
+# @method #equals(other)
+#   Alias for {#==}  - Two arrays are equal if they contain the same number of elements
+#   and if each element is equal to (according to {R.Object#==}) the corresponding
+#   element in the other array.
+#   @example
+#      R(["a", "c"]   ).equals(["a", "c", 7])     #=> false
+#      R(["a", "c", 7]).equals(["a", "c", 7])     #=> true
+#      R(["a", "c", 7]).equals(["a", "d", "f"])   #=> false
+#      # #equals is an alias to #==
+#      R(["a", "c"]   )['=='](["a", "c", 7])     #=> false
+#   @return [Boolean]
+#   @alias #==
+#
+# @method #append(obj)
+#   Alias for {#<<} - Pushes the given object on to the end of this array. This
+#   expression returns the array itself, so several appends may be chained
+#   together.
+#   @example
+#      R([ 1, 2 ]).append("c").append("d").append([3, 4])
+#      #=> [ 1, 2, "c", "d", [ 3, 4 ] ]
+#   @param [Object] obj
+#   @return [R.Array]
+#
+# @method #intersection(other)
+#   Alias for {#&} - Returns a new array containing elements common to the two
+#   arrays, with no duplicates.
+#   @example
+#     R([ 1, 1, 3, 5 ]).intersection [ 1, 2, 3 ]
+#     #=> [ 1, 3 ]
+#   @alias #&
+#   @param [Array] other
+#   @return [R.Array]
+#   @todo Slow implementation, slight deviation Ruby implementation of equality check
+#
+# @method #cmp(other)
+#   Alias for {#<=>} - Returns an integer (-1, 0, or +1) if this array is less than,
+#   equal to, or greater than other_ary. Each object in each array is compared
+#   (using <=>). If any value isn’t equal, then that inequality is the return
+#   value. If all the values found are equal, then the return is based on a
+#   comparison of the array lengths. Thus, two arrays are “equal” according to
+#   {R.Array#<=>} if and only if they have the same length and the value of each
+#   element is equal to the value of the corresponding element in the other
+#   array.
+#   @example
+#     R([ "a", "a", "c" ]   )['<=>'] [ "a", "b", "c" ]   #=> -1
+#     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
+#   @param [Array] other
+#   @return [R.Array]
 #
 class RubyJS.Array extends RubyJS.Object
   @include RubyJS.Enumerable
@@ -10,9 +60,10 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_array: -> true
 
-
+  # @private
   iterator: () ->
     @__native__
 
@@ -71,11 +122,11 @@ class RubyJS.Array extends RubyJS.Object
       ary[idx] = if block then block(R(idx)) else obj
     return new R.Array(ary)
 
-
+  # @private
   @typecast: (arr, recursive) ->
     new RubyJS.Array(arr, recursive)
 
-
+  # @private
   @isNativeArray: nativeArray.isArray or (obj) ->
     _toString_.call(obj) is '[object Array]'
 
@@ -158,32 +209,11 @@ class RubyJS.Array extends RubyJS.Object
 
     true
 
-  # Append—Pushes the given object on to the end of this array. This
-  # expression returns the array itself, so several appends may be chained
-  # together.
-  #
-  # @example
-  #      R([ 1, 2 ]).append("c").append("d").append([3, 4])
-  #      #=> [ 1, 2, "c", "d", [ 3, 4 ] ]
-  #
-  # @alias #append
-  #
   '<<': (obj) ->
     @__native__.push(obj)
     this
 
 
-  # Set Intersection—Returns a new array containing elements common to the two
-  # arrays, with no duplicates.
-  #
-  # @example
-  #     R([ 1, 1, 3, 5 ]).intersection [ 1, 2, 3 ]
-  #     #=> [ 1, 3 ]
-  #
-  # @alias #intersection
-  #
-  # @todo Slow implementation, slight deviation Ruby implementation of equality check
-  #
   '&': (other) ->
     other = CoerceProto.to_ary(other)
     arr   = new R.Array([])
@@ -191,20 +221,7 @@ class RubyJS.Array extends RubyJS.Object
     @each (el) -> arr.push(el) if other.include(el)
     arr.uniq()
 
-
-  # Comparison—Returns an integer (-1, 0, or +1) if this array is less than,
-  # equal to, or greater than other_ary. Each object in each array is compared
-  # (using <=>). If any value isn’t equal, then that inequality is the return
-  # value. If all the values found are equal, then the return is based on a
-  # comparison of the array lengths. Thus, two arrays are “equal” according to
-  # Array#<=> if and only if they have the same length and the value of each
-  # element is equal to the value of the corresponding element in the other
-  # array.
-  #
-  # @example
-  #     R([ "a", "a", "c" ]   )['<=>'] [ "a", "b", "c" ]   #=> -1
-  #     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
-  #
+  # @private
   '<=>': (other) ->
     return null unless other?
     try
@@ -237,7 +254,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.at(0)     #=> "a"
   #     a.at(-1)    #=> "e"
   #
-  # @return obj
+  # @return [Object]
   #
   at: (index) ->
     # UNSUPPORTED: @__ensure_args_length(arguments, 1)
@@ -255,7 +272,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a = R([ "a", "b", "c", "d", "e" ])
   #     a.clear()    #=> [ ]
   #
-  # @return R.Array
+  # @return [R.Array]
   #
   clear: () ->
     @__ensure_args_length(arguments, 0)
@@ -264,7 +281,8 @@ class RubyJS.Array extends RubyJS.Object
 
 
   # @todo does not copy the singleton class of the copied object
-  clone: () -> @dup()
+  clone: () ->
+    @dup()
 
 
   # Invokes the block once for each element of self, replacing the element
@@ -353,21 +371,24 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ "a", nil, "b", nil, "c", nil ]).compact()
   #     #=> [ "a", "b", "c" ]
   #
-  compact: () ->
+  # @return [R.Array]
+  #
+  compact: ->
     @dup().tap (a) -> a.compact_bang()
 
   # Removes nil elements from the array. Returns nil if no changes were made,
   # otherwise returns ary.
   #
   # @example
+  #
   #     R([ "a", nil, "b", nil, "c" ]).compact_bang()
-  #     #=> [ "a", "b", "c" ]
+  #     # => [ "a", "b", "c" ]
   #     R([ "a", "b", "c" ]).compact_bang()
-  #     #=> null
+  #     # => null
   #
   # @return self or null if nothing changed
   #
-  compact_bang: () ->
+  compact_bang: ->
     length = @__native__.length
 
     arr = []
@@ -585,10 +606,6 @@ class RubyJS.Array extends RubyJS.Object
 
   # Returns true if self contains no elements.
   #
-  # @example
-  #     [].empty?   #=> true
-  #
-  # @return [true,false]
   #
   empty: () ->
     @__native__.length is 0
@@ -904,6 +921,7 @@ class RubyJS.Array extends RubyJS.Object
     new R.Array( @__native__[-n.. -1] )
 
 
+  # @private
   # @todo Not yet implemented
   permutation: (args...) ->
     throw R.NotImplementedError.new()

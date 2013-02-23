@@ -7,7 +7,7 @@
 # in array.
 #
 # @mixin
-#
+# @private
 class RubyJS.EnumerableArray
 
   map: (block) ->
