@@ -69,12 +69,11 @@ class BlockMulti
     if args.length > 1
       @block.apply(@thisArg, args)
     else
-      args = args[0]
-      if typeof args is 'object' && R.Array.isNativeArray(args)
-        @block.apply(@thisArg, args)
+      arg = args[0]
+      if typeof arg is 'object' && R.Array.isNativeArray(arg)
+        @block.apply(@thisArg, arg)
       else
-        @block.call(@thisArg, args)
-
+        @block.call(@thisArg, arg)
 
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
@@ -94,3 +93,4 @@ class BlockSingle
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
 
+R.Block = Block
