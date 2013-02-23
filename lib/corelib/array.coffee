@@ -133,8 +133,8 @@ class RubyJS.Array extends RubyJS.Object
 
 
   '==': (other) ->
-    return true  if this is other
-    `if (other == null) return false;`
+    return true if this is other
+    return false unless other?
 
     other = R(other)
     unless other.is_array?
@@ -202,7 +202,7 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
   #
   '<=>': (other) ->
-    `if (other == null) return null;`
+    return null unless other?
     try
       other = CoerceProto.to_ary(other)
     catch e

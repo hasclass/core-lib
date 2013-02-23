@@ -86,7 +86,7 @@ task 'build', 'Build single application file from source files', ->
 
 
 task 'minify', 'Minify and gzip the resulting application file after build', ->
-  exec 'uglifyjs "ruby.js" > ruby.min.js && cp ruby.min.js spec/javascripts/lib && cp ruby.min.js ../rubyjs.org/', (err, stdout, stderr) ->
+  exec 'uglifyjs "ruby.js" > ruby.min.js && cp ruby.min.js spec/javascripts/lib && (if [ -d ../rubyjs.org ]; then cp ruby.min.js ../rubyjs.org/; fi)', (err, stdout, stderr) ->
     throw err if err
     console.log stdout + stderr
     exec "gzip -c 'ruby.min.js' > 'ruby.min.js.gz'", defaultExecHandler
