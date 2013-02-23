@@ -1,3 +1,7 @@
+#
+#
+#
+#
 class RubyJS.Float extends RubyJS.Numeric
   @include RubyJS.Comparable
 
@@ -28,24 +32,8 @@ class RubyJS.Float extends RubyJS.Numeric
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_float:   -> true
-
-
-  # ---- Javascript primitives --------------------------------------------------
-
-  toString: ->
-    @to_native().toString()
-
-
-  valueOf: () ->
-    @__native__
-
-
-  to_native: ->
-    @__native__
-
-
-  unbox: @prototype.to_native
 
 
   @isFloat: (obj) ->
@@ -55,23 +43,6 @@ class RubyJS.Float extends RubyJS.Numeric
   # ---- Instance methods -----------------------------------------------------
 
 
-  arg: ->
-    if @nan()
-      this
-    else if @lt(0.0)
-      @$Float(Math.PI)
-    else
-      @$Float 0
-
-
-  ceil: ->
-    new RubyJS.Fixnum(Math.ceil(@to_native()))
-
-
-  inspect: () ->
-    @to_s()
-
-
   '<=>': (other) ->
     return null if !@box(other).is_numeric?
     other = CoerceProto.to_num_native(other)
@@ -79,9 +50,6 @@ class RubyJS.Float extends RubyJS.Numeric
     return  0 if @to_native() == other
     return -1 if @to_native() < other
     return  1 if @to_native() > other
-
-
-  dup: -> Float.new(@to_native())
 
 
   '==': (other) ->
@@ -124,17 +92,77 @@ class RubyJS.Float extends RubyJS.Numeric
 
     new Float(val)
 
+  # Returns 0 if the value is positive, pi otherwise.
+  #
+  # @return [R.Float]
+  # @alias #angle, #phase
+  #
+  arg: ->
+    if @nan()
+      this
+    else if @__native__ < 0.0
+      new R.Float(Math.PI)
+    else
+      new R.Float(0)
 
+
+  # Returns the smallest Integer greater than or equal to flt.
+  #
+  # @example
+  #
+  #    R( 1.2).ceil()      #=> 2
+  #    R( 2.0).ceil()      #=> 2
+  #    R(-1.2).ceil()      #=> -1
+  #    R(-2.0).ceil()      #=> -2
+  #
+  # @return [R.Fixnum]
+  #
+  ceil: ->
+    new RubyJS.Fixnum(Math.ceil(@to_native()))
+
+
+  inspect: () ->
+    @to_s()
+
+
+  dup: -> Float.new(@to_native())
+
+
+  # Returns true only if obj is a Float with the same value as flt. Contrast
+  # this with Float#==, which performs type conversions.
+  #
+  # @example
+  #
+  #     new R.Float(1.0).eql(1)   #=> false
+  #
+  # @return [Boolean]
+  #
   eql: (other) ->
     other = @box(other)
     return false unless other.is_float?
     @equals(other)
 
 
+  # Returns true if flt is a valid IEEE floating point number (it is not
+  # infinite, and nan? is false).
+  #
+  # @return [Boolean]
+  #
   finite: ->
     !(@infinite() || @nan())
 
 
+  # Returns nil, -1, or +1 depending on whether flt is finite, -infinity, or
+  # +infinity.
+  #
+  # @example
+  #
+  #     new R.Float(0.0).infinite()        #=> nil
+  #     new R.Float(-1.0/0.0).infinite()   #=> -1
+  #     new R.Float(+1.0/0.0).infinite()   #=> 1
+  #
+  # @return [Boolean]
+  #
   infinite: ->
     if @to_native() is Float.INFINITY
       1
@@ -144,13 +172,28 @@ class RubyJS.Float extends RubyJS.Numeric
       null
 
 
+  # Returns true if flt is an invalid IEEE floating point number.
+  #
+  # @example
+  #
+  #     a = new R.Float(-1.0)      #=> -1.0
+  #     a.nan()                    #=> false
+  #     a = new R.Float(0.0/0.0)   #=> NaN
+  #     a.nan()                    #=> true
+  #
+  # @return [Boolean]
+  #
   nan: ->
     isNaN(@to_native())
 
 
+  # As flt is already a float, returns self.
   to_f: -> @dup()
 
 
+  # Returns flt truncated to an Integer.
+  #
+  # @return [R.Fixnum]
   to_i: ->
     if @to_native() < 0
       @ceil()
@@ -158,10 +201,25 @@ class RubyJS.Float extends RubyJS.Numeric
       @floor()
 
 
+  # Returns the largest integer less than or equal to flt.
+  #
+  # @example
+  #
+  #     new R.Float(1.2).floor()    #=> 1
+  #     new R.Float(2.0).floor()    #=> 2
+  #     new R.Float(-1.2).floor()   #=> -2
+  #     new R.Float(-2.0).floor()   #=> -2
+  #
+  # @return [R.Fixnum]
+  #
   floor: ->
     new R.Fixnum(Math.floor(@__native__))
 
 
+  # Returns float / numeric.
+  #
+  # @return [R.Float]
+  #
   quo: (other) ->
     @__ensure_args_length(arguments, 1)
 
@@ -169,6 +227,32 @@ class RubyJS.Float extends RubyJS.Numeric
     @divide(other)
 
 
+  # Rounds flt to a given precision in decimal digits (default 0 digits).
+  # Precision may be negative. Returns a floating point number when ndigits is
+  # more than zero.
+  #
+  # @example
+  #
+  #     R(1.4).round()      #=> 1
+  #     R(1.5).round()      #=> 2
+  #     R(1.6).round()      #=> 2
+  #     R(-1.5).round()     #=> -2
+  #     R(1.234567).round(2)  #=> 1.23
+  #     R(1.234567).round(3)  #=> 1.235
+  #     R(1.234567).round(4)  #=> 1.2346
+  #     R(1.234567).round(5)  #=> 1.23457
+  #     R(34567.89).round(-5) #=> 0
+  #     R(34567.89).round(-4) #=> 30000
+  #     R(34567.89).round(-3) #=> 35000
+  #     R(34567.89).round(-2) #=> 34600
+  #     R(34567.89).round(-1) #=> 34570
+  #     R(34567.89).round(0)  #=> 34568
+  #     R(34567.89).round(1)  #=> 34567.9
+  #     R(34567.89).round(2)  #=> 34567.89
+  #     R(34567.89).round(3)  #=> 34567.89
+  #
+  # @return [R.Fixnum, R.Float]
+  #
   round: (n = 0) ->
     n = CoerceProto.to_int_native(n)
 
@@ -184,6 +268,13 @@ class RubyJS.Float extends RubyJS.Numeric
     else
       new RubyJS.Fixnum(rounded)
 
+
+  # Returns a string containing a representation of self. As well as a fixed
+  # or exponential form of the number, the call may return “NaN”, “Infinity”,
+  # and “-Infinity”.
+  #
+  # @return [R.String]
+  #
   to_s: ->
     v = ""+@to_native()
     if @nan()
@@ -197,11 +288,42 @@ class RubyJS.Float extends RubyJS.Numeric
     @$String(v)
 
 
+  # ---- Javascript primitives --------------------------------------------------
+
+  # @return [String]
+  toString: ->
+    @to_native().toString()
+
+
+  # @return [String]
+  valueOf: () ->
+    @__native__
+
+
+  # @return [String]
+  to_native: ->
+    @__native__
+
+
+  # @private
+  unbox: @prototype.to_native
+
 
   # ---- Aliases --------------------------------------------------------------
 
   angle:      @prototype.arg
   fdiv:       @prototype.quo
+
+  # Returns the absolute value of flt.
+  #
+  # @example
+  #
+  #     R(-34.56).abs()     #=> 34.56
+  #     R(-34.56).abs()     #=> 34.56
+  #
+  # @return [R.Float]
+  # @alias #abs
+  #
   magnitude:  @prototype.abs
   phase:      @prototype.arg
   to_int:     @prototype.to_i
