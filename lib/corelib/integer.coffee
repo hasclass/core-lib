@@ -26,11 +26,23 @@ class RubyJS.Integer extends RubyJS.Numeric
 
   # ---- Instance methods -----------------------------------------------------
 
-
+  # Returns a string containing the character represented by the receiver’s value according to encoding.
+  #
+  # @example
+  #
+  #     R(65).chr()                   #=> "A"
+  #     R(230).chr()                  #=> "\346"
+  #     R(255).chr(Encoding::UTF_8)   #=> "\303\277"
+  #
+  # @return [R.String]
+  #
   chr: ->
     new R.String(String.fromCharCode(@to_native()))
 
-
+  # Returns 1.
+  #
+  # @return [R.Fixnum]
+  #
   denominator: ->
     new R.Fixnum(1)
 
@@ -70,9 +82,23 @@ class RubyJS.Integer extends RubyJS.Numeric
     this
 
 
+  # Returns true if int is an even number.
+  #
+  # @return [Boolean]
+  #
   even: -> @to_native() % 2 == 0
 
 
+  # Returns the greatest common divisor (always positive). 0.gcd(x) and x.gcd(0) return abs(x).
+  #
+  # @example
+  #
+  #     R(2).gcd(2)                    #=> 2
+  #     R(3).gcd(-7)                   #=> 1
+  #     R((1<<31)-1).gcd((1<<61)-1)    #=> 1
+  #
+  # @return [R.Fixnum]
+  #
   gcd: (other) ->
     other = @box(other)
     @__ensure_args_length(arguments, 1)
@@ -87,7 +113,16 @@ class RubyJS.Integer extends RubyJS.Numeric
       a = t
     new R.Fixnum(a).numerator()
 
-
+  # Returns an array; [int.gcd(int2), int.lcm(int2)].
+  #
+  # @example
+  #
+  #     R(2).gcdlcm(2)                    #=> [2, 2]
+  #     R(3).gcdlcm(-7)                   #=> [1, 21]
+  #     R((1<<31)-1).gcdlcm((1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #
+  # @return [R.Array<R.Fixnum, R.Fixnum>]
+  #
   gcdlcm: (other) ->
     other = @box(other)
     @__ensure_args_length(arguments, 1)
@@ -95,7 +130,16 @@ class RubyJS.Integer extends RubyJS.Numeric
 
     new R.Array([@gcd(other), @lcm(other)])
 
-
+  # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
+  #
+  # @example
+  #
+  #     R(2).lcm(2)                    #=> 2
+  #     R(3).lcm(-7)                   #=> 21
+  #     R((1<<31)-1).lcm((1<<61)-1)    #=> 4951760154835678088235319297
+  #
+  # @return [R.Fixnum]
+  #
   lcm: (other) ->
     other = R(other)
     @__ensure_args_length(arguments, 1)
@@ -105,28 +149,58 @@ class RubyJS.Integer extends RubyJS.Numeric
     lcm.numerator()
 
 
+  # Returns self.
   numerator: ->
     if @lt(0)
       @$Integer(@to_native() * -1)
     else
       this
 
-
+  # Returns true if int is an odd number.
+  #
+  # @return [Boolean]
+  #
   odd:  -> !@even()
 
 
   ord:  ->
     this
 
-
+  # Returns the Integer equal to int + 1.
+  #
+  # @example
+  #
+  #     R(1).next(     #=> 2
+  #     R(-1).next()   #=> 0
+  #
+  # @return [R.Fixnum]
+  # @alias #succ
+  #
   next: ->
     @plus(1)
 
-
+  # Returns the Integer equal to int - 1.
+  #
+  # @example
+  #
+  #     R(1).pred()    #=> 0
+  #     R(-1).pred()   #=> -2
+  #
+  # @return [R.Fixnum]
+  #
   pred: ->
     @minus(1)
 
-
+  # Rounds to a given precision in decimal digits (default 0 digits). Precision may be negative. Returns a floating point number when ndigits is positive, self for zero, and round down for negative.
+  #
+  # @example
+  #
+  #     R(1).round()      #=> 1
+  #     R(1).round(2)     #=> 1.0
+  #     R(15).round(-1)   #=> 20
+  #
+  # @return [R.Fixnum]
+  #
   round: (n) ->
     return this if n is undefined
     n = CoerceProto.to_int_native(n)
