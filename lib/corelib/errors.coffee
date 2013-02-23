@@ -12,6 +12,7 @@ errors = [
 ]
 
 for error in errors
-  errorClass     = class extends Error
-  errorClass.new = -> new RubyJS[error](error)
-  RubyJS[error]  = errorClass
+  do (error) ->
+    errorClass     = class extends Error
+    errorClass.new = -> new RubyJS[error](error)
+    RubyJS[error]  = errorClass
