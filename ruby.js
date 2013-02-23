@@ -9,7 +9,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var Block, BlockArgs, BlockMulti, BlockSingle, CharTable, Coerce, CoerceProto, RStrProto, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _ref, _slice_, _toString_,
+  var Block, BlockArgs, BlockMulti, BlockSingle, CharTable, Coerce, CoerceProto, RStrProto, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _fn, _i, _len, _ref, _slice_, _toString_,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -737,165 +737,30 @@ http://www.rubyjs.org/LICENSE.txt
     RubyJS[name] = method;
   }
 
-  RubyJS.ArgumentError = (function(_super) {
+  errors = ['ArgumentError', 'RegexpError', 'TypeError', 'IndexError', 'FloatDomainError', 'RangeError', 'StandardError', 'ZeroDivisionError', 'NotSupportedError', 'NotImplementedError'];
 
-    __extends(ArgumentError, _super);
+  _fn = function(error) {
+    var errorClass;
+    errorClass = (function(_super) {
 
-    function ArgumentError() {
-      return ArgumentError.__super__.constructor.apply(this, arguments);
-    }
+      __extends(_Class, _super);
 
-    ArgumentError["new"] = function() {
-      return new RubyJS.ArgumentError('ArgumentError');
+      function _Class() {
+        return _Class.__super__.constructor.apply(this, arguments);
+      }
+
+      return _Class;
+
+    })(Error);
+    errorClass["new"] = function() {
+      return new RubyJS[error](error);
     };
-
-    return ArgumentError;
-
-  })(Error);
-
-  RubyJS.RegexpError = (function(_super) {
-
-    __extends(RegexpError, _super);
-
-    function RegexpError() {
-      return RegexpError.__super__.constructor.apply(this, arguments);
-    }
-
-    RegexpError["new"] = function() {
-      return new RubyJS.RegexpError('RegexpError');
-    };
-
-    return RegexpError;
-
-  })(Error);
-
-  RubyJS.TypeError = (function(_super) {
-
-    __extends(TypeError, _super);
-
-    function TypeError() {
-      return TypeError.__super__.constructor.apply(this, arguments);
-    }
-
-    TypeError["new"] = function() {
-      return new RubyJS.TypeError('TypeError');
-    };
-
-    return TypeError;
-
-  })(Error);
-
-  RubyJS.IndexError = (function(_super) {
-
-    __extends(IndexError, _super);
-
-    function IndexError() {
-      return IndexError.__super__.constructor.apply(this, arguments);
-    }
-
-    IndexError["new"] = function() {
-      return new RubyJS.IndexError('IndexError');
-    };
-
-    return IndexError;
-
-  })(Error);
-
-  RubyJS.FloatDomainError = (function(_super) {
-
-    __extends(FloatDomainError, _super);
-
-    function FloatDomainError() {
-      return FloatDomainError.__super__.constructor.apply(this, arguments);
-    }
-
-    FloatDomainError["new"] = function() {
-      return new RubyJS.FloatDomainError('FloatDomainError');
-    };
-
-    return FloatDomainError;
-
-  })(Error);
-
-  RubyJS.RangeError = (function(_super) {
-
-    __extends(RangeError, _super);
-
-    function RangeError() {
-      return RangeError.__super__.constructor.apply(this, arguments);
-    }
-
-    RangeError["new"] = function() {
-      return new RubyJS.RangeError('RangeError');
-    };
-
-    return RangeError;
-
-  })(Error);
-
-  RubyJS.StandardError = (function(_super) {
-
-    __extends(StandardError, _super);
-
-    function StandardError() {
-      return StandardError.__super__.constructor.apply(this, arguments);
-    }
-
-    StandardError["new"] = function() {
-      return new RubyJS.StandardError('StandardError');
-    };
-
-    return StandardError;
-
-  })(Error);
-
-  RubyJS.ZeroDivisionError = (function(_super) {
-
-    __extends(ZeroDivisionError, _super);
-
-    function ZeroDivisionError() {
-      return ZeroDivisionError.__super__.constructor.apply(this, arguments);
-    }
-
-    ZeroDivisionError["new"] = function() {
-      return new RubyJS.ZeroDivisionError('ZeroDivisionError');
-    };
-
-    return ZeroDivisionError;
-
-  })(Error);
-
-  RubyJS.NotSupportedError = (function(_super) {
-
-    __extends(NotSupportedError, _super);
-
-    function NotSupportedError() {
-      return NotSupportedError.__super__.constructor.apply(this, arguments);
-    }
-
-    NotSupportedError["new"] = function() {
-      return new RubyJS.NotSupportedError('NotSupportedError');
-    };
-
-    return NotSupportedError;
-
-  })(Error);
-
-  RubyJS.NotImplementedError = (function(_super) {
-
-    __extends(NotImplementedError, _super);
-
-    function NotImplementedError() {
-      return NotImplementedError.__super__.constructor.apply(this, arguments);
-    }
-
-    NotImplementedError["new"] = function() {
-      return new RubyJS.NotImplementedError('NotImplementedError');
-    };
-
-    return NotImplementedError;
-
-  })(Error);
+    return RubyJS[error] = errorClass;
+  };
+  for (_i = 0, _len = errors.length; _i < _len; _i++) {
+    error = errors[_i];
+    _fn(error);
+  }
 
   RubyJS.Comparable = (function() {
 
@@ -2499,15 +2364,15 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.to_native = function(recursive) {
-      var el, _i, _len, _ref1, _results;
+      var el, _j, _len1, _ref1, _results;
       if (recursive == null) {
         recursive = false;
       }
       if (recursive) {
         _ref1 = this.__native__;
         _results = [];
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          el = _ref1[_i];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          el = _ref1[_j];
           if (el && (el.to_native != null)) {
             el = el.to_native(true);
           }
@@ -2520,15 +2385,15 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.unbox = function(recursive) {
-      var el, _i, _len, _ref1, _results;
+      var el, _j, _len1, _ref1, _results;
       if (recursive == null) {
         recursive = false;
       }
       if (recursive) {
         _ref1 = this.__native__;
         _results = [];
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          el = _ref1[_i];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          el = _ref1[_j];
           if (el && (el.unbox != null)) {
             el = el.unbox(true);
           }
@@ -2665,9 +2530,9 @@ http://www.rubyjs.org/LICENSE.txt
       } else if (num >= 0 && num < this.size()) {
         num = num;
         stack = (function() {
-          var _i, _ref1, _results;
+          var _j, _ref1, _results;
           _results = [];
-          for (i = _i = 0, _ref1 = num + 1; 0 <= _ref1 ? _i <= _ref1 : _i >= _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+          for (i = _j = 0, _ref1 = num + 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
             _results.push(0);
           }
           return _results;
@@ -2727,7 +2592,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype["delete"] = function() {
-      var args, block, deleted, i, obj, orig, total, _i, _len, _ref1;
+      var args, block, deleted, i, obj, orig, total, _j, _len1, _ref1;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       block = this.__extract_block(args);
       orig = args[0];
@@ -2743,8 +2608,8 @@ http://www.rubyjs.org/LICENSE.txt
       }
       if (deleted.length > 0) {
         _ref1 = deleted.reverse();
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          i = _ref1[_i];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          i = _ref1[_j];
           this.delete_at(i);
         }
         return orig;
@@ -3592,10 +3457,10 @@ http://www.rubyjs.org/LICENSE.txt
       var args, ary, idx;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       ary = (function() {
-        var _i, _len, _results;
+        var _j, _len1, _results;
         _results = [];
-        for (_i = 0, _len = args.length; _i < _len; _i++) {
-          idx = args[_i];
+        for (_j = 0, _len1 = args.length; _j < _len1; _j++) {
+          idx = args[_j];
           _results.push(this.at(CoerceProto.to_int_native(idx)) || null);
         }
         return _results;
@@ -3910,13 +3775,13 @@ http://www.rubyjs.org/LICENSE.txt
     __extends(MatchData, _super);
 
     function MatchData(__native__, opts) {
-      var i, m, _i, _len, _ref1;
+      var i, m, _j, _len1, _ref1;
       this.__native__ = __native__;
       if (opts == null) {
         opts = {};
       }
       _ref1 = this.__native__;
-      for (i = _i = 0, _len = _ref1.length; _i < _len; i = ++_i) {
+      for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
         m = _ref1[i];
         this[i] = m;
       }
@@ -4129,14 +3994,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype['*'] = function(num) {
-      var n, str, _i, _ref1;
+      var n, str, _j, _ref1;
       num = this.box(num).to_int();
       this.__ensure_numeric(num);
       if (num.lt(0)) {
         throw RubyJS.ArgumentError["new"]();
       }
       str = "";
-      for (n = _i = 0, _ref1 = num.to_native(); 0 <= _ref1 ? _i < _ref1 : _i > _ref1; n = 0 <= _ref1 ? ++_i : --_i) {
+      for (n = _j = 0, _ref1 = num.to_native(); 0 <= _ref1 ? _j < _ref1 : _j > _ref1; n = 0 <= _ref1 ? ++_j : --_j) {
         str += this;
       }
       return new R.String(str);
@@ -4441,7 +4306,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.end_with = function() {
-      var needles, w, _i, _len, _ref1;
+      var needles, w, _j, _len1, _ref1;
       needles = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       needles = this.$Array_r(needles).select(function(el) {
         return (el != null ? el.to_str : void 0) != null;
@@ -4449,8 +4314,8 @@ http://www.rubyjs.org/LICENSE.txt
         return w.to_str().to_native();
       });
       _ref1 = needles.iterator();
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        w = _ref1[_i];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        w = _ref1[_j];
         if (this.to_native().lastIndexOf(w) + w.length === this.to_native().length) {
           return true;
         }
@@ -4819,11 +4684,11 @@ http://www.rubyjs.org/LICENSE.txt
         });
         if (match.length > 1) {
           val = new R.Array((function() {
-            var _i, _len, _ref1, _results;
+            var _j, _len1, _ref1, _results;
             _ref1 = match.slice(1, match.length);
             _results = [];
-            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-              m = _ref1[_i];
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              m = _ref1[_j];
               _results.push(new R.String(m));
             }
             return _results;
@@ -4939,10 +4804,10 @@ http://www.rubyjs.org/LICENSE.txt
       }
       ret = this.to_native().split(pattern);
       ret = R((function() {
-        var _i, _len, _results;
+        var _j, _len1, _results;
         _results = [];
-        for (_i = 0, _len = ret.length; _i < _len; _i++) {
-          str = ret[_i];
+        for (_j = 0, _len1 = ret.length; _j < _len1; _j++) {
+          str = ret[_j];
           _results.push(new this.constructor(str));
         }
         return _results;
@@ -4989,14 +4854,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.start_with = function() {
-      var needles, w, _i, _len, _ref1;
+      var needles, w, _j, _len1, _ref1;
       needles = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       needles = this.$Array_r(needles).select(function(el) {
         return (el != null ? el.to_str : void 0) != null;
       });
       _ref1 = needles.iterator();
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        w = _ref1[_i];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        w = _ref1[_j];
         if (this.to_native().indexOf(w.to_str().to_native()) === 0) {
           return true;
         }
@@ -5057,11 +4922,11 @@ http://www.rubyjs.org/LICENSE.txt
         return this.replace("");
       } else {
         codes = (function() {
-          var _i, _len, _ref1, _results;
+          var _j, _len1, _ref1, _results;
           _ref1 = this.to_native().split("");
           _results = [];
-          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-            c = _ref1[_i];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            c = _ref1[_j];
             _results.push(c.charCodeAt(0));
           }
           return _results;
@@ -5105,10 +4970,10 @@ http://www.rubyjs.org/LICENSE.txt
           }
         }
         chars = (function() {
-          var _i, _len, _results;
+          var _j, _len1, _results;
           _results = [];
-          for (_i = 0, _len = codes.length; _i < _len; _i++) {
-            c = codes[_i];
+          for (_j = 0, _len1 = codes.length; _j < _len1; _j++) {
+            c = codes[_j];
             _results.push(String.fromCharCode(c));
           }
           return _results;
@@ -5302,13 +5167,13 @@ http://www.rubyjs.org/LICENSE.txt
   CharTable = (function() {
 
     function CharTable(patterns) {
-      var arr, v, w, _i, _len, _ref1;
+      var arr, v, w, _j, _len1, _ref1;
       this.patterns = patterns;
       this.incl = null;
       this.excl = null;
       _ref1 = this.patterns;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        w = _ref1[_i];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        w = _ref1[_j];
         v = CoerceProto.to_str(w).to_native();
         if (v.length === 0) {
 
@@ -5347,11 +5212,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     CharTable.prototype.__char_table__ = function(str) {
-      var arr, m, s, _i, _len;
+      var arr, m, s, _j, _len1;
       arr = [];
       if (m = str.match(/[^\\]\-./g)) {
-        for (_i = 0, _len = m.length; _i < _len; _i++) {
-          s = m[_i];
+        for (_j = 0, _len1 = m.length; _j < _len1; _j++) {
+          s = m[_j];
           arr = arr.concat(this.__char_range__(s[0], s[2]));
         }
       }
@@ -5551,10 +5416,10 @@ http://www.rubyjs.org/LICENSE.txt
         args = first_arg;
       }
       sources = (function() {
-        var _i, _len, _results;
+        var _j, _len1, _results;
         _results = [];
-        for (_i = 0, _len = args.length; _i < _len; _i++) {
-          arg = args[_i];
+        for (_j = 0, _len1 = args.length; _j < _len1; _j++) {
+          arg = args[_j];
           arg = R(arg);
           if (arg.is_regexp != null) {
             _results.push(arg.to_s());
@@ -6088,7 +5953,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Fixnum.__cache_fixnums__ = function(from, to) {
-      var i, _i, _results;
+      var i, _j, _results;
       if (from == null) {
         from = -1;
       }
@@ -6096,7 +5961,7 @@ http://www.rubyjs.org/LICENSE.txt
         to = 256;
       }
       _results = [];
-      for (i = _i = from; from <= to ? _i <= to : _i >= to; i = from <= to ? ++_i : --_i) {
+      for (i = _j = from; from <= to ? _j <= to : _j >= to; i = from <= to ? ++_j : --_j) {
         _results.push(this.__memoized_fixnums__[i] = new R.Fixnum(i));
       }
       return _results;
