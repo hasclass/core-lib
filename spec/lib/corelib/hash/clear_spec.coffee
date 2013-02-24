@@ -5,19 +5,18 @@ describe "Hash#clear", ->
     expect( h ).toEqual R.hashify({})
 
   it "does not remove default values", ->
-    # h = R.hashify 5
-    # h.clear
-    # h.default.should == 5
+    h = R.hashify({}, 5)
+    h.clear()
+    expect( h.default()).toEqual 5
 
-    # h = R.hashify("a" => 100, "b" => 200)
-    # h.default = "Go fish"
-    # h.clear
-    # h["z"].should == "Go fish"
+    h = R.hashify({a: 100, b: 200}, "Go fish")
+    h.clear()
+    expect( h.get("z") ).toEqual "Go fish"
 
   it "does not remove default procs", ->
-    # h = R.hashify { 5 }
-    # h.clear
-    # h.default_proc.should_not == nil
+    h = R.hashify {}, -> 5
+    h.clear()
+    expect( h.default_proc() ).toNotEqual null
 
   describe "1.9", ->
     xit "raises a RuntimeError if called on a frozen instance", ->

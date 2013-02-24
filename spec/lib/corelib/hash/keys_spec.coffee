@@ -4,8 +4,8 @@ describe "Hash#keys", ->
     expect( new_hash.keys() ).toEqual R([])
     expect( new_hash.keys() ).toBeInstanceOf R.Array
 
-    # new_hash(5).keys.should == []
-    # new_hash { 5 }.keys.should == []
+    expect( R.hashify({}, 5).keys()     ).toEqual R([])
+    expect( R.hashify({}, -> 5 ).keys() ).toEqual R([])
 
     # HASH unordered keys
     expect( R.hashify(1: 2, 4: 8, 2: 4).keys() ).toEqual R(['1', '2', '4'])

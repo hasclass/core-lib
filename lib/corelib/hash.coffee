@@ -58,6 +58,20 @@ class RubyJS.Hash extends RubyJS.Object
       null
 
 
+  # If Hash.new was invoked with a block, return that block, otherwise return
+  # nil.
+  #
+  # @example
+  #     h = new R.Hash(function(h,k) { return h.set(k, k*k) }   #=> {}
+  #     p = h.default_proc()               #=> function
+  #
+  default_proc: ->
+    if @__default__?.call?
+      @__default__
+    else
+      null
+
+
   # Deletes and returns a key-value pair from hsh whose key is equal to key.
   # If the key is not found, returns the default value. If the optional code
   # block is given and the key is not found, pass in the key and return the
@@ -235,7 +249,10 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Object]
   #
   get: (key) ->
-    @__native__[key]
+    if @__default__? and !@has_key(key)
+      @default(key)
+    else
+      @__native__[key]
 
 
   # Returns true if the given value is present for some key in hsh.
