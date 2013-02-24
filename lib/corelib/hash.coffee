@@ -16,7 +16,33 @@ class RubyJS.Hash extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
+  # Removes all key-value pairs from hsh.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.clear()  #=> {}
+  #
+  # @return [this]
+  #
+  clear: ->
+    @__native__ = {}
+    this
 
+
+  # Deletes and returns a key-value pair from hsh whose key is equal to key.
+  # If the key is not found, returns the default value. If the optional code
+  # block is given and the key is not found, pass in the key and return the
+  # result of block.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.delete("a")                              #=> 100
+  #     h.delete("z")                              #=> nil
+  #     h.delete("z", function (el) { return "#{el} not found" )
+  #     #=> "z not found"
+  #
+  # @return [Object, null]
+  #
   delete: (key, block) ->
     if @has_key(key)
       value = @get(key)
@@ -28,6 +54,27 @@ class RubyJS.Hash extends RubyJS.Object
       else
         null
 
+
+  # Deletes every key-value pair from hsh for which block evaluates to true.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200, c: 300 })
+  #     h.delete_if(function(key, value) {return key >= "b"}
+  #     #=> {"a"=>100}
+  #
+  # @return [this, R.Enumerator]
+  #
+  delete_if: (block) ->
+    if block?.call?
+      for own k,v of @__native__
+        if block(k,v)
+          delete @__native__[k]
+
+      this
+    else
+      @to_enum()
 
 
   # Calls block once for each key in hsh, passing the key-value pair as
