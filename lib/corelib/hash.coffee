@@ -16,6 +16,20 @@ class RubyJS.Hash extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
+
+  delete: (key, block) ->
+    if @has_key(key)
+      value = @get(key)
+      delete @__native__[key]
+      return value
+    else
+      if block?.call?
+        block(key)
+      else
+        null
+
+
+
   # Calls block once for each key in hsh, passing the key-value pair as
   # parameters.
   #
@@ -257,6 +271,11 @@ class RubyJS.Hash extends RubyJS.Object
     arr = for own k, v of @__native__
       v
     new R.Array(arr)
+
+  values_at: (keys) ->
+    arr = for k in arguments
+      @get(k)
+    R(arr)
 
   # ---- Aliases --------------------------------------------------------------
 
