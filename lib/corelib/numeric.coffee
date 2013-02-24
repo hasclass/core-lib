@@ -152,6 +152,9 @@ class RubyJS.Numeric extends RubyJS.Object
   inspect: -> new R.String(""+@to_native())
 
   # Returns float division.
+  #
+  # @return [R.Float]
+  #
   fdiv: (other) ->
     other = CoerceProto.to_num_native(other)
     @to_f()['/'](other)
@@ -169,11 +172,15 @@ class RubyJS.Numeric extends RubyJS.Object
     @to_f().floor()
 
 
+  # Returns the absolute value of num.
+  #
   # @alias #abs
+  #
   magnitude: ->
     @abs()
 
-
+  # Alias to {#divmod}
+  #
   # @alias #divmod
   modulo: (other) ->
     other = @box(other)
@@ -184,8 +191,11 @@ class RubyJS.Numeric extends RubyJS.Object
   # Returns self if num is not zero, nil otherwise. This behavior is useful
   # when chaining comparisons:
   #
+  # @return [null, this]
+  #
   nonzero: ->
     if @zero() then null else this
+
 
   # Returns most exact division (rational for integers, float for floats).
   quo: (other) ->
@@ -204,6 +214,10 @@ class RubyJS.Numeric extends RubyJS.Object
   rectangular: @prototype.rect
 
 
+  # x.remainder(y) means x-y*(x/y).truncate
+  #
+  # @see {R.Numeric#divmod}
+  #
   remainder: (other) ->
     other = @box(other)
     mod = @['%'](other)
@@ -214,71 +228,115 @@ class RubyJS.Numeric extends RubyJS.Object
       mod
 
 
-  round: (n) -> @to_f().round(n)
+  # Rounds num to a given precision in decimal digits (default 0 digits).
+  # Precision may be negative. Returns a floating point number when ndigits is
+  # more than zero. Numeric implements this by converting itself to a Float
+  # and invoking Float#round.
+  #
+  # @return [R.Numeric]
+  #
+  round: (n) ->
+    @to_f().round(n)
 
 
+  # Invokes block with the sequence of numbers starting at num, incremented by
+  # step (default 1) on each call. The loop finishes when the value to be
+  # passed to the block is greater than limit (if step is positive) or less
+  # than limit (if step is negative). If all the arguments are integers, the
+  # loop operates using an integer counter. If any of the arguments are
+  # floating point numbers, all are converted to floats, and the loop is
+  # executed floor(n + n*epsilon)+ 1 times, where n = (limit - num)/step.
+  # Otherwise, the loop starts at num, uses either the < or > operator to
+  # compare the counter against limit, and increments itself using the +
+  # operator.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     R(1).step(10, 2, function (i) { R.puts(i)} )
+  #     R(Math.E).step(Math.PI, 0.2, function (i) { R.puts(i)} )
+  #     # produces:
+  #     # 1 3 5 7 9
+  #     # 2.71828182845905 2.91828182845905 3.11828182845905
+  #
+  # @return [this, R.Enumerator]
+  #
   step: (limit, step = 1, block) ->
-    # ported from rubinius
-    limit = @box(limit)
-    if block?.call?
-    else
+    limit = R(limit)
+    unless block?.call?
       block = step
       step  = 1
-    step = @box(step)
+    step = R(step)
 
-    return @to_enum('step', limit, step) unless block?.call?
-    throw new R.ArgumentError("ArgumentError") if step.equals(0)
+    unless block?.call?
+      return @to_enum('step', limit, step)
 
-    value = this
+    if step.equals(0)
+      throw new R.ArgumentError("ArgumentError")
+
+    float_mode = @is_float? or limit.is_float? or step.is_float?
+
+    limit = limit.to_native()
+    step  = step.to_native()
+    value = @to_native()
 
     # eps = 0.0000000000000002220446049250313080847263336181640625
-    if value.is_float? or limit.is_float? or step.is_float?
+    if float_mode
       # For some reason the following ported code is not needed.
       # it appears to work properly in js withouth the Float::EPSILON
-      # value = value.to_f()
-      # limit = limit.to_f()
-      # step  = step.to_f()
       # err = (value.abs().plus(limit.abs()).plus(limit.minus(value).abs()).divide(step.abs())).multiply(eps)
       # err = 0.5 if err.gt(0.5)
       # n   = (limit.minus(value)).divide(step.plus(err)).floor()
-      n   = (limit.to_f().minus(value)).divide(step)
-      i   = R(0).to_f()
-      if step.gt(0)
-        while i.lteq(n)
-          d = i.multiply(step).plus(value)
-          d = limit if limit.lt(d)
-          block(d)
-          i = i.plus(1)
+      n = (limit - value) / step
+      i = 0
+      if step > 0
+        while i <= n
+          d = i * step + value
+          d = limit if limit < d
+          block(new R.Float(d))
+          i += 1
       else
-        while i.lteq(n)
-          d = i.multiply(step).plus(value)
-          d = limit if limit.gt(d)
-          block(d)
-          i = i.plus(1)
+        while i <= n
+          d = i * step + value
+          d = limit if limit > d
+          block(new R.Float(d))
+          i += 1
     else
-      if step.gt(0)
-        until value.gt(limit)
-          block(value)
-          value = value.plus(step)
+      if step > 0
+        until value > limit
+          block(new R.Fixnum(value))
+          value += step
       else
-        until value.lt(limit)
-          block(value)
-          value = value.plus(step)
+        until value < limit
+          block(new R.Fixnum(value))
+          value += step
     this
 
 
+  # @private
   to_int: ->
     @to_i()
 
 
+  # Returns num truncated to an integer. Numeric implements this by converting
+  # its value to a float and invoking Float#truncate.
+  #
+  # @return [R.Fixnum]
+  #
   truncate: ->
     @to_f().truncate()
 
 
+  # Unary Minus—Returns the receiver’s value, negated.
+  #
+  # @return [R.Numeric]
+  #
   uminus: ->
     @multiply(-1)
 
-
+  # Returns true if num has a zero value.
+  #
+  # @return [Boolean]
   zero: ->
     @['=='](0)
 
