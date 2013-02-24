@@ -2,6 +2,7 @@ errors = [
   'ArgumentError'
   'RegexpError'
   'TypeError'
+  'KeyError'
   'IndexError'
   'FloatDomainError'
   'RangeError'

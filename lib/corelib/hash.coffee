@@ -38,6 +38,32 @@ class RubyJS.Hash extends RubyJS.Object
     else
       @to_enum()
 
+
+  each_pair: @prototype.each
+
+
+  # Calls block once for each key in hsh, passing the key as a parameter.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 }
+  #     h.each_key (key) -> R.puts(key)
+  #     # produces:
+  #     # a
+  #     # b
+  #
+  # @return [this, R.Enumerator]
+  #
+  each_key: (block) ->
+    if block?.call?
+      for own k,v of @__native__
+        block(k)
+      this
+    else
+      @to_enum()
+
+
   # Calls block once for each key in hsh, passing the value as a parameter.
   #
   # If no block is given, an enumerator is returned instead.
@@ -59,6 +85,41 @@ class RubyJS.Hash extends RubyJS.Object
     else
       @to_enum()
 
+
+  # Returns a value from the hash for the given key. If the key can’t be
+  # found, there are several options: With no other arguments, it will raise
+  # an KeyError exception; if default is given, then that will be returned; if
+  # the optional code block is specified, then that will be run and its result
+  # returned.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.fetch("a")                            #=> 100
+  #     h.fetch("z", "go fish")                 #=> "go fish"
+  #     h.fetch("z", (el) -> "go fish, #{el}")  #=> "go fish, z"
+  #
+  # The following example shows that an exception is raised if the key is not
+  # found and a default value is not supplied.
+  #
+  #     h = { "a" => 100, "b" => 200 }
+  #     h.fetch("z")
+  #     produces:
+  #     # key not found (KeyError)
+  #
+  fetch: (key, default_value) ->
+    if arguments.length == 0
+      throw R.ArgumentError.new()
+
+    if @has_key(key)
+      @get(key)
+    else if default_value?.call? || arguments[2]?.call?
+      (arguments[2] || default_value)(key)
+    else if default_value != undefined
+        default_value
+    else
+      throw R.KeyError.new()
+
+
   # Element Reference—Retrieves the value object corresponding to the key
   # object. If not found, returns the default value (see Hash::new for
   # details).
@@ -73,6 +134,23 @@ class RubyJS.Hash extends RubyJS.Object
   #
   get: (key) ->
     @__native__[key]
+
+
+  # Returns true if the given key is present in hsh.
+  #
+  # @example
+  #     h = R.hashify({a; 100, b; 200 })
+  #     h.has_key("a")   #=> true
+  #     h.has_key("z")   #=> false
+  #
+  # @alias #include, #member
+  #
+  has_key: (key) ->
+    `key in this.__native__`
+
+
+  include: @prototype.has_key
+  member: @prototype.has_key
 
 
   # Returns a new array populated with the keys from this hash. See also
@@ -105,6 +183,7 @@ class RubyJS.Hash extends RubyJS.Object
   #
   set: (key, value) ->
     @__native__[key] = value
+
 
   store: @prototype.set
 
