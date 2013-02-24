@@ -16,11 +16,13 @@ class RubyJS.Integer extends RubyJS.Numeric
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_integer: -> true
 
 
   # ---- Javascript primitives --------------------------------------------------
 
+  # @private
   unbox: -> @to_native()
 
 
@@ -46,38 +48,34 @@ class RubyJS.Integer extends RubyJS.Numeric
   denominator: ->
     new R.Fixnum(1)
 
-
-  # TODO: remove dog food
-  upto: (stop, block) ->
-    stop = R(stop)
-
-    throw RubyJS.ArgumentError.new() unless stop?.to_int?
-    return RubyJS.Enumerator.new(this, 'upto', stop) unless block && block.call?
-
-    stop = stop.floor().to_native()
-    return this unless @to_native() <= stop
-
-    idx = @to_native()
-    while idx <= stop
-      block( new R.Fixnum(idx) ) #for i in [@to_native()..stop]
-      idx += 1
-
-    this
-
-
+  # Iterates block, passing decreasing values from int down to and including
+  # limit.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #    R(5).downto(1, function (n) { R.puts(n + ".. ") }
+  #    # => 5.. 4.. 3.. 2.. 1..
+  #
+  # @param [Number] stop
+  # @return [this]
+  #
   downto: (stop, block) ->
-    stop = R(stop)
+    try
+      stop = CoerceProto.to_num_native(stop)
+    catch err
+      throw R.ArgumentError.new()
 
-    throw RubyJS.ArgumentError.new() unless stop?.to_int?
-    return RubyJS.Enumerator.new(this, 'downto', stop) unless block && block.call?
+    unless block?.call?
+      return RubyJS.Enumerator.new(this, 'downto', stop)
 
-    stop = Math.ceil(stop.to_native())
-    return this unless @to_native() >= stop
-
+    stop = Math.ceil(stop)
     idx  = @to_native()
+
     while idx >= stop
       block( new R.Fixnum(idx) )
-      idx = idx - 1
+      idx -= 1
 
     this
 
@@ -86,7 +84,8 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   # @return [Boolean]
   #
-  even: -> @to_native() % 2 == 0
+  even: ->
+    @to_native() % 2 == 0
 
 
   # Returns the greatest common divisor (always positive). 0.gcd(x) and x.gcd(0) return abs(x).
@@ -150,9 +149,12 @@ class RubyJS.Integer extends RubyJS.Numeric
 
 
   # Returns self.
+  #
+  # @return [R.Fixnum,this]
+  #
   numerator: ->
     if @lt(0)
-      @$Integer(@to_native() * -1)
+      new R.Fixnum(@to_native() * -1)
     else
       this
 
@@ -163,8 +165,18 @@ class RubyJS.Integer extends RubyJS.Numeric
   odd:  -> !@even()
 
 
+  # Returns the int itself.
+  #
+  #      a.ord    #=> 97
+  #
+  # This method is intended for compatibility to character constant in Ruby
+  # 1.9. For example, ?a.ord returns 97 both in 1.8 and 1.9.
+  #
+  # @return [this]
+  #
   ord:  ->
     this
+
 
   # Returns the Integer equal to int + 1.
   #
@@ -179,6 +191,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   next: ->
     @plus(1)
 
+
   # Returns the Integer equal to int - 1.
   #
   # @example
@@ -190,6 +203,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   pred: ->
     @minus(1)
+
 
   # Rounds to a given precision in decimal digits (default 0 digits). Precision may be negative. Returns a floating point number when ndigits is positive, self for zero, and round down for negative.
   #
@@ -216,6 +230,17 @@ class RubyJS.Integer extends RubyJS.Numeric
   succ:  @prototype.next
 
 
+  # Iterates block int times, passing in values from zero to int - 1.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #     R(5).times(function(i) { R.puts(i) })
+  #     # => 0 1 2 3 4
+  #
+  # @return [this]
+  #
   times: (block) ->
     return @to_enum('times') unless block?.call?
 
@@ -230,14 +255,50 @@ class RubyJS.Integer extends RubyJS.Numeric
       this
 
 
+  # As int is already an Integer, all these methods simply return the receiver
+  # @return [this]
   to_i:   -> this
 
 
+  # Iterates block, passing in integer values from int up to and including
+  # limit.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #     R(5).upto(10, function (i) { R.puts(i + " " })
+  #     # => 5 6 7 8 9 10
+  #
+  # @param [Number] stop
+  # @return [this]
+  #
+  upto: (stop, block) ->
+    try
+      stop = CoerceProto.to_num_native(stop)
+    catch err
+      throw R.ArgumentError.new()
+
+    unless block?.call?
+      return R.Enumerator.new(this, 'upto', stop)
+
+    stop = Math.floor(stop)
+    idx = @to_native()
+
+    while idx <= stop
+      block( new R.Fixnum(idx) ) #for i in [@to_native()..stop]
+      idx += 1
+
+    this
+
+
+  # @return [String]
   toString: -> "#{@to_native()}"
 
 
   # ---- Private methods ------------------------------------------------------
 
+  # @private
   __ensure_integer__: (other) ->
     throw RubyJS.TypeError.new() unless other?.is_integer?
 

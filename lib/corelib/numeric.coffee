@@ -37,6 +37,7 @@ class RubyJS.Numeric extends RubyJS.Object
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_numeric: -> true
 
 
@@ -46,20 +47,55 @@ class RubyJS.Numeric extends RubyJS.Object
     if this is other then 0 else null
 
 
+  # Returns the absolute value of num.
+  #
+  # @example
+  #     R(12).abs()         #=> 12
+  #     (-34.56).abs()      #=> 34.56
+  #     R(-34.56).abs()     #=> 34.56
+  #
+  # @return [R.Numeric]
+  #
   abs: ->
     if @['<'](0) then @uminus() else this
 
 
+  # Returns square of self.
+  #
+  # @return [R.Numeric]
+  #
   abs2: ->
     return this if @nan?()
     @abs()['**'](2)
 
 
+  # Returns the smallest Integer greater than or equal to num. Class Numeric achieves this by converting itself to a Float then invoking Float#ceil.
+  #
+  # @example
+  #     R(1).ceil()      #=> 1
+  #     R(1.2).ceil()    #=> 2
+  #     R(-1.2).ceil()   #=> -1
+  #     R(-1.0).ceil()   #=> -1
+  #
+  # @return [R.Fixnum]
+  #
   ceil: () ->
     @to_f().ceil()
 
 
-  # TODO: this needs some serious love
+  # If a Numeric is the same type as num, returns an array containing aNumeric
+  # and num. Otherwise, returns an array with both aNumeric and num
+  # represented as Float objects. This coercion mechanism is used by Ruby to
+  # handle mixed-type numeric operations: it is intended to find a compatible
+  # common type between the two operands of the operator.
+  #
+  # @example
+  #     R(1).coerce(2.5)   #=> [2.5, 1.0]
+  #     R(1.2).coerce(3)   #=> [3.0, 1.2]
+  #     R(1).coerce(2)     #=> [2, 1]
+  #
+  # @todo this needs some serious love
+  #
   coerce: (other) ->
     throw RubyJS.TypeError.new() if other is null or other is false or other is undefined
     other = @box(other)
@@ -73,6 +109,15 @@ class RubyJS.Numeric extends RubyJS.Object
       throw RubyJS.TypeError.new()
 
 
+  # Uses / to perform division, then converts the result to an integer.
+  # numeric does not define the / operator; this is left to subclasses.
+  #
+  # Equivalent to num.divmod(aNumeric).
+  #
+  # See {R.Numeric#divmod}
+  #
+  # @return [R.Float]
+  #
   div: (other) ->
     other = @box(other)
     throw RubyJS.TypeError.new() unless other.to_int?
@@ -87,6 +132,15 @@ class RubyJS.Numeric extends RubyJS.Object
     new R.Array([quotient, modulus])
 
 
+  # Returns true if num and numeric are the same type and have equal values.
+  #
+  # @example
+  #     new R.Fixnum(1).equals(new R.Float(1.0))  #=> true
+  #     new R.Fixnum(1).eql(new R.Float(1.0))     #=> false
+  #     new R.Float(1).eql(new R.Float(1.0))      #=> true
+  #
+  # @return [Boolean]
+  #
   eql: (other) ->
     other = @box(other)
     return false unless other
@@ -94,38 +148,54 @@ class RubyJS.Numeric extends RubyJS.Object
     if @['=='](other) then true else false
 
 
-  inspect: -> ""+@to_native()
+  # @return [R.String]
+  inspect: -> new R.String(""+@to_native())
 
-
+  # Returns float division.
   fdiv: (other) ->
     other = CoerceProto.to_num_native(other)
     @to_f()['/'](other)
 
 
+  # Returns the largest integer less than or equal to num. Numeric implements this by converting anInteger to a Float and invoking Float#floor.
+  #
+  # @example
+  #     R( 1).floor()   #=> 1
+  #     R(-1).floor()   #=> -1
+  #
+  # @return [R.Fixnum]
+  #
   floor: () ->
     @to_f().floor()
 
 
+  # @alias #abs
   magnitude: ->
     @abs()
 
 
+  # @alias #divmod
   modulo: (other) ->
     other = @box(other)
     # self - other * self.div(other)
     @['-']( other['*']( @div(other)) )
 
 
+  # Returns self if num is not zero, nil otherwise. This behavior is useful
+  # when chaining comparisons:
+  #
   nonzero: ->
     if @zero() then null else this
 
-
+  # Returns most exact division (rational for integers, float for floats).
   quo: (other) ->
     other = @box(other)
     throw new Error("ZeroDivisionError") if other.zero()
     arr = @coerce(other)
     @['/'](arr.first())
 
+
+  # Returns an array; [num, 0].
   rect: ->
     throw R.ArgumentError.new() if arguments.length > 0
     new R.Array([this, new R.Fixnum(0)])
@@ -155,6 +225,7 @@ class RubyJS.Numeric extends RubyJS.Object
       block = step
       step  = 1
     step = @box(step)
+
     return @to_enum('step', limit, step) unless block?.call?
     throw new R.ArgumentError("ArgumentError") if step.equals(0)
 
