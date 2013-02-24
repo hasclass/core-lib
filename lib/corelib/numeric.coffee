@@ -97,8 +97,8 @@ class RubyJS.Numeric extends RubyJS.Object
   # @todo this needs some serious love
   #
   coerce: (other) ->
-    throw RubyJS.TypeError.new() if other is null or other is false or other is undefined
-    other = @box(other)
+    throw RubyJS.TypeError.new() if !other? or other is false
+    other = R(other)
     # throw RubyJS.TypeError.new() unless other.to_f?
     if      other.is_string?    then @$Array [@$Float(other), @to_f()]
     else if other.constructor.prototype is @constructor.prototype then @$Array([other, this])
