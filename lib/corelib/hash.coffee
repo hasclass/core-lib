@@ -7,8 +7,9 @@ class RubyJS.Hash extends RubyJS.Object
   @new: () ->
     new R.Hash()
 
-  constructor: (obj) ->
-    @__native__ = obj
+  constructor: (hsh, default_value) ->
+    @__native__ = hsh
+    @__default__ = default_value
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -27,6 +28,34 @@ class RubyJS.Hash extends RubyJS.Object
   clear: ->
     @__native__ = {}
     this
+
+
+  # Returns the default value, the value that would be returned by hsh if key
+  # did not exist in hsh. See also Hash::new and Hash#default=.
+  #
+  # @example
+  #      h = R.Hash.new()                        #=> {}
+  #      h.default()                             #=> null
+  #      h.default(2)                            #=> null
+  #
+  #      h = R.Hash.new({}, "cat")               #=> {}
+  #      h.default( )                            #=> "cat"
+  #      h.default(2)                            #=> "cat"
+  #
+  #      h = R.Hash.new({}, function(h,k) { return h.set(k, k*10) }   #=> {}
+  #      h.default( )                            #=> null
+  #      h.default(2)                            #=> 20
+  #
+  # @return [Object, null]
+  #
+  default: (key) ->
+    if @__default__
+      if @__default__.call?
+        @__default__(this, key) unless key is undefined
+      else
+        @__default__
+    else
+      null
 
 
   # Deletes and returns a key-value pair from hsh whose key is equal to key.
@@ -247,6 +276,30 @@ class RubyJS.Hash extends RubyJS.Object
   include: @prototype.has_key
   member: @prototype.has_key
 
+  # Returns the key of an occurrence of a given value. If the value is not
+  # found, returns nil.
+  #
+  # @example
+  #      h = R.hashify({ a: 100, b: 200, c: 300, d: 300 })
+  #      h.key(200)   #=> "b"
+  #      h.key(300)   #=> "c"
+  #      h.key(999)   #=> nil
+  #
+  # @return [String]
+  #
+  key: (value) ->
+    value = R(value)
+
+    if value.rubyjs?
+      for own k, v of @__native__
+        return k if value.equals(v)
+    else
+      for own k, v of @__native__
+        return k if v == value
+
+    null
+
+
 
   # Returns a new array populated with the keys from this hash. See also
   # Hash#values.
@@ -327,5 +380,5 @@ class RubyJS.Hash extends RubyJS.Object
   # ---- Aliases --------------------------------------------------------------
 
 
-R.hashify = (obj) ->
-  new R.Hash(obj)
+R.hashify = (obj, default_value) ->
+  new R.Hash(obj, default_value)
