@@ -303,6 +303,7 @@ class RubyJS.Hash extends RubyJS.Object
   #      h.key(999)   #=> nil
   #
   # @return [String]
+  # @alias #index
   #
   key: (value) ->
     value = R(value)
@@ -316,6 +317,8 @@ class RubyJS.Hash extends RubyJS.Object
 
     null
 
+
+  index: @prototype.key
 
 
   # Returns a new array populated with the keys from this hash. See also
