@@ -10,28 +10,28 @@ class RubyJS.Comparable
 
   '<': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp < 0
 
   '>': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp > 0
 
   '<=': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp <= 0
 
   '>=': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp >= 0
 
   # Returns false if obj <=> min is less than zero or if anObject <=> max is
   # greater than zero, true otherwise.
   #
-  #
+  # @example
   #     R(3).between(1, 5)               # => true
   #     R(6).between(1, 5)               # => false
   #     R(3).between(3, 3)               # => true

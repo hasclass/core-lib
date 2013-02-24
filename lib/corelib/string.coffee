@@ -1,8 +1,8 @@
-# make String accessible within RubyJS.String
+# make String accessible within R.String
 nativeString = root.String
 
 class RubyJS.String extends RubyJS.Object
-  @include RubyJS.Comparable
+  @include R.Comparable
 
   @fromCharCode: (obj) -> nativeString.fromCharCode(obj)
 
@@ -93,7 +93,7 @@ class RubyJS.String extends RubyJS.Object
   '*': (num) ->
     num = @box(num).to_int()
     @__ensure_numeric(num)
-    throw(RubyJS.ArgumentError.new()) if num.lt(0)
+    throw(R.ArgumentError.new()) if num.lt(0)
 
     str = ""
     str += this for n in [0...num.to_native()]
@@ -338,7 +338,7 @@ class RubyJS.String extends RubyJS.Object
       @replace("") if @empty()
     else
       sep = @$String(sep)
-      # sep = new RubyJS.String(sep)
+      # sep = new R.String(sep)
       # sep = sep.to_str()
       if sep.empty()
         regexp = /((\r\n)|\n)+$/
@@ -409,7 +409,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
   #
   count: (args...) ->
-    throw RubyJS.ArgumentError.new() if R(args.length).equals(0)
+    throw R.ArgumentError.new() if R(args.length).equals(0)
     tbl = new CharTable(args)
     # @to_native().match(rgxp).length
     @chars().count (chr) ->
@@ -437,7 +437,7 @@ class RubyJS.String extends RubyJS.Object
   # modified.
   #
   delete_bang: (args...) ->
-    throw RubyJS.ArgumentError.new() if R(args.length).equals(0)
+    throw R.ArgumentError.new() if R(args.length).equals(0)
     tbl = new CharTable(args)
 
     # OPTIMIZE:
@@ -1805,7 +1805,7 @@ class RubyJS.String extends RubyJS.Object
       exclusive = false
 
     throw R.TypeError.new() unless stop?.is_string?
-    return RubyJS.Enumerator.new(this, 'upto', stop, exclusive) unless block && block.call?
+    return R.Enumerator.new(this, 'upto', stop, exclusive) unless block && block.call?
 
     # stop       = stop.to_str()
     # return this if @lt(stop)
@@ -1934,5 +1934,4 @@ class CharTable
       throw R.ArgumentError.new("ERROR: #{a} #{b}") if counter == 10000
     arr
 
-RStrProto = RubyJS.String.prototype
 

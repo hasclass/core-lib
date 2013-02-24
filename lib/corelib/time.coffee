@@ -38,7 +38,7 @@ class RubyJS.Time extends RubyJS.Object
   #     Time.new(y,m,d,h,m,s,utc_offset_in_seconds)
   #     Time.now() # in timezone
   #     Time.at() # local_time
-  @include RubyJS.Comparable
+  @include R.Comparable
 
   @LOCALE:
     'DAYS':         ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -224,7 +224,7 @@ class RubyJS.Time extends RubyJS.Object
   #
   @utc: (year, month, day, hour, min, sec) ->
     date = new Date(Date.UTC(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0))
-    new RubyJS.Time(date, 0)
+    new R.Time(date, 0)
 
 
   # @alias #utc
@@ -236,7 +236,7 @@ class RubyJS.Time extends RubyJS.Object
   # system time.
   #
   @now: ->
-    RubyJS.Time.new()
+    R.Time.new()
 
 
   # @private
@@ -518,7 +518,7 @@ class RubyJS.Time extends RubyJS.Object
 
   # @todo: implement %N
   strftime: (format) ->
-    locale = RubyJS.Time.LOCALE
+    locale = R.Time.LOCALE
 
     fill = @_rjust
 

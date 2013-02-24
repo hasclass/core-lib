@@ -3,13 +3,13 @@
 # @include RubyJS.Enumerable
 #
 class RubyJS.Range extends RubyJS.Object
-  @include RubyJS.Enumerable
+  @include R.Enumerable
 
   # ---- Constructors & Typecast ----------------------------------------------
 
   # TODO: .new should BOX here:
   @new: (start, end, exclusive = false) ->
-    new RubyJS.Range(start, end, exclusive)
+    new R.Range(start, end, exclusive)
 
   # TODO: do not box here...
   constructor: (start, end, @exclusive = false) ->
@@ -56,7 +56,7 @@ class RubyJS.Range extends RubyJS.Object
   # @return true, false
   #
   '==': (other) ->
-    return false unless other instanceof RubyJS.Range
+    return false unless other instanceof R.Range
     @__end__['=='](other.end()) and @__start__['=='](other.start()) and @exclusive is other.exclude_end()
 
   # Returns true only if obj is a Range, has equivalent beginning and end items
@@ -88,7 +88,7 @@ class RubyJS.Range extends RubyJS.Object
   # @param other
   #
   cover: (obj) ->
-    throw RubyJS.ArgumentError.new() if arguments.length != 1
+    throw R.ArgumentError.new() if arguments.length != 1
     obj = obj
     return false if obj is null
     @equal_case(obj)
@@ -261,8 +261,8 @@ class RubyJS.Range extends RubyJS.Object
     this
 
   to_a: () ->
-    throw RubyJS.TypeError.new() if @__end__.is_float? && @__start__.is_float?
-    RubyJS.Enumerable.prototype.to_a.apply(this)
+    throw R.TypeError.new() if @__end__.is_float? && @__start__.is_float?
+    R.Enumerable.prototype.to_a.apply(this)
 
 
   to_s: @prototype.inspect

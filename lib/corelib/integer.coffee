@@ -7,7 +7,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   # ---- Constructors & Typecast ----------------------------------------------
 
   @new: (value) ->
-    new Integer(value)
+    new R.Integer(value)
 
 
   @isInteger: (obj) ->
@@ -68,7 +68,7 @@ class RubyJS.Integer extends RubyJS.Numeric
       throw R.ArgumentError.new()
 
     unless block?.call?
-      return RubyJS.Enumerator.new(this, 'downto', stop)
+      return R.Enumerator.new(this, 'downto', stop)
 
     stop = Math.ceil(stop)
     idx  = @to_native()

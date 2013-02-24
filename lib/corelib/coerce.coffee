@@ -35,7 +35,7 @@ class Coerce
       obj = R(obj)
 
       unless obj[to_what]?
-        throw RubyJS.TypeError.new("TypeError: cant't convert ... into String")
+        throw R.TypeError.new("TypeError: cant't convert ... into String")
 
       if skip_native isnt undefined
         obj[to_what]().to_native()
@@ -47,11 +47,12 @@ class Coerce
   #
   # Throws error if typecasted RubyJS object is not a numeric.
   to_num_native: (obj) ->
+    # TODO allow custom error types
     if typeof obj is 'number'
       obj
     else
       obj = R(obj)
-      throw RubyJS.TypeError.new() if !obj.is_numeric?
+      throw R.TypeError.new() if !obj.is_numeric?
       obj.to_native()
 
 

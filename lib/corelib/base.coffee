@@ -1,7 +1,7 @@
 # Methods in Base are added to `R`.
 #
 class RubyJS.Base extends RubyJS.Object
-  @include RubyJS.Kernel
+  @include R.Kernel
 
   #
   '$~': null
@@ -21,7 +21,7 @@ class RubyJS.Base extends RubyJS.Object
       'null'
     else if obj.inspect?
       obj.inspect()
-    else if RubyJS.Array.isNativeArray(obj)
+    else if R.Array.isNativeArray(obj)
       "[#{obj}]"
     else
       obj

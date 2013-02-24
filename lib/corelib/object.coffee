@@ -61,17 +61,17 @@ class RubyJS.Object
   # RubyJS specific helper methods
   # @private
   __ensure_args_length: (args, length) ->
-    throw RubyJS.ArgumentError.new() unless args.length is length
+    throw R.ArgumentError.new() unless args.length is length
 
 
   # @private
   __ensure_numeric: (obj) ->
-    throw RubyJS.TypeError.new() unless obj?.is_numeric?
+    throw R.TypeError.new() unless obj?.is_numeric?
 
 
   # @private
   __ensure_string: (obj) ->
-    throw RubyJS.TypeError.new() unless obj?.is_string?
+    throw R.TypeError.new() unless obj?.is_string?
 
   # Finds, removes and returns the last block/function in arguments list.
   # This is a destructive method.

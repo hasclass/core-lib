@@ -1,5 +1,5 @@
 class RubyJS.Fixnum extends RubyJS.Integer
-  @include RubyJS.Comparable
+  @include R.Comparable
 
 
   # ---- Constructors & Typecast ----------------------------------------------
@@ -12,12 +12,12 @@ class RubyJS.Fixnum extends RubyJS.Integer
   @new: (val) ->
     # memo = @__memoized_fixnums__[val]
     # return memo if memo
-    new RubyJS.Fixnum(val)
+    new R.Fixnum(val)
 
 
   @try_convert: (obj) ->
     obj = R(obj)
-    throw RubyJS.TypeError.new() unless obj.to_int?
+    throw R.TypeError.new() unless obj.to_int?
     obj
 
   # Fixnums are unchangeable. Cache them for later use.
@@ -78,7 +78,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     unless typeof other is 'number'
       other = R(other)
       return null                  unless other.is_numeric?
-      throw RubyJS.TypeError.new() unless other.to_int?
+      throw R.TypeError.new() unless other.to_int?
       other = other.to_native()
 
     if @to_native() < other
@@ -98,7 +98,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #plus
   #
   '+': (other) ->
-    RubyJS.Numeric.typecast(@to_native() + CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() + CoerceProto.to_num_native(other))
 
   # Performs subtraction: the class of the resulting object depends on the
   # class of numeric and on the magnitude of the result.
@@ -110,7 +110,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #minus
   #
   '-': (other) ->
-    RubyJS.Numeric.typecast(@to_native() - CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() - CoerceProto.to_num_native(other))
 
   # Performs division: the class of the resulting object depends on the class
   # of numeric and on the magnitude of the result.
@@ -131,7 +131,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     else if +other == 0
       throw R.ZeroDivisionError.new()
     else
-      val = RubyJS.Numeric.typecast(@to_native() / other.to_native())
+      val = R.Numeric.typecast(@to_native() / other.to_native())
       if other.is_float? then val else val.floor()
 
 
@@ -141,7 +141,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #multiply
   #
   '*': (other) ->
-    RubyJS.Numeric.typecast(@to_native() * CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() * CoerceProto.to_num_native(other))
 
   # Raises fix to the numeric power, which may be negative or fractional.
   #
@@ -177,7 +177,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   fdiv: (other) ->
     other = R(other)
-    throw RubyJS.TypeError.new() unless other.is_numeric?
+    throw R.TypeError.new() unless other.is_numeric?
     @__ensure_args_length(arguments, 1)
     @to_f().divide(other.to_f())
 
@@ -203,7 +203,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   to_s: (base = 10) ->
     base = @box(base)
-    throw RubyJS.ArgumentError.new() if base.lt(2) || base.gt(36)
+    throw R.ArgumentError.new() if base.lt(2) || base.gt(36)
     @box("#{@to_native().toString(base.to_native())}")
 
 

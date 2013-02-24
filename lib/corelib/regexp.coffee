@@ -13,13 +13,13 @@ class RubyJS.Regexp extends RubyJS.Object
     if typeof arg is 'string'
       # optimize R.Regexp.new("foo") with string primitive
       arg = @__compile__( arg )
-    else if RubyJS.Regexp.isRegexp(arg)
+    else if R.Regexp.isRegexp(arg)
     else if arg.is_regexp?
       arg = arg.to_native()
     else
       arg = @__compile__( CoerceProto.to_str_native(arg))
 
-    new RubyJS.Regexp(arg)
+    new R.Regexp(arg)
 
 
   @compile: @new
@@ -120,7 +120,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
   # @unsupported currently no support for encodings in RubyJS
   encoding: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @alias to #==
@@ -129,12 +129,12 @@ class RubyJS.Regexp extends RubyJS.Object
 
   # @unsupported currently no support for encodings in RubyJS
   fixed_encoding: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @unsupported currently no support for hash in RubyJS
   hash: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # Returns a MatchData object describing the match, or nil if there was no
@@ -333,7 +333,7 @@ class RubyJS.Regexp extends RubyJS.Object
       if arg.is_regexp? then arg.to_s() else CoerceProto.to_str(arg)
 
     # TODO: use proper Regexp.compile/new method
-    new RubyJS.Regexp(
+    new R.Regexp(
       new nativeRegExp( sources.join('|') ))
 
 
@@ -355,17 +355,17 @@ class RubyJS.Regexp extends RubyJS.Object
 
   # @unsupported named captures are not supported in JS
   names: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @unsupported named captures are not supported in JS
   named_captures: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @unsupported JS options are different from Ruby options.
   options: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # ---- Aliases --------------------------------------------------------------

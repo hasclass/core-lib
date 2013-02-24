@@ -226,7 +226,7 @@ class RubyJS.MatchData extends RubyJS.Object
 
   # @unsupported extracting names is not supported in Javascript
   names: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # ---- Private methods ------------------------------------------------------

@@ -3,7 +3,7 @@
 #
 #
 class RubyJS.Float extends RubyJS.Numeric
-  @include RubyJS.Comparable
+  @include R.Comparable
 
   # FIXME: this should ideally be rubyjs.Floats
   @INFINITY:   1.0/0.0
@@ -37,7 +37,7 @@ class RubyJS.Float extends RubyJS.Numeric
 
 
   @isFloat: (obj) ->
-    RubyJS.Numeric.isNumeric(obj) && !RubyJS.Integer.isInteger(obj)
+    R.Numeric.isNumeric(obj) && !R.Integer.isInteger(obj)
 
 
   # ---- Instance methods -----------------------------------------------------
@@ -118,7 +118,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [R.Fixnum]
   #
   ceil: ->
-    new RubyJS.Fixnum(Math.ceil(@to_native()))
+    new R.Fixnum(Math.ceil(@to_native()))
 
 
   inspect: () ->
@@ -259,14 +259,14 @@ class RubyJS.Float extends RubyJS.Numeric
     throw new TypeError("FloatDomainError") if @infinite()
     throw new TypeError("RangeError")       if @nan()
 
-    return new RubyJS.Fixnum(Math.round(@to_native())) if n is 0
+    return new R.Fixnum(Math.round(@to_native())) if n is 0
 
     multiplier = Math.pow(10, n)
     rounded    = Math.round(@to_native() * multiplier) / multiplier
     if n > 0
-      new RubyJS.Float(rounded)
+      new R.Float(rounded)
     else
-      new RubyJS.Fixnum(rounded)
+      new R.Fixnum(rounded)
 
 
   # Returns a string containing a representation of self. As well as a fixed

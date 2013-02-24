@@ -1,11 +1,11 @@
 # Not yet implemented
 class RubyJS.Hash extends RubyJS.Object
-  @include RubyJS.Enumerable
+  @include R.Enumerable
 
   # ---- Constructors & Typecast ----------------------------------------------
 
   @new: () ->
-    new RubyJS.Hash()
+    new R.Hash()
 
   constructor: (obj) ->
 

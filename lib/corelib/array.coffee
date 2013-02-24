@@ -55,8 +55,8 @@
 #   @return [R.Array]
 #
 class RubyJS.Array extends RubyJS.Object
-  @include RubyJS.Enumerable
-  @include RubyJS.EnumerableArray, true
+  @include R.Enumerable
+  @include R.EnumerableArray, true
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -124,7 +124,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # @private
   @typecast: (arr, recursive) ->
-    new RubyJS.Array(arr, recursive)
+    new R.Array(arr, recursive)
 
   # @private
   @isNativeArray: nativeArray.isArray or (obj) ->
@@ -1591,7 +1591,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # find a better way for this.
   to_enum: (iter = "each", args...) ->
-    new RubyJS.Enumerator(this, iter, args)
+    new R.Enumerator(this, iter, args)
 
 
   to_ary: () -> this

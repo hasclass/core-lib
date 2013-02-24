@@ -459,7 +459,7 @@ class RubyJS.Enumerable
   first: (n = null) ->
     if n != null
       n = CoerceProto.to_int_native(n)
-      throw new RubyJS.ArgumentError('ArgumentError') if n < 0
+      throw new R.ArgumentError('ArgumentError') if n < 0
       @take(n)
     else
       @take(1).to_native()[0]
@@ -641,7 +641,7 @@ class RubyJS.Enumerable
   max: (block) ->
     max = undefined
 
-    block ||= RubyJS.Comparable.cmp
+    block ||= R.Comparable.cmp
 
     # # Following Optimization won't complain if:
     # # [1,2,'3']
@@ -698,7 +698,7 @@ class RubyJS.Enumerable
   #
   min: (block) ->
     min = undefined
-    block ||= RubyJS.Comparable.cmp
+    block ||= R.Comparable.cmp
 
     # Following Optimization won't complain if:
     # [1,2,'3']
@@ -932,11 +932,11 @@ class RubyJS.Enumerable
       ary.push(BlockMulti.prototype.args(arguments))
       null
 
-    new RubyJS.Array(ary)
+    new R.Array(ary)
 
 
   to_enum: (iter = "each", args...) ->
-    new RubyJS.Enumerator(this, iter, args)
+    new R.Enumerator(this, iter, args)
 
   entries: @prototype.to_a
 

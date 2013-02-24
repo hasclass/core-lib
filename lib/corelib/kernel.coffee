@@ -133,9 +133,9 @@ class RubyJS.Kernel
 
   $Array:   (obj, recursive = false) ->
     if recursive is true
-      RubyJS.Array.new( @box(e) for e in obj )
+      R.Array.new( @box(e) for e in obj )
     else
-      RubyJS.Array.new(obj)
+      R.Array.new(obj)
 
   # TODO: Remove from code
   $Array_r: (obj) ->
@@ -143,47 +143,47 @@ class RubyJS.Kernel
 
   $Float: (obj) ->
     obj = @box(obj)
-    throw RubyJS.TypeError.new() if obj == null
-    throw RubyJS.TypeError.new() unless obj.to_f?
+    throw R.TypeError.new() if obj == null
+    throw R.TypeError.new() unless obj.to_f?
 
     if obj.is_float?
       obj
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Float(+stripped.to_native().replace(/_/g, ''))
+        new R.Float(+stripped.to_native().replace(/_/g, ''))
       else
-        throw RubyJS.ArgumentError.new()
+        throw R.ArgumentError.new()
     else if obj.rubyjs?
-      new RubyJS.Float(obj.to_native())
+      new R.Float(obj.to_native())
     else # is not a R object
-      new RubyJS.Float(obj)
+      new R.Float(obj)
 
   $Integer: (obj) ->
-    obj = @box(obj)
-    throw RubyJS.TypeError.new() if obj is null or obj is undefined
-    # throw RubyJS.TypeError.new() unless obj.to_i?
+    obj = R(obj)
+    throw R.TypeError.new() unless obj?
+    # throw R.TypeError.new() unless obj.to_i?
 
     if obj.is_integer?
       obj
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')))
+        new R.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')))
       else
-        throw RubyJS.ArgumentError.new()
+        throw R.ArgumentError.new()
     else if obj.rubyjs?
-      # throw RubyJS.TypeError.new() unless obj.to_i?
-      new RubyJS.Fixnum(Math.floor(obj.to_native()))
+      # throw R.TypeError.new() unless obj.to_i?
+      new R.Fixnum(Math.floor(obj.to_native()))
     else # is not a R object
-      new RubyJS.Fixnum(Math.floor(obj))
+      new R.Fixnum(Math.floor(obj))
 
   $Integer: @prototype.$Integer
 
-  $String:  (obj) -> RubyJS.String.try_convert(obj) or throw(RubyJS.TypeError.new())
+  $String:  (obj) -> R.String.try_convert(obj) or throw(R.TypeError.new())
 
   $Range: (start,end,exclusive) ->
-    RubyJS.Range.new(start,end,exclusive)
+    R.Range.new(start,end,exclusive)
 
   puts: (obj) -> console.log(obj)
 
