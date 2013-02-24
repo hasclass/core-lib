@@ -85,6 +85,18 @@ class RubyJS.Hash extends RubyJS.Object
     else
       @to_enum()
 
+  # Returns true if hsh contains no key-value pairs.
+  #
+  #     R.hashify({}).empty()   #=> true
+  #
+  # @return [Boolean]
+  #
+  empty: ->
+    for own k, v of @__native__
+      return false
+    true
+
+
 
   # Returns a value from the hash for the given key. If the key can’t be
   # found, there are several options: With no other arguments, it will raise
@@ -101,7 +113,7 @@ class RubyJS.Hash extends RubyJS.Object
   # The following example shows that an exception is raised if the key is not
   # found and a default value is not supplied.
   #
-  #     h = { "a" => 100, "b" => 200 }
+  #     h = { a: 100, b: 200 }
   #     h.fetch("z")
   #     produces:
   #     # key not found (KeyError)
@@ -136,10 +148,32 @@ class RubyJS.Hash extends RubyJS.Object
     @__native__[key]
 
 
+  # Returns true if the given value is present for some key in hsh.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.has_value(100)   #=> true
+  #     h.has_value(999)   #=> false
+  #
+  # @return [Boolean]
+  #
+  has_value: (val) ->
+    val = R(val)
+
+    if val.rubyjs?
+      for own k, v of @__native__
+        return true if val.equals(v)
+    else
+      for own k, v of @__native__
+        return true if v == val
+
+    false
+
+
   # Returns true if the given key is present in hsh.
   #
   # @example
-  #     h = R.hashify({a; 100, b; 200 })
+  #     h = R.hashify({a: 100, b: 200 })
   #     h.has_key("a")   #=> true
   #     h.has_key("z")   #=> false
   #
