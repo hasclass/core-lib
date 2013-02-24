@@ -118,12 +118,11 @@ class BlockMulti
     if args.length > 1
       @block.apply(@thisArg, args)
     else
-      args = args[0]
-      if typeof args is 'object' && R.Array.isNativeArray(args)
-        @block.apply(@thisArg, args)
+      arg = args[0]
+      if typeof arg is 'object' && R.Array.isNativeArray(arg)
+        @block.apply(@thisArg, arg)
       else
-        @block.call(@thisArg, args)
-
+        @block.call(@thisArg, arg)
 
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
@@ -143,7 +142,8 @@ class BlockSingle
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
 
-
+R.Block = Block
+R.blockify = Block.create
 
 
 class RubyJS.Kernel
@@ -298,11 +298,11 @@ class RubyJS.Kernel
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Float(+stripped.unbox().replace(/_/g, ''))
+        new RubyJS.Float(+stripped.to_native().replace(/_/g, ''))
       else
         throw RubyJS.ArgumentError.new()
     else if obj.rubyjs?
-      new RubyJS.Float(obj.unbox())
+      new RubyJS.Float(obj.to_native())
     else # is not a R object
       new RubyJS.Float(obj)
 
@@ -316,12 +316,12 @@ class RubyJS.Kernel
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Fixnum(Math.floor(+stripped.unbox().replace(/_/g, '')))
+        new RubyJS.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')))
       else
         throw RubyJS.ArgumentError.new()
     else if obj.rubyjs?
       # throw RubyJS.TypeError.new() unless obj.to_i?
-      new RubyJS.Fixnum(Math.floor(obj.unbox()))
+      new RubyJS.Fixnum(Math.floor(obj.to_native()))
     else # is not a R object
       new RubyJS.Fixnum(Math.floor(obj))
 
@@ -331,7 +331,6 @@ class RubyJS.Kernel
 
   $Range: (start,end,exclusive) ->
     RubyJS.Range.new(start,end,exclusive)
-
 
   puts: (obj) -> console.log(obj)
 
@@ -392,11 +391,12 @@ class Coerce
   #
   # Throws error if typecasted RubyJS object is not a numeric.
   to_num_native: (obj) ->
+    # TODO allow custom error types
     if typeof obj is 'number'
       obj
     else
       obj = R(obj)
-      throw RubyJS.TypeError.new() if !obj.is_numeric?
+      throw R.TypeError.new() if !obj.is_numeric?
       obj.to_native()
 
 
@@ -804,7 +804,7 @@ class RubyJS.Enumerable
   #
   all: (block) ->
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each ->
         result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
@@ -825,7 +825,7 @@ class RubyJS.Enumerable
   #
   any: (block) ->
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each ->
         result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
@@ -844,7 +844,7 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     ary = []
     @each ->
       ary.push(callback.invoke(arguments))
@@ -871,7 +871,7 @@ class RubyJS.Enumerable
     else if block is null
       @each (el) -> counter += 1 if el is null
     else if block.call?
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
@@ -924,7 +924,7 @@ class RubyJS.Enumerable
 
     return @to_enum('cycle', n) unless block
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     cache = new R.Array([])
     @each ->
@@ -980,7 +980,7 @@ class RubyJS.Enumerable
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     ary = []
     dropping = true
@@ -1013,7 +1013,7 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() unless n > 0
 
     # TODO: use callback
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     len = block.length
     ary = []
     @each ->
@@ -1070,7 +1070,7 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     len      = block.length
     ary      = []
 
@@ -1120,7 +1120,7 @@ class RubyJS.Enumerable
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     idx = 0
     @each ->
@@ -1142,7 +1142,7 @@ class RubyJS.Enumerable
   each_with_object: (obj, block) ->
     return @to_enum('each_with_object', obj) unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     @each ->
       args = BlockMulti.prototype.args(arguments)
@@ -1167,7 +1167,7 @@ class RubyJS.Enumerable
       block  = ifnone
       ifnone = null
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @catch_break (breaker) ->
       @each ->
         unless R.falsey(callback.invoke(arguments))
@@ -1192,7 +1192,7 @@ class RubyJS.Enumerable
     return @to_enum('find_all') unless block && block.call?
 
     ary = []
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @each ->
       unless R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
@@ -1222,7 +1222,7 @@ class RubyJS.Enumerable
       block = (el) -> R(el)['=='](value) or el is value
 
     idx = 0
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @catch_break (breaker) ->
       @each ->
         breaker.break(new R.Fixnum(idx)) if callback.invoke(arguments)
@@ -1314,7 +1314,7 @@ class RubyJS.Enumerable
   inject: (init, sym, block) ->
     [init, sym, block] = @__inject_args__(init, sym, block)
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     @each ->
       if init is undefined
         init = callback.args(arguments)
@@ -1339,7 +1339,7 @@ class RubyJS.Enumerable
   grep: (pattern, block) ->
     ary      = new R.Array([])
     pattern  = R(pattern)
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
     if block
       @each (el) ->
         if pattern['==='](el)
@@ -1361,7 +1361,7 @@ class RubyJS.Enumerable
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     h = {}
     @each ->
@@ -1395,7 +1395,7 @@ class RubyJS.Enumerable
   map: (block) ->
     return @to_enum('map') unless block?.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     arr = []
     @each ->
@@ -1560,7 +1560,7 @@ class RubyJS.Enumerable
   #
   none: (block) ->
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each (args) ->
         result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
@@ -1584,7 +1584,7 @@ class RubyJS.Enumerable
     counter  = 0
 
     @catch_break (breaker) ->
-      callback = Block.create(block, this)
+      callback = R.blockify(block, this)
       @each (args) ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
@@ -1600,7 +1600,7 @@ class RubyJS.Enumerable
     left  = []
     right = []
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     @each ->
       args = BlockMulti.prototype.args(arguments)
@@ -1617,7 +1617,7 @@ class RubyJS.Enumerable
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     ary = []
     @each ->
@@ -1670,7 +1670,7 @@ class RubyJS.Enumerable
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     ary = []
     @each (value) ->
@@ -1807,7 +1807,7 @@ class RubyJS.Enumerable.SortedElement
 # in array.
 #
 # @mixin
-#
+# @private
 class RubyJS.EnumerableArray
 
   map: (block) ->
@@ -2482,7 +2482,7 @@ class RubyJS.Enumerator extends RubyJS.Object
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
 
-    callback = Block.create(block, this)
+    callback = R.blockify(block, this)
 
     idx = 0
     @each ->
@@ -2496,7 +2496,7 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   iterator: () ->
-    @to_a().unbox()
+    @to_a().to_native()
 
   native_array: () ->
     @arr ||= @iterator()
@@ -2546,7 +2546,57 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
 #
 # @todo No proper support for handling recursive arrays. (e.g. a = [], a.push(a)).
 #   Look for ArraySpecs.recursive_array in the specs.
-# @todo #taint, #trust, #freeze does nothing
+#
+# @todo The methods #taint, #trust, #freeze do nothing
+#
+# @method #equals(other)
+#   Alias for {#==}  - Two arrays are equal if they contain the same number of elements
+#   and if each element is equal to (according to {R.Object#==}) the corresponding
+#   element in the other array.
+#   @example
+#      R(["a", "c"]   ).equals(["a", "c", 7])     #=> false
+#      R(["a", "c", 7]).equals(["a", "c", 7])     #=> true
+#      R(["a", "c", 7]).equals(["a", "d", "f"])   #=> false
+#      # #equals is an alias to #==
+#      R(["a", "c"]   )['=='](["a", "c", 7])     #=> false
+#   @return [Boolean]
+#   @alias #==
+#
+# @method #append(obj)
+#   Alias for {#<<} - Pushes the given object on to the end of this array. This
+#   expression returns the array itself, so several appends may be chained
+#   together.
+#   @example
+#      R([ 1, 2 ]).append("c").append("d").append([3, 4])
+#      #=> [ 1, 2, "c", "d", [ 3, 4 ] ]
+#   @param [Object] obj
+#   @return [R.Array]
+#
+# @method #intersection(other)
+#   Alias for {#&} - Returns a new array containing elements common to the two
+#   arrays, with no duplicates.
+#   @example
+#     R([ 1, 1, 3, 5 ]).intersection [ 1, 2, 3 ]
+#     #=> [ 1, 3 ]
+#   @alias #&
+#   @param [Array] other
+#   @return [R.Array]
+#   @todo Slow implementation, slight deviation Ruby implementation of equality check
+#
+# @method #cmp(other)
+#   Alias for {#<=>} - Returns an integer (-1, 0, or +1) if this array is less than,
+#   equal to, or greater than other_ary. Each object in each array is compared
+#   (using <=>). If any value isn’t equal, then that inequality is the return
+#   value. If all the values found are equal, then the return is based on a
+#   comparison of the array lengths. Thus, two arrays are “equal” according to
+#   {R.Array#<=>} if and only if they have the same length and the value of each
+#   element is equal to the value of the corresponding element in the other
+#   array.
+#   @example
+#     R([ "a", "a", "c" ]   )['<=>'] [ "a", "b", "c" ]   #=> -1
+#     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
+#   @param [Array] other
+#   @return [R.Array]
 #
 class RubyJS.Array extends RubyJS.Object
   @include RubyJS.Enumerable
@@ -2554,9 +2604,10 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_array: -> true
 
-
+  # @private
   iterator: () ->
     @__native__
 
@@ -2615,11 +2666,11 @@ class RubyJS.Array extends RubyJS.Object
       ary[idx] = if block then block(R(idx)) else obj
     return new R.Array(ary)
 
-
+  # @private
   @typecast: (arr, recursive) ->
     new RubyJS.Array(arr, recursive)
 
-
+  # @private
   @isNativeArray: nativeArray.isArray or (obj) ->
     _toString_.call(obj) is '[object Array]'
 
@@ -2647,34 +2698,38 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- Javascript primitives --------------------------------------------------
 
+  # Returns native array.
+  #
+  # @return Array
   valueOf: ->
     @__native__
 
 
+  # Returns native array.
+  #
+  # @param [boolean] recursive if set to true array and its elements are unboxed
+  # @return Array
+  #
   to_native: (recursive = false) ->
     if recursive
-      for el in @__native__
+      # explicitly coded for performance reasons
+      [idx,len,ary] = @__iter_vars__()
+      while (++idx < len)
+        el = @__native__[idx]
         el = el.to_native(true) if el && el.to_native?
-        el
+        ary[idx] = el
+      ary
     else
       # Clone array to avoid confusion
       @__native__.slice(0)
 
 
-  # TODO: remove legacy behaviour
-  unbox: (recursive = false) ->
-    if recursive
-      for el in @__native__
-        el = el.unbox(true) if el && el.unbox?
-        el
-    else
-      @__native__.slice(0)
-
+  # @private
+  unbox: @prototype.to_native
 
   to_native_clone: -> @__native__.slice(0)
 
   # ---- Instance methods -----------------------------------------------------
-
 
   '==': (other) ->
     return true if this is other
@@ -2698,32 +2753,11 @@ class RubyJS.Array extends RubyJS.Object
 
     true
 
-  # Append—Pushes the given object on to the end of this array. This
-  # expression returns the array itself, so several appends may be chained
-  # together.
-  #
-  # @example
-  #      R([ 1, 2 ]).append("c").append("d").append([3, 4])
-  #      #=> [ 1, 2, "c", "d", [ 3, 4 ] ]
-  #
-  # @alias #append
-  #
   '<<': (obj) ->
     @__native__.push(obj)
     this
 
 
-  # Set Intersection—Returns a new array containing elements common to the two
-  # arrays, with no duplicates.
-  #
-  # @example
-  #     R([ 1, 1, 3, 5 ]).intersection [ 1, 2, 3 ]
-  #     #=> [ 1, 3 ]
-  #
-  # @alias #intersection
-  #
-  # @todo Slow implementation, slight deviation Ruby implementation of equality check
-  #
   '&': (other) ->
     other = CoerceProto.to_ary(other)
     arr   = new R.Array([])
@@ -2731,20 +2765,7 @@ class RubyJS.Array extends RubyJS.Object
     @each (el) -> arr.push(el) if other.include(el)
     arr.uniq()
 
-
-  # Comparison—Returns an integer (-1, 0, or +1) if this array is less than,
-  # equal to, or greater than other_ary. Each object in each array is compared
-  # (using <=>). If any value isn’t equal, then that inequality is the return
-  # value. If all the values found are equal, then the return is based on a
-  # comparison of the array lengths. Thus, two arrays are “equal” according to
-  # Array#<=> if and only if they have the same length and the value of each
-  # element is equal to the value of the corresponding element in the other
-  # array.
-  #
-  # @example
-  #     R([ "a", "a", "c" ]   )['<=>'] [ "a", "b", "c" ]   #=> -1
-  #     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
-  #
+  # @private
   '<=>': (other) ->
     return null unless other?
     try
@@ -2777,7 +2798,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.at(0)     #=> "a"
   #     a.at(-1)    #=> "e"
   #
-  # @return obj
+  # @return [Object]
   #
   at: (index) ->
     # UNSUPPORTED: @__ensure_args_length(arguments, 1)
@@ -2795,7 +2816,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a = R([ "a", "b", "c", "d", "e" ])
   #     a.clear()    #=> [ ]
   #
-  # @return R.Array
+  # @return [R.Array]
   #
   clear: () ->
     @__ensure_args_length(arguments, 0)
@@ -2804,7 +2825,8 @@ class RubyJS.Array extends RubyJS.Object
 
 
   # @todo does not copy the singleton class of the copied object
-  clone: () -> @dup()
+  clone: () ->
+    @dup()
 
 
   # Invokes the block once for each element of self, replacing the element
@@ -2893,21 +2915,24 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ "a", nil, "b", nil, "c", nil ]).compact()
   #     #=> [ "a", "b", "c" ]
   #
-  compact: () ->
+  # @return [R.Array]
+  #
+  compact: ->
     @dup().tap (a) -> a.compact_bang()
 
   # Removes nil elements from the array. Returns nil if no changes were made,
   # otherwise returns ary.
   #
   # @example
+  #
   #     R([ "a", nil, "b", nil, "c" ]).compact_bang()
-  #     #=> [ "a", "b", "c" ]
+  #     # => [ "a", "b", "c" ]
   #     R([ "a", "b", "c" ]).compact_bang()
-  #     #=> null
+  #     # => null
   #
   # @return self or null if nothing changed
   #
-  compact_bang: () ->
+  compact_bang: ->
     length = @__native__.length
 
     arr = []
@@ -3125,10 +3150,6 @@ class RubyJS.Array extends RubyJS.Object
 
   # Returns true if self contains no elements.
   #
-  # @example
-  #     [].empty?   #=> true
-  #
-  # @return [true,false]
   #
   empty: () ->
     @__native__.length is 0
@@ -3444,6 +3465,7 @@ class RubyJS.Array extends RubyJS.Object
     new R.Array( @__native__[-n.. -1] )
 
 
+  # @private
   # @todo Not yet implemented
   permutation: (args...) ->
     throw R.NotImplementedError.new()
@@ -4806,7 +4828,7 @@ class RubyJS.String extends RubyJS.Object
 
   # ---- Javascript primitives --------------------------------------------------
 
-  to_native:  ->
+  to_native: ->
     @__native__
 
 
@@ -4816,7 +4838,7 @@ class RubyJS.String extends RubyJS.Object
   toString: -> @to_native()
 
 
-  unbox: -> @toString()
+  unbox: -> @__native__
 
 
   # ---- Instance methods -----------------------------------------------------
@@ -7103,6 +7125,7 @@ class RubyJS.Numeric extends RubyJS.Object
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_numeric: -> true
 
 
@@ -7112,23 +7135,58 @@ class RubyJS.Numeric extends RubyJS.Object
     if this is other then 0 else null
 
 
+  # Returns the absolute value of num.
+  #
+  # @example
+  #     R(12).abs()         #=> 12
+  #     (-34.56).abs()      #=> 34.56
+  #     R(-34.56).abs()     #=> 34.56
+  #
+  # @return [R.Numeric]
+  #
   abs: ->
     if @['<'](0) then @uminus() else this
 
 
+  # Returns square of self.
+  #
+  # @return [R.Numeric]
+  #
   abs2: ->
     return this if @nan?()
     @abs()['**'](2)
 
 
+  # Returns the smallest Integer greater than or equal to num. Class Numeric achieves this by converting itself to a Float then invoking Float#ceil.
+  #
+  # @example
+  #     R(1).ceil()      #=> 1
+  #     R(1.2).ceil()    #=> 2
+  #     R(-1.2).ceil()   #=> -1
+  #     R(-1.0).ceil()   #=> -1
+  #
+  # @return [R.Fixnum]
+  #
   ceil: () ->
     @to_f().ceil()
 
 
-  # TODO: this needs some serious love
+  # If a Numeric is the same type as num, returns an array containing aNumeric
+  # and num. Otherwise, returns an array with both aNumeric and num
+  # represented as Float objects. This coercion mechanism is used by Ruby to
+  # handle mixed-type numeric operations: it is intended to find a compatible
+  # common type between the two operands of the operator.
+  #
+  # @example
+  #     R(1).coerce(2.5)   #=> [2.5, 1.0]
+  #     R(1.2).coerce(3)   #=> [3.0, 1.2]
+  #     R(1).coerce(2)     #=> [2, 1]
+  #
+  # @todo this needs some serious love
+  #
   coerce: (other) ->
-    throw RubyJS.TypeError.new() if other is null or other is false or other is undefined
-    other = @box(other)
+    throw RubyJS.TypeError.new() if !other? or other is false
+    other = R(other)
     # throw RubyJS.TypeError.new() unless other.to_f?
     if      other.is_string?    then @$Array [@$Float(other), @to_f()]
     else if other.constructor.prototype is @constructor.prototype then @$Array([other, this])
@@ -7139,6 +7197,15 @@ class RubyJS.Numeric extends RubyJS.Object
       throw RubyJS.TypeError.new()
 
 
+  # Uses / to perform division, then converts the result to an integer.
+  # numeric does not define the / operator; this is left to subclasses.
+  #
+  # Equivalent to num.divmod(aNumeric).
+  #
+  # See {R.Numeric#divmod}
+  #
+  # @return [R.Float]
+  #
   div: (other) ->
     other = @box(other)
     throw RubyJS.TypeError.new() unless other.to_int?
@@ -7153,6 +7220,15 @@ class RubyJS.Numeric extends RubyJS.Object
     new R.Array([quotient, modulus])
 
 
+  # Returns true if num and numeric are the same type and have equal values.
+  #
+  # @example
+  #     new R.Fixnum(1).equals(new R.Float(1.0))  #=> true
+  #     new R.Fixnum(1).eql(new R.Float(1.0))     #=> false
+  #     new R.Float(1).eql(new R.Float(1.0))      #=> true
+  #
+  # @return [Boolean]
+  #
   eql: (other) ->
     other = @box(other)
     return false unless other
@@ -7160,38 +7236,64 @@ class RubyJS.Numeric extends RubyJS.Object
     if @['=='](other) then true else false
 
 
-  inspect: -> ""+@to_native()
+  # @return [R.String]
+  inspect: -> new R.String(""+@to_native())
 
-
+  # Returns float division.
+  #
+  # @return [R.Float]
+  #
   fdiv: (other) ->
     other = CoerceProto.to_num_native(other)
     @to_f()['/'](other)
 
 
+  # Returns the largest integer less than or equal to num. Numeric implements this by converting anInteger to a Float and invoking Float#floor.
+  #
+  # @example
+  #     R( 1).floor()   #=> 1
+  #     R(-1).floor()   #=> -1
+  #
+  # @return [R.Fixnum]
+  #
   floor: () ->
     @to_f().floor()
 
 
+  # Returns the absolute value of num.
+  #
+  # @alias #abs
+  #
   magnitude: ->
     @abs()
 
-
+  # Alias to {#divmod}
+  #
+  # @alias #divmod
   modulo: (other) ->
     other = @box(other)
     # self - other * self.div(other)
     @['-']( other['*']( @div(other)) )
 
 
+  # Returns self if num is not zero, nil otherwise. This behavior is useful
+  # when chaining comparisons:
+  #
+  # @return [null, this]
+  #
   nonzero: ->
     if @zero() then null else this
 
 
+  # Returns most exact division (rational for integers, float for floats).
   quo: (other) ->
     other = @box(other)
     throw new Error("ZeroDivisionError") if other.zero()
     arr = @coerce(other)
     @['/'](arr.first())
 
+
+  # Returns an array; [num, 0].
   rect: ->
     throw R.ArgumentError.new() if arguments.length > 0
     new R.Array([this, new R.Fixnum(0)])
@@ -7200,6 +7302,10 @@ class RubyJS.Numeric extends RubyJS.Object
   rectangular: @prototype.rect
 
 
+  # x.remainder(y) means x-y*(x/y).truncate
+  #
+  # @see {R.Numeric#divmod}
+  #
   remainder: (other) ->
     other = @box(other)
     mod = @['%'](other)
@@ -7210,70 +7316,115 @@ class RubyJS.Numeric extends RubyJS.Object
       mod
 
 
-  round: (n) -> @to_f().round(n)
+  # Rounds num to a given precision in decimal digits (default 0 digits).
+  # Precision may be negative. Returns a floating point number when ndigits is
+  # more than zero. Numeric implements this by converting itself to a Float
+  # and invoking Float#round.
+  #
+  # @return [R.Numeric]
+  #
+  round: (n) ->
+    @to_f().round(n)
 
 
+  # Invokes block with the sequence of numbers starting at num, incremented by
+  # step (default 1) on each call. The loop finishes when the value to be
+  # passed to the block is greater than limit (if step is positive) or less
+  # than limit (if step is negative). If all the arguments are integers, the
+  # loop operates using an integer counter. If any of the arguments are
+  # floating point numbers, all are converted to floats, and the loop is
+  # executed floor(n + n*epsilon)+ 1 times, where n = (limit - num)/step.
+  # Otherwise, the loop starts at num, uses either the < or > operator to
+  # compare the counter against limit, and increments itself using the +
+  # operator.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     R(1).step(10, 2, function (i) { R.puts(i)} )
+  #     R(Math.E).step(Math.PI, 0.2, function (i) { R.puts(i)} )
+  #     # produces:
+  #     # 1 3 5 7 9
+  #     # 2.71828182845905 2.91828182845905 3.11828182845905
+  #
+  # @return [this, R.Enumerator]
+  #
   step: (limit, step = 1, block) ->
-    # ported from rubinius
-    limit = @box(limit)
-    if block?.call?
-    else
+    limit = R(limit)
+    unless block?.call?
       block = step
       step  = 1
-    step = @box(step)
-    return @to_enum('step', limit, step) unless block?.call?
-    throw new R.ArgumentError("ArgumentError") if step.equals(0)
+    step = R(step)
 
-    value = this
+    unless block?.call?
+      return @to_enum('step', limit, step)
+
+    if step.equals(0)
+      throw new R.ArgumentError("ArgumentError")
+
+    float_mode = @is_float? or limit.is_float? or step.is_float?
+
+    limit = limit.to_native()
+    step  = step.to_native()
+    value = @to_native()
 
     # eps = 0.0000000000000002220446049250313080847263336181640625
-    if value.is_float? or limit.is_float? or step.is_float?
+    if float_mode
       # For some reason the following ported code is not needed.
       # it appears to work properly in js withouth the Float::EPSILON
-      # value = value.to_f()
-      # limit = limit.to_f()
-      # step  = step.to_f()
       # err = (value.abs().plus(limit.abs()).plus(limit.minus(value).abs()).divide(step.abs())).multiply(eps)
       # err = 0.5 if err.gt(0.5)
       # n   = (limit.minus(value)).divide(step.plus(err)).floor()
-      n   = (limit.to_f().minus(value)).divide(step)
-      i   = R(0).to_f()
-      if step.gt(0)
-        while i.lteq(n)
-          d = i.multiply(step).plus(value)
-          d = limit if limit.lt(d)
-          block(d)
-          i = i.plus(1)
+      n = (limit - value) / step
+      i = 0
+      if step > 0
+        while i <= n
+          d = i * step + value
+          d = limit if limit < d
+          block(new R.Float(d))
+          i += 1
       else
-        while i.lteq(n)
-          d = i.multiply(step).plus(value)
-          d = limit if limit.gt(d)
-          block(d)
-          i = i.plus(1)
+        while i <= n
+          d = i * step + value
+          d = limit if limit > d
+          block(new R.Float(d))
+          i += 1
     else
-      if step.gt(0)
-        until value.gt(limit)
-          block(value)
-          value = value.plus(step)
+      if step > 0
+        until value > limit
+          block(new R.Fixnum(value))
+          value += step
       else
-        until value.lt(limit)
-          block(value)
-          value = value.plus(step)
+        until value < limit
+          block(new R.Fixnum(value))
+          value += step
     this
 
 
+  # @private
   to_int: ->
     @to_i()
 
 
+  # Returns num truncated to an integer. Numeric implements this by converting
+  # its value to a float and invoking Float#truncate.
+  #
+  # @return [R.Fixnum]
+  #
   truncate: ->
     @to_f().truncate()
 
 
+  # Unary Minus—Returns the receiver’s value, negated.
+  #
+  # @return [R.Numeric]
+  #
   uminus: ->
     @multiply(-1)
 
-
+  # Returns true if num has a zero value.
+  #
+  # @return [Boolean]
   zero: ->
     @['=='](0)
 
@@ -7298,63 +7449,88 @@ class RubyJS.Integer extends RubyJS.Numeric
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_integer: -> true
 
 
   # ---- Javascript primitives --------------------------------------------------
 
+  # @private
   unbox: -> @to_native()
 
 
   # ---- Instance methods -----------------------------------------------------
 
-
+  # Returns a string containing the character represented by the receiver’s value according to encoding.
+  #
+  # @example
+  #
+  #     R(65).chr()                   #=> "A"
+  #     R(230).chr()                  #=> "\346"
+  #     R(255).chr(Encoding::UTF_8)   #=> "\303\277"
+  #
+  # @return [R.String]
+  #
   chr: ->
     new R.String(String.fromCharCode(@to_native()))
 
-
+  # Returns 1.
+  #
+  # @return [R.Fixnum]
+  #
   denominator: ->
     new R.Fixnum(1)
 
-
-  # TODO: remove dog food
-  upto: (stop, block) ->
-    stop = R(stop)
-
-    throw RubyJS.ArgumentError.new() unless stop?.to_int?
-    return RubyJS.Enumerator.new(this, 'upto', stop) unless block && block.call?
-
-    stop = stop.floor().to_native()
-    return this unless @to_native() <= stop
-
-    idx = @to_native()
-    while idx <= stop
-      block( new R.Fixnum(idx) ) #for i in [@to_native()..stop]
-      idx += 1
-
-    this
-
-
+  # Iterates block, passing decreasing values from int down to and including
+  # limit.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #    R(5).downto(1, function (n) { R.puts(n + ".. ") }
+  #    # => 5.. 4.. 3.. 2.. 1..
+  #
+  # @param [Number] stop
+  # @return [this]
+  #
   downto: (stop, block) ->
-    stop = R(stop)
+    try
+      stop = CoerceProto.to_num_native(stop)
+    catch err
+      throw R.ArgumentError.new()
 
-    throw RubyJS.ArgumentError.new() unless stop?.to_int?
-    return RubyJS.Enumerator.new(this, 'downto', stop) unless block && block.call?
+    unless block?.call?
+      return RubyJS.Enumerator.new(this, 'downto', stop)
 
-    stop = Math.ceil(stop.to_native())
-    return this unless @to_native() >= stop
-
+    stop = Math.ceil(stop)
     idx  = @to_native()
+
     while idx >= stop
       block( new R.Fixnum(idx) )
-      idx = idx - 1
+      idx -= 1
 
     this
 
 
-  even: -> @to_native() % 2 == 0
+  # Returns true if int is an even number.
+  #
+  # @return [Boolean]
+  #
+  even: ->
+    @to_native() % 2 == 0
 
 
+  # Returns the greatest common divisor (always positive). 0.gcd(x) and x.gcd(0) return abs(x).
+  #
+  # @example
+  #
+  #     R(2).gcd(2)                    #=> 2
+  #     R(3).gcd(-7)                   #=> 1
+  #     R((1<<31)-1).gcd((1<<61)-1)    #=> 1
+  #
+  # @return [R.Fixnum]
+  #
   gcd: (other) ->
     other = @box(other)
     @__ensure_args_length(arguments, 1)
@@ -7369,7 +7545,16 @@ class RubyJS.Integer extends RubyJS.Numeric
       a = t
     new R.Fixnum(a).numerator()
 
-
+  # Returns an array; [int.gcd(int2), int.lcm(int2)].
+  #
+  # @example
+  #
+  #     R(2).gcdlcm(2)                    #=> [2, 2]
+  #     R(3).gcdlcm(-7)                   #=> [1, 21]
+  #     R((1<<31)-1).gcdlcm((1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #
+  # @return [R.Array<R.Fixnum, R.Fixnum>]
+  #
   gcdlcm: (other) ->
     other = @box(other)
     @__ensure_args_length(arguments, 1)
@@ -7377,7 +7562,16 @@ class RubyJS.Integer extends RubyJS.Numeric
 
     new R.Array([@gcd(other), @lcm(other)])
 
-
+  # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
+  #
+  # @example
+  #
+  #     R(2).lcm(2)                    #=> 2
+  #     R(3).lcm(-7)                   #=> 21
+  #     R((1<<31)-1).lcm((1<<61)-1)    #=> 4951760154835678088235319297
+  #
+  # @return [R.Fixnum]
+  #
   lcm: (other) ->
     other = R(other)
     @__ensure_args_length(arguments, 1)
@@ -7387,28 +7581,73 @@ class RubyJS.Integer extends RubyJS.Numeric
     lcm.numerator()
 
 
+  # Returns self.
+  #
+  # @return [R.Fixnum,this]
+  #
   numerator: ->
     if @lt(0)
-      @$Integer(@to_native() * -1)
+      new R.Fixnum(@to_native() * -1)
     else
       this
 
-
+  # Returns true if int is an odd number.
+  #
+  # @return [Boolean]
+  #
   odd:  -> !@even()
 
 
+  # Returns the int itself.
+  #
+  #      a.ord    #=> 97
+  #
+  # This method is intended for compatibility to character constant in Ruby
+  # 1.9. For example, ?a.ord returns 97 both in 1.8 and 1.9.
+  #
+  # @return [this]
+  #
   ord:  ->
     this
 
 
+  # Returns the Integer equal to int + 1.
+  #
+  # @example
+  #
+  #     R(1).next(     #=> 2
+  #     R(-1).next()   #=> 0
+  #
+  # @return [R.Fixnum]
+  # @alias #succ
+  #
   next: ->
     @plus(1)
 
 
+  # Returns the Integer equal to int - 1.
+  #
+  # @example
+  #
+  #     R(1).pred()    #=> 0
+  #     R(-1).pred()   #=> -2
+  #
+  # @return [R.Fixnum]
+  #
   pred: ->
     @minus(1)
 
 
+  # Rounds to a given precision in decimal digits (default 0 digits). Precision may be negative. Returns a floating point number when ndigits is positive, self for zero, and round down for negative.
+  #
+  # @example
+  #
+  #     R(1).round()      #=> 1
+  #     R(1).round(2)     #=> 1.0
+  #     R(15).round(-1)   #=> 20
+  #
+  # @return [R.Fixnum]
+  #
   round: (n) ->
     return this if n is undefined
     n = CoerceProto.to_int_native(n)
@@ -7424,6 +7663,17 @@ class RubyJS.Integer extends RubyJS.Numeric
   succ:  @prototype.next
 
 
+  # Iterates block int times, passing in values from zero to int - 1.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #     R(5).times(function(i) { R.puts(i) })
+  #     # => 0 1 2 3 4
+  #
+  # @return [this]
+  #
   times: (block) ->
     return @to_enum('times') unless block?.call?
 
@@ -7438,14 +7688,50 @@ class RubyJS.Integer extends RubyJS.Numeric
       this
 
 
+  # As int is already an Integer, all these methods simply return the receiver
+  # @return [this]
   to_i:   -> this
 
 
+  # Iterates block, passing in integer values from int up to and including
+  # limit.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #     R(5).upto(10, function (i) { R.puts(i + " " })
+  #     # => 5 6 7 8 9 10
+  #
+  # @param [Number] stop
+  # @return [this]
+  #
+  upto: (stop, block) ->
+    try
+      stop = CoerceProto.to_num_native(stop)
+    catch err
+      throw R.ArgumentError.new()
+
+    unless block?.call?
+      return R.Enumerator.new(this, 'upto', stop)
+
+    stop = Math.floor(stop)
+    idx = @to_native()
+
+    while idx <= stop
+      block( new R.Fixnum(idx) ) #for i in [@to_native()..stop]
+      idx += 1
+
+    this
+
+
+  # @return [String]
   toString: -> "#{@to_native()}"
 
 
   # ---- Private methods ------------------------------------------------------
 
+  # @private
   __ensure_integer__: (other) ->
     throw RubyJS.TypeError.new() unless other?.is_integer?
 
@@ -7613,7 +7899,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   '**': (other) ->
     other = @box(other)
-    val   = @box Math.pow(@to_native(), other.unbox())
+    val   = @box Math.pow(@to_native(), other.to_native())
     if other.is_float? then val.to_f() else val.to_i()
 
   # Returns fix modulo other. See numeric.divmod for more information.
@@ -7665,7 +7951,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   to_s: (base = 10) ->
     base = @box(base)
     throw RubyJS.ArgumentError.new() if base.lt(2) || base.gt(36)
-    @box("#{@to_native().toString(base.unbox())}")
+    @box("#{@to_native().toString(base.to_native())}")
 
 
   # ---- Aliases --------------------------------------------------------------
@@ -7673,6 +7959,10 @@ class RubyJS.Fixnum extends RubyJS.Integer
   @__add_default_aliases__(@prototype)
 
 
+#
+#
+#
+#
 class RubyJS.Float extends RubyJS.Numeric
   @include RubyJS.Comparable
 
@@ -7703,24 +7993,8 @@ class RubyJS.Float extends RubyJS.Numeric
 
   # ---- RubyJSism ------------------------------------------------------------
 
+  # @private
   is_float:   -> true
-
-
-  # ---- Javascript primitives --------------------------------------------------
-
-  toString: ->
-    @to_native().toString()
-
-
-  valueOf: () ->
-    @__native__
-
-
-  to_native: ->
-    @__native__
-
-
-  unbox: @prototype.to_native
 
 
   @isFloat: (obj) ->
@@ -7730,23 +8004,6 @@ class RubyJS.Float extends RubyJS.Numeric
   # ---- Instance methods -----------------------------------------------------
 
 
-  arg: ->
-    if @nan()
-      this
-    else if @lt(0.0)
-      @$Float(Math.PI)
-    else
-      @$Float 0
-
-
-  ceil: ->
-    new RubyJS.Fixnum(Math.ceil(@to_native()))
-
-
-  inspect: () ->
-    @to_s()
-
-
   '<=>': (other) ->
     return null if !@box(other).is_numeric?
     other = CoerceProto.to_num_native(other)
@@ -7754,9 +8011,6 @@ class RubyJS.Float extends RubyJS.Numeric
     return  0 if @to_native() == other
     return -1 if @to_native() < other
     return  1 if @to_native() > other
-
-
-  dup: -> Float.new(@to_native())
 
 
   '==': (other) ->
@@ -7799,17 +8053,77 @@ class RubyJS.Float extends RubyJS.Numeric
 
     new Float(val)
 
+  # Returns 0 if the value is positive, pi otherwise.
+  #
+  # @return [R.Float]
+  # @alias #angle, #phase
+  #
+  arg: ->
+    if @nan()
+      this
+    else if @__native__ < 0.0
+      new R.Float(Math.PI)
+    else
+      new R.Float(0)
 
+
+  # Returns the smallest Integer greater than or equal to flt.
+  #
+  # @example
+  #
+  #    R( 1.2).ceil()      #=> 2
+  #    R( 2.0).ceil()      #=> 2
+  #    R(-1.2).ceil()      #=> -1
+  #    R(-2.0).ceil()      #=> -2
+  #
+  # @return [R.Fixnum]
+  #
+  ceil: ->
+    new RubyJS.Fixnum(Math.ceil(@to_native()))
+
+
+  inspect: () ->
+    @to_s()
+
+
+  dup: -> Float.new(@to_native())
+
+
+  # Returns true only if obj is a Float with the same value as flt. Contrast
+  # this with Float#==, which performs type conversions.
+  #
+  # @example
+  #
+  #     new R.Float(1.0).eql(1)   #=> false
+  #
+  # @return [Boolean]
+  #
   eql: (other) ->
     other = @box(other)
     return false unless other.is_float?
     @equals(other)
 
 
+  # Returns true if flt is a valid IEEE floating point number (it is not
+  # infinite, and nan? is false).
+  #
+  # @return [Boolean]
+  #
   finite: ->
     !(@infinite() || @nan())
 
 
+  # Returns nil, -1, or +1 depending on whether flt is finite, -infinity, or
+  # +infinity.
+  #
+  # @example
+  #
+  #     new R.Float(0.0).infinite()        #=> nil
+  #     new R.Float(-1.0/0.0).infinite()   #=> -1
+  #     new R.Float(+1.0/0.0).infinite()   #=> 1
+  #
+  # @return [Boolean]
+  #
   infinite: ->
     if @to_native() is Float.INFINITY
       1
@@ -7819,13 +8133,28 @@ class RubyJS.Float extends RubyJS.Numeric
       null
 
 
+  # Returns true if flt is an invalid IEEE floating point number.
+  #
+  # @example
+  #
+  #     a = new R.Float(-1.0)      #=> -1.0
+  #     a.nan()                    #=> false
+  #     a = new R.Float(0.0/0.0)   #=> NaN
+  #     a.nan()                    #=> true
+  #
+  # @return [Boolean]
+  #
   nan: ->
     isNaN(@to_native())
 
 
+  # As flt is already a float, returns self.
   to_f: -> @dup()
 
 
+  # Returns flt truncated to an Integer.
+  #
+  # @return [R.Fixnum]
   to_i: ->
     if @to_native() < 0
       @ceil()
@@ -7833,10 +8162,25 @@ class RubyJS.Float extends RubyJS.Numeric
       @floor()
 
 
+  # Returns the largest integer less than or equal to flt.
+  #
+  # @example
+  #
+  #     new R.Float(1.2).floor()    #=> 1
+  #     new R.Float(2.0).floor()    #=> 2
+  #     new R.Float(-1.2).floor()   #=> -2
+  #     new R.Float(-2.0).floor()   #=> -2
+  #
+  # @return [R.Fixnum]
+  #
   floor: ->
     new R.Fixnum(Math.floor(@__native__))
 
 
+  # Returns float / numeric.
+  #
+  # @return [R.Float]
+  #
   quo: (other) ->
     @__ensure_args_length(arguments, 1)
 
@@ -7844,6 +8188,32 @@ class RubyJS.Float extends RubyJS.Numeric
     @divide(other)
 
 
+  # Rounds flt to a given precision in decimal digits (default 0 digits).
+  # Precision may be negative. Returns a floating point number when ndigits is
+  # more than zero.
+  #
+  # @example
+  #
+  #     R(1.4).round()      #=> 1
+  #     R(1.5).round()      #=> 2
+  #     R(1.6).round()      #=> 2
+  #     R(-1.5).round()     #=> -2
+  #     R(1.234567).round(2)  #=> 1.23
+  #     R(1.234567).round(3)  #=> 1.235
+  #     R(1.234567).round(4)  #=> 1.2346
+  #     R(1.234567).round(5)  #=> 1.23457
+  #     R(34567.89).round(-5) #=> 0
+  #     R(34567.89).round(-4) #=> 30000
+  #     R(34567.89).round(-3) #=> 35000
+  #     R(34567.89).round(-2) #=> 34600
+  #     R(34567.89).round(-1) #=> 34570
+  #     R(34567.89).round(0)  #=> 34568
+  #     R(34567.89).round(1)  #=> 34567.9
+  #     R(34567.89).round(2)  #=> 34567.89
+  #     R(34567.89).round(3)  #=> 34567.89
+  #
+  # @return [R.Fixnum, R.Float]
+  #
   round: (n = 0) ->
     n = CoerceProto.to_int_native(n)
 
@@ -7859,6 +8229,13 @@ class RubyJS.Float extends RubyJS.Numeric
     else
       new RubyJS.Fixnum(rounded)
 
+
+  # Returns a string containing a representation of self. As well as a fixed
+  # or exponential form of the number, the call may return “NaN”, “Infinity”,
+  # and “-Infinity”.
+  #
+  # @return [R.String]
+  #
   to_s: ->
     v = ""+@to_native()
     if @nan()
@@ -7872,11 +8249,42 @@ class RubyJS.Float extends RubyJS.Numeric
     @$String(v)
 
 
+  # ---- Javascript primitives --------------------------------------------------
+
+  # @return [String]
+  toString: ->
+    @to_native().toString()
+
+
+  # @return [String]
+  valueOf: () ->
+    @__native__
+
+
+  # @return [String]
+  to_native: ->
+    @__native__
+
+
+  # @private
+  unbox: @prototype.to_native
+
 
   # ---- Aliases --------------------------------------------------------------
 
   angle:      @prototype.arg
   fdiv:       @prototype.quo
+
+  # Returns the absolute value of flt.
+  #
+  # @example
+  #
+  #     R(-34.56).abs()     #=> 34.56
+  #     R(-34.56).abs()     #=> 34.56
+  #
+  # @return [R.Float]
+  # @alias #abs
+  #
   magnitude:  @prototype.abs
   phase:      @prototype.arg
   to_int:     @prototype.to_i

@@ -138,14 +138,15 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     BlockMulti.prototype.invoke = function(args) {
+      var arg;
       if (args.length > 1) {
         return this.block.apply(this.thisArg, args);
       } else {
-        args = args[0];
-        if (typeof args === 'object' && R.Array.isNativeArray(args)) {
-          return this.block.apply(this.thisArg, args);
+        arg = args[0];
+        if (typeof arg === 'object' && R.Array.isNativeArray(arg)) {
+          return this.block.apply(this.thisArg, arg);
         } else {
-          return this.block.call(this.thisArg, args);
+          return this.block.call(this.thisArg, arg);
         }
       }
     };
@@ -180,6 +181,10 @@ http://www.rubyjs.org/LICENSE.txt
     return BlockSingle;
 
   })();
+
+  R.Block = Block;
+
+  R.blockify = Block.create;
 
   RubyJS.Kernel = (function() {
 
@@ -317,12 +322,12 @@ http://www.rubyjs.org/LICENSE.txt
       } else if (obj.is_string != null) {
         stripped = obj.strip();
         if (stripped.valid_float()) {
-          return new RubyJS.Float(+stripped.unbox().replace(/_/g, ''));
+          return new RubyJS.Float(+stripped.to_native().replace(/_/g, ''));
         } else {
           throw RubyJS.ArgumentError["new"]();
         }
       } else if (obj.rubyjs != null) {
-        return new RubyJS.Float(obj.unbox());
+        return new RubyJS.Float(obj.to_native());
       } else {
         return new RubyJS.Float(obj);
       }
@@ -339,12 +344,12 @@ http://www.rubyjs.org/LICENSE.txt
       } else if (obj.is_string != null) {
         stripped = obj.strip();
         if (stripped.valid_float()) {
-          return new RubyJS.Fixnum(Math.floor(+stripped.unbox().replace(/_/g, '')));
+          return new RubyJS.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')));
         } else {
           throw RubyJS.ArgumentError["new"]();
         }
       } else if (obj.rubyjs != null) {
-        return new RubyJS.Fixnum(Math.floor(obj.unbox()));
+        return new RubyJS.Fixnum(Math.floor(obj.to_native()));
       } else {
         return new RubyJS.Fixnum(Math.floor(obj));
       }
@@ -429,7 +434,7 @@ http://www.rubyjs.org/LICENSE.txt
       } else {
         obj = R(obj);
         if (!(obj.is_numeric != null)) {
-          throw RubyJS.TypeError["new"]();
+          throw R.TypeError["new"]();
         }
         return obj.to_native();
       }
@@ -876,7 +881,7 @@ http://www.rubyjs.org/LICENSE.txt
     Enumerable.prototype.all = function(block) {
       return this.catch_break(function(breaker) {
         var callback;
-        callback = Block.create(block, this);
+        callback = R.blockify(block, this);
         this.each(function() {
           var result;
           result = callback.invoke(arguments);
@@ -893,7 +898,7 @@ http://www.rubyjs.org/LICENSE.txt
     Enumerable.prototype.any = function(block) {
       return this.catch_break(function(breaker) {
         var callback;
-        callback = Block.create(block, this);
+        callback = R.blockify(block, this);
         this.each(function() {
           var result;
           result = callback.invoke(arguments);
@@ -913,7 +918,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('collect_concat');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       ary = [];
       this.each(function() {
         return ary.push(callback.invoke(arguments));
@@ -937,7 +942,7 @@ http://www.rubyjs.org/LICENSE.txt
           }
         });
       } else if (block.call != null) {
-        callback = Block.create(block, this);
+        callback = R.blockify(block, this);
         this.each(function() {
           var result;
           result = callback.invoke(arguments);
@@ -977,7 +982,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!block) {
         return this.to_enum('cycle', n);
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       cache = new R.Array([]);
       this.each(function() {
         var args;
@@ -1031,7 +1036,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('drop_while');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       ary = [];
       dropping = true;
       this.each(function() {
@@ -1055,7 +1060,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(n > 0)) {
         throw R.ArgumentError["new"]();
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       len = block.length;
       ary = [];
       this.each(function() {
@@ -1111,7 +1116,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (block === void 0) {
         return this.to_enum('each_slice', n);
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       len = block.length;
       ary = [];
       this.each(function() {
@@ -1143,7 +1148,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('each_with_index');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       idx = 0;
       this.each(function() {
         var val;
@@ -1159,7 +1164,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('each_with_object', obj);
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       this.each(function() {
         var args;
         args = BlockMulti.prototype.args(arguments);
@@ -1177,7 +1182,7 @@ http://www.rubyjs.org/LICENSE.txt
         block = ifnone;
         ifnone = null;
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       return this.catch_break(function(breaker) {
         this.each(function() {
           if (!R.falsey(callback.invoke(arguments))) {
@@ -1196,7 +1201,7 @@ http://www.rubyjs.org/LICENSE.txt
         return this.to_enum('find_all');
       }
       ary = [];
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       this.each(function() {
         if (!R.falsey(callback.invoke(arguments))) {
           return ary.push(callback.args(arguments));
@@ -1221,7 +1226,7 @@ http://www.rubyjs.org/LICENSE.txt
         };
       }
       idx = 0;
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       return this.catch_break(function(breaker) {
         this.each(function() {
           if (callback.invoke(arguments)) {
@@ -1285,7 +1290,7 @@ http://www.rubyjs.org/LICENSE.txt
     Enumerable.prototype.inject = function(init, sym, block) {
       var callback, _ref1;
       _ref1 = this.__inject_args__(init, sym, block), init = _ref1[0], sym = _ref1[1], block = _ref1[2];
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       this.each(function() {
         var args;
         if (init === void 0) {
@@ -1306,7 +1311,7 @@ http://www.rubyjs.org/LICENSE.txt
       var ary, callback;
       ary = new R.Array([]);
       pattern = R(pattern);
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       if (block) {
         this.each(function(el) {
           if (pattern['==='](el)) {
@@ -1328,7 +1333,7 @@ http://www.rubyjs.org/LICENSE.txt
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('group_by');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       h = {};
       this.each(function() {
         var args, key;
@@ -1345,7 +1350,7 @@ http://www.rubyjs.org/LICENSE.txt
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('map');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       arr = [];
       this.each(function() {
         return arr.push(callback.invoke(arguments));
@@ -1462,7 +1467,7 @@ http://www.rubyjs.org/LICENSE.txt
     Enumerable.prototype.none = function(block) {
       return this.catch_break(function(breaker) {
         var callback;
-        callback = Block.create(block, this);
+        callback = R.blockify(block, this);
         this.each(function(args) {
           var result;
           result = callback.invoke(arguments);
@@ -1481,7 +1486,7 @@ http://www.rubyjs.org/LICENSE.txt
       counter = 0;
       return this.catch_break(function(breaker) {
         var callback;
-        callback = Block.create(block, this);
+        callback = R.blockify(block, this);
         this.each(function(args) {
           var result;
           result = callback.invoke(arguments);
@@ -1505,7 +1510,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
       left = [];
       right = [];
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       this.each(function() {
         var args;
         args = BlockMulti.prototype.args(arguments);
@@ -1525,7 +1530,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('reject');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       ary = [];
       this.each(function() {
         if (R.falsey(callback.invoke(arguments))) {
@@ -1590,7 +1595,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('sort_by');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       ary = [];
       this.each(function(value) {
         return ary.push(new R.Enumerable.SortedElement(value, callback.invoke(arguments)));
@@ -2181,7 +2186,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(block && (block.call != null))) {
         return this.to_enum('each_with_index');
       }
-      callback = Block.create(block, this);
+      callback = R.blockify(block, this);
       idx = 0;
       return this.each(function() {
         var args, val;
@@ -2197,7 +2202,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Enumerator.prototype.iterator = function() {
-      return this.to_a().unbox();
+      return this.to_a().to_native();
     };
 
     Enumerator.prototype.native_array = function() {
@@ -2364,46 +2369,26 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.to_native = function(recursive) {
-      var el, _j, _len1, _ref1, _results;
+      var ary, el, idx, len, _ref1;
       if (recursive == null) {
         recursive = false;
       }
       if (recursive) {
-        _ref1 = this.__native__;
-        _results = [];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          el = _ref1[_j];
+        _ref1 = this.__iter_vars__(), idx = _ref1[0], len = _ref1[1], ary = _ref1[2];
+        while (++idx < len) {
+          el = this.__native__[idx];
           if (el && (el.to_native != null)) {
             el = el.to_native(true);
           }
-          _results.push(el);
+          ary[idx] = el;
         }
-        return _results;
+        return ary;
       } else {
         return this.__native__.slice(0);
       }
     };
 
-    Array.prototype.unbox = function(recursive) {
-      var el, _j, _len1, _ref1, _results;
-      if (recursive == null) {
-        recursive = false;
-      }
-      if (recursive) {
-        _ref1 = this.__native__;
-        _results = [];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          el = _ref1[_j];
-          if (el && (el.unbox != null)) {
-            el = el.unbox(true);
-          }
-          _results.push(el);
-        }
-        return _results;
-      } else {
-        return this.__native__.slice(0);
-      }
-    };
+    Array.prototype.unbox = Array.prototype.to_native;
 
     Array.prototype.to_native_clone = function() {
       return this.__native__.slice(0);
@@ -3980,7 +3965,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.unbox = function() {
-      return this.toString();
+      return this.__native__;
     };
 
     String.prototype.initialize_copy = function() {};
@@ -5544,10 +5529,10 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Numeric.prototype.coerce = function(other) {
-      if (other === null || other === false || other === void 0) {
+      if (!(other != null) || other === false) {
         throw RubyJS.TypeError["new"]();
       }
-      other = this.box(other);
+      other = R(other);
       if (other.is_string != null) {
         return this.$Array([this.$Float(other), this.to_f()]);
       } else if (other.constructor.prototype === this.constructor.prototype) {
@@ -5597,7 +5582,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Numeric.prototype.inspect = function() {
-      return "" + this.to_native();
+      return new R.String("" + this.to_native());
     };
 
     Numeric.prototype.fdiv = function(other) {
@@ -5661,57 +5646,58 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Numeric.prototype.step = function(limit, step, block) {
-      var d, i, n, value;
+      var d, float_mode, i, n, value;
       if (step == null) {
         step = 1;
       }
-      limit = this.box(limit);
-      if ((block != null ? block.call : void 0) != null) {
-
-      } else {
+      limit = R(limit);
+      if ((block != null ? block.call : void 0) == null) {
         block = step;
         step = 1;
       }
-      step = this.box(step);
+      step = R(step);
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('step', limit, step);
       }
       if (step.equals(0)) {
         throw new R.ArgumentError("ArgumentError");
       }
-      value = this;
-      if ((value.is_float != null) || (limit.is_float != null) || (step.is_float != null)) {
-        n = (limit.to_f().minus(value)).divide(step);
-        i = R(0).to_f();
-        if (step.gt(0)) {
-          while (i.lteq(n)) {
-            d = i.multiply(step).plus(value);
-            if (limit.lt(d)) {
+      float_mode = (this.is_float != null) || (limit.is_float != null) || (step.is_float != null);
+      limit = limit.to_native();
+      step = step.to_native();
+      value = this.to_native();
+      if (float_mode) {
+        n = (limit - value) / step;
+        i = 0;
+        if (step > 0) {
+          while (i <= n) {
+            d = i * step + value;
+            if (limit < d) {
               d = limit;
             }
-            block(d);
-            i = i.plus(1);
+            block(new R.Float(d));
+            i += 1;
           }
         } else {
-          while (i.lteq(n)) {
-            d = i.multiply(step).plus(value);
-            if (limit.gt(d)) {
+          while (i <= n) {
+            d = i * step + value;
+            if (limit > d) {
               d = limit;
             }
-            block(d);
-            i = i.plus(1);
+            block(new R.Float(d));
+            i += 1;
           }
         }
       } else {
-        if (step.gt(0)) {
-          while (!value.gt(limit)) {
-            block(value);
-            value = value.plus(step);
+        if (step > 0) {
+          while (!(value > limit)) {
+            block(new R.Fixnum(value));
+            value += step;
           }
         } else {
-          while (!value.lt(limit)) {
-            block(value);
-            value = value.plus(step);
+          while (!(value < limit)) {
+            block(new R.Fixnum(value));
+            value += step;
           }
         }
       }
@@ -5770,44 +5756,21 @@ http://www.rubyjs.org/LICENSE.txt
       return new R.Fixnum(1);
     };
 
-    Integer.prototype.upto = function(stop, block) {
-      var idx;
-      stop = R(stop);
-      if ((stop != null ? stop.to_int : void 0) == null) {
-        throw RubyJS.ArgumentError["new"]();
-      }
-      if (!(block && (block.call != null))) {
-        return RubyJS.Enumerator["new"](this, 'upto', stop);
-      }
-      stop = stop.floor().to_native();
-      if (!(this.to_native() <= stop)) {
-        return this;
-      }
-      idx = this.to_native();
-      while (idx <= stop) {
-        block(new R.Fixnum(idx));
-        idx += 1;
-      }
-      return this;
-    };
-
     Integer.prototype.downto = function(stop, block) {
       var idx;
-      stop = R(stop);
-      if ((stop != null ? stop.to_int : void 0) == null) {
-        throw RubyJS.ArgumentError["new"]();
+      try {
+        stop = CoerceProto.to_num_native(stop);
+      } catch (err) {
+        throw R.ArgumentError["new"]();
       }
-      if (!(block && (block.call != null))) {
+      if ((block != null ? block.call : void 0) == null) {
         return RubyJS.Enumerator["new"](this, 'downto', stop);
       }
-      stop = Math.ceil(stop.to_native());
-      if (!(this.to_native() >= stop)) {
-        return this;
-      }
+      stop = Math.ceil(stop);
       idx = this.to_native();
       while (idx >= stop) {
         block(new R.Fixnum(idx));
-        idx = idx - 1;
+        idx -= 1;
       }
       return this;
     };
@@ -5850,7 +5813,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Integer.prototype.numerator = function() {
       if (this.lt(0)) {
-        return this.$Integer(this.to_native() * -1);
+        return new R.Fixnum(this.to_native() * -1);
       } else {
         return this;
       }
@@ -5909,6 +5872,25 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Integer.prototype.to_i = function() {
+      return this;
+    };
+
+    Integer.prototype.upto = function(stop, block) {
+      var idx;
+      try {
+        stop = CoerceProto.to_num_native(stop);
+      } catch (err) {
+        throw R.ArgumentError["new"]();
+      }
+      if ((block != null ? block.call : void 0) == null) {
+        return R.Enumerator["new"](this, 'upto', stop);
+      }
+      stop = Math.floor(stop);
+      idx = this.to_native();
+      while (idx <= stop) {
+        block(new R.Fixnum(idx));
+        idx += 1;
+      }
       return this;
     };
 
@@ -6049,7 +6031,7 @@ http://www.rubyjs.org/LICENSE.txt
     Fixnum.prototype['**'] = function(other) {
       var val;
       other = this.box(other);
-      val = this.box(Math.pow(this.to_native(), other.unbox()));
+      val = this.box(Math.pow(this.to_native(), other.to_native()));
       if (other.is_float != null) {
         return val.to_f();
       } else {
@@ -6099,7 +6081,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (base.lt(2) || base.gt(36)) {
         throw RubyJS.ArgumentError["new"]();
       }
-      return this.box("" + (this.to_native().toString(base.unbox())));
+      return this.box("" + (this.to_native().toString(base.to_native())));
     };
 
     Fixnum.__add_default_aliases__(Fixnum.prototype);
@@ -6152,40 +6134,8 @@ http://www.rubyjs.org/LICENSE.txt
       return true;
     };
 
-    Float.prototype.toString = function() {
-      return this.to_native().toString();
-    };
-
-    Float.prototype.valueOf = function() {
-      return this.__native__;
-    };
-
-    Float.prototype.to_native = function() {
-      return this.__native__;
-    };
-
-    Float.prototype.unbox = Float.prototype.to_native;
-
     Float.isFloat = function(obj) {
       return RubyJS.Numeric.isNumeric(obj) && !RubyJS.Integer.isInteger(obj);
-    };
-
-    Float.prototype.arg = function() {
-      if (this.nan()) {
-        return this;
-      } else if (this.lt(0.0)) {
-        return this.$Float(Math.PI);
-      } else {
-        return this.$Float(0);
-      }
-    };
-
-    Float.prototype.ceil = function() {
-      return new RubyJS.Fixnum(Math.ceil(this.to_native()));
-    };
-
-    Float.prototype.inspect = function() {
-      return this.to_s();
     };
 
     Float.prototype['<=>'] = function(other) {
@@ -6202,10 +6152,6 @@ http://www.rubyjs.org/LICENSE.txt
       if (this.to_native() > other) {
         return 1;
       }
-    };
-
-    Float.prototype.dup = function() {
-      return Float["new"](this.to_native());
     };
 
     Float.prototype['=='] = function(other) {
@@ -6253,6 +6199,28 @@ http://www.rubyjs.org/LICENSE.txt
       div = this['/'](other).floor();
       val = this.to_native() - (div.to_native() * other.to_native());
       return new Float(val);
+    };
+
+    Float.prototype.arg = function() {
+      if (this.nan()) {
+        return this;
+      } else if (this.__native__ < 0.0) {
+        return new R.Float(Math.PI);
+      } else {
+        return new R.Float(0);
+      }
+    };
+
+    Float.prototype.ceil = function() {
+      return new RubyJS.Fixnum(Math.ceil(this.to_native()));
+    };
+
+    Float.prototype.inspect = function() {
+      return this.to_s();
+    };
+
+    Float.prototype.dup = function() {
+      return Float["new"](this.to_native());
     };
 
     Float.prototype.eql = function(other) {
@@ -6344,6 +6312,20 @@ http://www.rubyjs.org/LICENSE.txt
       }
       return this.$String(v);
     };
+
+    Float.prototype.toString = function() {
+      return this.to_native().toString();
+    };
+
+    Float.prototype.valueOf = function() {
+      return this.__native__;
+    };
+
+    Float.prototype.to_native = function() {
+      return this.__native__;
+    };
+
+    Float.prototype.unbox = Float.prototype.to_native;
 
     Float.prototype.angle = Float.prototype.arg;
 
