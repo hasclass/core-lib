@@ -1,4 +1,6 @@
-# Not yet implemented
+#
+# Unsupported: #value?() use @has_value?
+#
 class RubyJS.Hash extends RubyJS.Object
   @include R.Enumerable
 
@@ -117,7 +119,7 @@ class RubyJS.Hash extends RubyJS.Object
 
       this
     else
-      @to_enum()
+      @to_enum('delete_if')
 
 
   # Calls block once for each key in hsh, passing the key-value pair as
@@ -140,9 +142,11 @@ class RubyJS.Hash extends RubyJS.Object
         block(k,v)
       this
     else
-      @to_enum()
+      @to_enum('each')
 
 
+
+  # Alias for {#each}
   each_pair: @prototype.each
 
 
@@ -165,7 +169,7 @@ class RubyJS.Hash extends RubyJS.Object
         block(k)
       this
     else
-      @to_enum()
+      @to_enum('each_key')
 
 
   # Calls block once for each key in hsh, passing the value as a parameter.
@@ -187,7 +191,7 @@ class RubyJS.Hash extends RubyJS.Object
         block(v)
       this
     else
-      @to_enum()
+      @to_enum('each_value')
 
   # Returns true if hsh contains no key-value pairs.
   #
@@ -334,6 +338,44 @@ class RubyJS.Hash extends RubyJS.Object
     arr = for own k, v of @__native__
       k
     new R.Array(arr)
+
+
+  merge: (other, block) ->
+    hsh = {}
+    other = other.__native__ if other.rubyjs?
+
+    for own k, v of @__native__
+      hsh[k] = v
+    for own k, v of other
+      if block?.call? and `k in hsh`
+        hsh[k] = block(k, hsh[k], v)
+      else
+        hsh[k] = v
+
+    new R.Hash(hsh)
+
+
+  reject: (block) ->
+    @to_enum('reject') unless block?.call?
+
+    dup = {}
+    for own k,v of @__native__
+      if !block(k, v)
+        dup[k] = v
+    new R.Hash(dup)
+
+
+  reject_bang: (block) ->
+    @to_enum('reject_bang') unless block?.call?
+
+    changed = false
+    for own k,v of @__native__
+      if !block(k, v)
+        delete this.__native__[k]
+        changed = true
+
+    if changed then this else null
+
 
   # Element Assignment—Associates the value given by value with the key given
   # by key. key should not have its value changed while it is in use as a key
