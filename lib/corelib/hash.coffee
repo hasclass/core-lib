@@ -297,6 +297,19 @@ class RubyJS.Hash extends RubyJS.Object
   include: @prototype.has_key
   member: @prototype.has_key
 
+
+  # Deletes every key-value pair from hsh for which block evaluates to false.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @return [R.Hash] this
+  #
+  keep_if: (block) ->
+    return @to_enum('keep_if') unless block?.call?
+    @reject_bang(block)
+    this
+
+
   # Returns the key of an occurrence of a given value. If the value is not
   # found, returns nil.
   #
@@ -392,7 +405,7 @@ class RubyJS.Hash extends RubyJS.Object
 
 
   reject: (block) ->
-    @to_enum('reject') unless block?.call?
+    return @to_enum('reject') unless block?.call?
 
     dup = {}
     for own k,v of @__native__
@@ -402,11 +415,40 @@ class RubyJS.Hash extends RubyJS.Object
 
 
   reject_bang: (block) ->
-    @to_enum('reject_bang') unless block?.call?
+    return @to_enum('reject_bang') unless block?.call?
 
     changed = false
     for own k,v of @__native__
       if !block(k, v)
+        delete this.__native__[k]
+        changed = true
+
+    if changed then this else null
+
+  # Returns a new hash consisting of entries for which the block returns true.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = { "a" => 100, "b" => 200, "c" => 300 }
+  #     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
+  #     h.select {|k,v| v < 200}  #=> {"a" => 100}
+  select: (block) ->
+    return @to_enum('select') unless block?.call?
+
+    dup = {}
+    for own k,v of @__native__
+      if block(k, v)
+        dup[k] = v
+
+    new R.Hash(dup)
+
+  select_bang: (block) ->
+    return @to_enum('select_bang') unless block?.call?
+
+    changed = false
+    for own k,v of @__native__
+      if block(k, v)
         delete this.__native__[k]
         changed = true
 
