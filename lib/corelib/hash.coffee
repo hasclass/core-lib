@@ -325,6 +325,20 @@ class RubyJS.Hash extends RubyJS.Object
   index: @prototype.key
 
 
+  # Returns a new hash created by using hsh’s values as keys, and the keys as values.
+  #
+  # @example
+  #     h = { n: 100, m: 100, y: 300, d: 200, a: 0 }
+  #     h.invert()   #=> {0: a", 100: "m", 200: "d", 300: "y"}
+  #
+  # @return [R.Hash]
+  #
+  invert: ->
+    hsh = {}
+    for own k, v of @__native__
+      hsh[v] = k
+    new R.Hash(hsh)
+
   # Returns a new array populated with the keys from this hash. See also
   # Hash#values.
   #
@@ -438,6 +452,29 @@ class RubyJS.Hash extends RubyJS.Object
     new R.Fixnum(counter)
 
 
+  # Converts hsh to a nested array of [ key, value ] arrays.
+  #
+  # @example
+  #     h = { c: 300, a: 100, d: 400, c: 300  }
+  #     h.to_a()   #=> [["c", 300], ["a", 100], ["d", 400]]
+  #
+  # @return [R.Array]
+  #
+  to_a: ->
+    arr = for own k, v of @__native__
+      [k, v]
+    new R.Array(arr)
+
+
+  # Returns self.
+  #
+  # @return [R.Hash]
+  #
+  to_hash: -> this
+
+
+  # @return [Object]
+  #
   to_native: ->
     @__native__
 
