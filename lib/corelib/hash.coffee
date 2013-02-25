@@ -515,6 +515,9 @@ class RubyJS.Hash extends RubyJS.Object
   to_hash: -> this
 
 
+  to_h: @prototype.to_hash
+
+
   # @return [Object]
   #
   to_native: ->
