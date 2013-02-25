@@ -19,6 +19,31 @@ class RubyJS.Hash extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
+  # Searches through the hash comparing obj with the key using ==. Returns the
+  # key-value pair (two elements array) or nil if no match is found. See
+  # Array#assoc.
+  #
+  # @example
+  #     h = R.hashify({colors: ["red", "blue", "green"], letters: ["a", "b", "c" ]})
+  #     h.assoc("letters")  #=> ["letters", ["a", "b", "c"]]
+  #     h.assoc("foo")      #=> null
+  #
+  assoc: (needle) ->
+    needle = R(needle)
+
+    arr = []
+    if needle.rubyjs?
+      for own k, v of @__native__
+        if needle.equals(k)
+          return new R.Array([k, v])
+    else
+      for own k, v of @__native__
+        if needle == k
+          return new R.Array([k, v])
+
+    null
+
+
   # Removes all key-value pairs from hsh.
   #
   # @example
@@ -381,11 +406,30 @@ class RubyJS.Hash extends RubyJS.Object
 
     new R.Hash(hsh)
 
+
+  merge_bang: (other, block) ->
+    other = other.__native__ if other.rubyjs?
+
+    for own k, v of @__native__
+      @__native__[k] = v
+    for own k, v of other
+      if block?.call? and `k in this.__native__`
+        @__native__[k] = block(k, @__native__[k], v)
+      else
+        @__native__[k] = v
+
+    this
+
+
   # Searches through the hash comparing obj with the value using ==. Returns the first key-value pair (two-element array) that matches. See also Array#rassoc.
   #
-  # a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
-  # a.rassoc("two")    #=> [2, "two"]
-  # a.rassoc("four")   #=> nil
+  # @example
+  #     a = R.hashify({1: "one", 2 : "two", 3 : "three", ii: "two"})
+  #     a.rassoc("two")    #=> [2, "two"]
+  #     a.rassoc("four")   #=> nil
+  #
+  # @return [R.Array]
+  #
   rassoc: (needle) ->
     needle = R(needle)
 
@@ -522,6 +566,9 @@ class RubyJS.Hash extends RubyJS.Object
   #
   to_native: ->
     @__native__
+
+
+  update: @prototype.merge_bang
 
 
   # Returns a new array populated with the values from hsh. See also
