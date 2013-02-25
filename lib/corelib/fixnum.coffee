@@ -56,8 +56,8 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #equals
   #
   '==': (other) ->
-    if !@box(other).is_fixnum?
-      other['=='](this)
+    if !R(other).is_fixnum?
+      R(other)['=='](this)
     else
       @['<=>'](other) == 0
 

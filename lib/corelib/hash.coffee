@@ -354,6 +354,28 @@ class RubyJS.Hash extends RubyJS.Object
 
     new R.Hash(hsh)
 
+  # Searches through the hash comparing obj with the value using ==. Returns the first key-value pair (two-element array) that matches. See also Array#rassoc.
+  #
+  # a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
+  # a.rassoc("two")    #=> [2, "two"]
+  # a.rassoc("four")   #=> nil
+  rassoc: (needle) ->
+    needle = R(needle)
+
+    arr = []
+    if needle.rubyjs?
+      for own k, v of @__native__
+        if needle.equals(v)
+          return new R.Array([k, v])
+    else
+      for own k, v of @__native__
+        if needle == v
+          return new R.Array([k, v])
+
+    null
+
+
+
 
   reject: (block) ->
     @to_enum('reject') unless block?.call?
