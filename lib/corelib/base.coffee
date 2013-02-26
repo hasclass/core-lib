@@ -84,6 +84,25 @@ class RubyJS.Base extends RubyJS.Object
     obj[function_name] != undefined
 
 
+  # Optimized version of calling a.equals(b).
+  # Takes care of non rubyjs objects.
+  is_equal: (a, b) ->
+    if typeof a is 'object'
+      a.equals(b)
+    else if typeof b is 'object'
+      b.equals(a)
+    else
+      a == b
+
+  is_eql: (a, b) ->
+    if typeof a is 'object'
+      a.eql(b)
+    else if typeof b is 'object'
+      b.eql(a)
+    else
+      a == b
+
+
   extend: (obj, mixin) ->
     obj[name] = method for name, method of mixin
     obj
