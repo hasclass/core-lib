@@ -230,6 +230,17 @@ class RubyJS.Hash extends RubyJS.Object
     true
 
 
+  eql: (other) ->
+    other = other.to_native?() || other
+
+    for own k,v of @__native__
+      if `k in other`
+        return false unless R.is_eql(other[k], v)
+      else
+        return false
+
+    true
+
 
   # Returns a value from the hash for the given key. If the key can’t be
   # found, there are several options: With no other arguments, it will raise
@@ -595,3 +606,5 @@ class RubyJS.Hash extends RubyJS.Object
 
 R.hashify = (obj, default_value) ->
   new R.Hash(obj, default_value)
+
+R.h = R.hashify
