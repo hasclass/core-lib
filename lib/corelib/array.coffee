@@ -740,16 +740,16 @@ class RubyJS.Array extends RubyJS.Object
   # @todo do not typecast elements!
   #
   flatten: (recursion = -1) ->
-    recursion = R(recursion)
+    recursion = CoerceProto.to_int_native(recursion)
 
     arr = new R.Array([])
 
-    @each (el) ->
-      el = R(el)
-      if el?.to_ary? && !recursion.equals(0)
-        el.to_ary().flatten(recursion.minus(1)).each (e) -> arr.push(e)
+    @each (element) ->
+      el = R(element)
+      if el?.to_ary? && !(recursion == 0)
+        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
       else
-        arr.push(el)
+        arr.push(element)
     arr
 
   # Inserts the given values before the element with the given index (which

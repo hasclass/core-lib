@@ -10,7 +10,7 @@ class RubyJS.Hash extends RubyJS.Object
     new R.Hash()
 
   constructor: (hsh, default_value) ->
-    @__native__ = hsh
+    @__native__  = hsh
     @__default__ = default_value
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -271,7 +271,7 @@ class RubyJS.Hash extends RubyJS.Object
     else if default_value?.call? || arguments[2]?.call?
       (arguments[2] || default_value)(key)
     else if default_value != undefined
-        default_value
+      default_value
     else
       throw R.KeyError.new()
 
@@ -359,14 +359,14 @@ class RubyJS.Hash extends RubyJS.Object
   # @alias #index
   #
   key: (value) ->
-    value = R(value)
+    # value = R(value)
 
     if value.rubyjs?
       for own k, v of @__native__
         return k if value.equals(v)
     else
       for own k, v of @__native__
-        return k if v == value
+        return k if v.valueOf() == value
 
     null
 
@@ -526,6 +526,15 @@ class RubyJS.Hash extends RubyJS.Object
   #
   set: (key, value) ->
     @__native__[key] = value
+
+
+  flatten: (recursion = 1) ->
+    recursion = CoerceProto.to_int_native(recursion)
+    @to_a().flatten(recursion)
+
+  sort: (block) ->
+    @to_a().sort(block)
+
 
 
   store: @prototype.set
