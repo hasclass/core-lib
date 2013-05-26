@@ -276,7 +276,7 @@ _enum = R._enum =
     else if sym
       # for [1,2,3].inject(5, (memo, i) -> )
       block = (memo, el) -> memo[sym](el)
-    else if @box(initial)?.is_string?
+    else if R(initial)?.is_string?
       # for [1,2,3].inject('-')
       _method = "#{initial}"
       block   = (memo, el) -> memo[_method](el)
@@ -290,11 +290,11 @@ _enum = R._enum =
 
 
 
-  inject: (init, sym, block) ->
+  inject: (coll, init, sym, block) ->
     [init, sym, block] = @__inject_args__(init, sym, block)
 
-    callback = R.blockify(block, this)
-    @each ->
+    callback = R.blockify(block, coll)
+    @each coll, ->
       if init is undefined
         init = callback.args(arguments)
       else
@@ -304,73 +304,34 @@ _enum = R._enum =
     init
 
 
-  # _ruby: returns an object that works with
-  # for .. in ..
-  # @private
-  iterator: () ->
-    @each()
-
-  # Returns an array of every element in enum for which Pattern === element. If the optional block is supplied, each matching element is passed to it, and the block’s result is stored in the output array.
-  #
-  # @example
-  #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
-  #
-  grep: (pattern, block) ->
-    ary      = new RArray([])
+  grep: (coll, pattern, block) ->
+    ary      = []
     pattern  = R(pattern)
-    callback = R.blockify(block, this)
+    callback = R.blockify(block, coll)
     if block
-      @each (el) ->
+      @each coll, (el) ->
         if pattern['==='](el)
-          ary.append(callback.invoke(arguments))
+          ary.push(callback.invoke(arguments))
     else
-      @each (el) ->
-        ary.append(el) if pattern['==='](el)
+      @each coll, (el) ->
+        ary.push(el) if pattern['==='](el)
     ary
 
-  # Returns a hash, which keys are evaluated result from the block, and values
-  # are arrays of elements in enum corresponding to the key.
-  #
-  # If no block is given, an enumerator is returned instead.
-  #
-  # @example
-  #      R.rng(1, 6).group_by (i) -> i%3
-  #      #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
-  #
-  group_by: (block) ->
-    return @to_enum('group_by') unless block?.call?
 
-    callback = R.blockify(block, this)
+  group_by: (coll, block) ->
+    callback = R.blockify(block, coll)
 
     h = {}
-    @each ->
+    @each coll, ->
       args = callback.args(arguments)
       key  = callback.invoke(arguments)
 
-      h[key] ||= new RArray([])
-      h[key].append(args)
+      h[key] ||= []
+      h[key].push(args)
 
     h
 
 
-  # Returns a new array with the results of running block once for every
-  # element in enum.
-  #
-  # If no block is given, an enumerator is returned instead.
-  #
-  # @example
-  #     R.rng(1, 4).collect (i) -> i*i   #=> [1, 4, 9, 16]
-  #     R.rng(1, 4).collect -> "cat"     #=> ["cat", "cat", "cat", "cat"]
-  #
-  # @example #map with an enumerator:
-  #
-  #    en = R(['a']).each_with_index() #=> ['a', 0]
-  #    en.map (x) ->   # x: 'a'
-  #    en.map (x,i) -> # x: 'a', i: 0
-  #    en.map (x...) -> # x: ['a', 0]
-  #
-  # @alias #collect
-  #
   map: (coll, block) ->
     callback = R.blockify(block, coll)
 
@@ -381,22 +342,6 @@ _enum = R._enum =
     arr
 
 
-  # @alias #map
-
-
-  # @alias #member
-
-
-  # Returns the object in enum with the maximum value. The first form assumes
-  # all objects implement Comparable; the second uses the block to return a
-  # <=> b.
-  #
-  # @return
-  #     a = R.w('albatross dog horse')
-  #     a.max()                                #=> "horse"
-  #     # Not recommended at the moment:
-  #     a.max (a,b) -> R(a.length)['<=>'] b.length }   #=> "albatross"
-  #
   max: (coll, block) ->
     max = undefined
 
@@ -424,15 +369,6 @@ _enum = R._enum =
     max or null
 
 
-  # Returns the object in enum that gives the maximum value from the given
-  # block.
-  #
-  # If no block is given, an enumerator is returned instead.
-  #
-  # @example
-  #     a = R.w('albatross dog horse')
-  #     a.max_by (x) -> x.length    #=> "albatross"
-  #
   max_by: (coll, block) ->
     max = undefined
     # OPTIMIZE: use sorted element
@@ -445,15 +381,6 @@ _enum = R._enum =
     max or null
 
 
-  # Returns the object in enum with the minimum value. The first form assumes
-  # all objects implement Comparable; the second uses the block to return a
-  # <=> b.
-  #
-  #     a = R.w('albatross dog horse')
-  #     a.min()                                  #=> "albatross"
-  #     # Not recommended at the moment:
-  #     a.min (a,b) -> R(a.length)['<=>'] b.length }   #=> "dog"
-  #
   min: (coll, block) ->
     min = undefined
     block ||= R.Comparable.cmp
@@ -474,15 +401,7 @@ _enum = R._enum =
     min or null
 
 
-  # Returns the object in enum that gives the minimum value from the given
-  # block.
-  #
-  # If no block is given, an enumerator is returned instead.
-  #
-  # @example
-  #     a = R.w('albatross dog horse')
-  #     a.min_by (x) -> x.length   #=> "dog"
-  #
+
   min_by: (coll, block) ->
     min = undefined
     # OPTIMIZE: use sorted element
@@ -495,15 +414,6 @@ _enum = R._enum =
     min or null
 
 
-  # Returns two elements array which contains the minimum and the maximum
-  # value in the enumerable. The first form assumes all objects implement
-  # Comparable; the second uses the block to return a <=> b.
-  #
-  # @example
-  #     a = R.w('albatross dog horse')
-  #     a.minmax()                                  #=> ["albatross", "horse"]
-  #     a.minmax (a,b) -> a.length <=> b.length }   #=> ["dog", "albatross"]
-  #
   minmax: (coll, block) ->
     # TODO: optimize
     [@min(coll, block), @max(coll, block)]

@@ -259,10 +259,7 @@ class RubyJS.Enumerable
   #
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
-
-    ary = _enum.select(this, block)
-
-    new RArray(ary)
+    new RArray(_enum.select(this, block))
 
   select: @prototype.find_all
 
@@ -307,25 +304,6 @@ class RubyJS.Enumerable
   include: (other) ->
     _enum.include(this, other)
 
-  # @private
-  __inject_args__: (initial, sym, block) ->
-    if sym?.call?
-      block = sym
-    else if sym
-      # for [1,2,3].inject(5, (memo, i) -> )
-      block = (memo, el) -> memo[sym](el)
-    else if @box(initial)?.is_string?
-      # for [1,2,3].inject('-')
-      _method = "#{initial}"
-      block   = (memo, el) -> memo[_method](el)
-      initial = undefined
-    else if initial.call?
-      # for inject (memo,i) ->
-      block = initial
-      initial = undefined
-
-    [initial, sym, block]
-
 
   # Combines all elements of enum by applying a binary operation, specified by
   # a block or a symbol that names a method or operator.
@@ -358,17 +336,7 @@ class RubyJS.Enumerable
   # @todo implement inject('+')
   #
   inject: (init, sym, block) ->
-    [init, sym, block] = @__inject_args__(init, sym, block)
-
-    callback = R.blockify(block, this)
-    @each ->
-      if init is undefined
-        init = callback.args(arguments)
-      else
-        args = BlockMulti.prototype.args(arguments)
-        init = callback.invokeSplat(init, args)
-
-    init
+    _enum.inject(this, init, sym, block)
 
 
   # _ruby: returns an object that works with
@@ -383,17 +351,8 @@ class RubyJS.Enumerable
   #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
   #
   grep: (pattern, block) ->
-    ary      = new RArray([])
-    pattern  = R(pattern)
-    callback = R.blockify(block, this)
-    if block
-      @each (el) ->
-        if pattern['==='](el)
-          ary.append(callback.invoke(arguments))
-    else
-      @each (el) ->
-        ary.append(el) if pattern['==='](el)
-    ary
+    new RArray(_enum.grep(this, pattern, block))
+
 
   # Returns a hash, which keys are evaluated result from the block, and values
   # are arrays of elements in enum corresponding to the key.
@@ -406,18 +365,7 @@ class RubyJS.Enumerable
   #
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
-
-    callback = R.blockify(block, this)
-
-    h = {}
-    @each ->
-      args = callback.args(arguments)
-      key  = callback.invoke(arguments)
-
-      h[key] ||= new RArray([])
-      h[key].append(args)
-
-    h
+    _enum.group_by(this, block)
 
 
   # Returns a new array with the results of running block once for every

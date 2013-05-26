@@ -42,20 +42,6 @@ class RubyJS.EnumerableArray
       [-1, len, nativeArray(len)]
 
 
-  inject: (initial, sym, block) ->
-    [initial, sym, block] = @__inject_args__(initial, sym, block)
-
-    idx = -1
-
-    while (++idx < @__native__.length)
-      args = @__native__[idx]
-      if initial is undefined
-        initial = args
-      else
-        initial = block.call(this, initial, args)
-
-    initial
-
   find: (ifnone, block = null) ->
     if block == null
       block  = ifnone

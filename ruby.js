@@ -9,7 +9,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var Block, BlockArgs, BlockMulti, BlockSingle, CharTable, Coerce, CoerceProto, RArray, REnumerable, RString, StringClassMethods, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _enum, _fn, _i, _len, _ref, _slice_, _str, _toString_,
+  var Block, BlockArgs, BlockMulti, BlockSingle, CharTable, Coerce, CoerceProto, MYSortedElement, RArray, REnumerable, RString, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _blockify, _enum, _fn, _i, _len, _ref, _slice_, _str, _toString_,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -184,7 +184,7 @@ http://www.rubyjs.org/LICENSE.txt
 
   R.Block = Block;
 
-  R.blockify = Block.create;
+  R.blockify = _blockify = Block.create;
 
   RubyJS.Kernel = (function() {
 
@@ -675,7 +675,7 @@ http://www.rubyjs.org/LICENSE.txt
     Base.prototype.pollute_global = function() {
       var args, method, _i, _len;
       if (arguments.length === 0) {
-        args = ['_str', '_arr', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
+        args = ['_str', '_arr', '_enum', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
       } else {
         args = arguments;
       }
@@ -891,11 +891,27 @@ http://www.rubyjs.org/LICENSE.txt
   })();
 
   _enum = R._enum = {
+    catch_break: R.Kernel.prototype.catch_break,
+    each: function(coll, block) {
+      var k, v;
+      if (coll.each != null) {
+        coll.each(block);
+      } else if (RArray.isNativeArray(coll)) {
+        _arr.each(coll, block);
+      } else {
+        for (k in coll) {
+          if (!__hasProp.call(coll, k)) continue;
+          v = coll[k];
+          block(k, v);
+        }
+      }
+      return coll;
+    },
     all: function(coll, block) {
-      return R.catch_break(function(breaker) {
+      return this.catch_break(function(breaker) {
         var callback;
-        callback = R.blockify(block, coll);
-        coll.each(function() {
+        callback = _blockify(block, coll);
+        this.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
           if (R.falsey(result)) {
@@ -906,10 +922,10 @@ http://www.rubyjs.org/LICENSE.txt
       });
     },
     any: function(coll, block) {
-      return R.catch_break(function(breaker) {
+      return this.catch_break(function(breaker) {
         var callback;
-        callback = R.blockify(block, coll);
-        coll.each(function() {
+        callback = _blockify(block, coll);
+        this.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
           if (!R.falsey(result)) {
@@ -924,9 +940,9 @@ http://www.rubyjs.org/LICENSE.txt
       if (block == null) {
         block = null;
       }
-      callback = R.blockify(block, this);
+      callback = _blockify(block, this);
       ary = [];
-      coll.each(function() {
+      this.each(coll, function() {
         return ary.push(callback.invoke(arguments));
       });
       return _arr.flatten(ary, 1);
@@ -936,18 +952,18 @@ http://www.rubyjs.org/LICENSE.txt
       var callback, countable, counter;
       counter = 0;
       if (block === void 0) {
-        coll.each(function() {
+        this.each(coll, function() {
           return counter += 1;
         });
       } else if (block === null) {
-        coll.each(function(el) {
+        this.each(coll, function(el) {
           if (el === null) {
             return counter += 1;
           }
         });
       } else if (block.call != null) {
-        callback = R.blockify(block, coll);
-        coll.each(function() {
+        callback = _blockify(block, coll);
+        this.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
           if (!R.falsey(result)) {
@@ -956,7 +972,7 @@ http://www.rubyjs.org/LICENSE.txt
         });
       } else {
         countable = R(block);
-        coll.each(function(el) {
+        this.each(coll, function(el) {
           if (countable['=='](el)) {
             return counter += 1;
           }
@@ -983,9 +999,9 @@ http://www.rubyjs.org/LICENSE.txt
       if (!block) {
         return coll.to_enum('cycle', n);
       }
-      callback = R.blockify(block, coll);
+      callback = _blockify(block, coll);
       cache = new R.Array([]);
-      coll.each(function() {
+      this.each(coll, function() {
         var args;
         args = callback.args(arguments);
         cache.append(args);
@@ -1027,10 +1043,10 @@ http://www.rubyjs.org/LICENSE.txt
     },
     drop_while: function(coll, block) {
       var ary, callback, dropping;
-      callback = R.blockify(block, coll);
+      callback = _blockify(block, coll);
       ary = [];
       dropping = true;
-      coll.each(function() {
+      this.each(coll, function() {
         if (!(dropping && callback.invoke(arguments))) {
           dropping = false;
           return ary.push(callback.args(arguments));
@@ -1040,10 +1056,10 @@ http://www.rubyjs.org/LICENSE.txt
     },
     each_cons: function(coll, n, block) {
       var ary, callback, len;
-      callback = R.blockify(block, coll);
+      callback = _blockify(block, coll);
       len = block.length;
       ary = [];
-      coll.each(function() {
+      this.each(coll, function() {
         ary.push(BlockMulti.prototype.args(arguments));
         if (ary.length > n) {
           ary.shift();
@@ -1062,7 +1078,7 @@ http://www.rubyjs.org/LICENSE.txt
       var callback, len;
       callback = new BlockMulti(block, coll);
       len = block.length;
-      coll.each(function() {
+      this.each(coll, function() {
         var args;
         args = callback.args(arguments);
         if (len > 1 && R.Array.isNativeArray(args)) {
@@ -1075,10 +1091,10 @@ http://www.rubyjs.org/LICENSE.txt
     },
     each_slice: function(coll, n, block) {
       var args, ary, callback, len;
-      callback = R.blockify(block, coll);
+      callback = _blockify(block, coll);
       len = block.length;
       ary = [];
-      coll.each(function() {
+      this.each(coll, function() {
         var args;
         ary.push(BlockMulti.prototype.args(arguments));
         if (ary.length === n) {
@@ -1103,9 +1119,9 @@ http://www.rubyjs.org/LICENSE.txt
     },
     each_with_index: function(coll, block) {
       var callback, idx;
-      callback = R.blockify(block, coll);
+      callback = _blockify(block, coll);
       idx = 0;
-      coll.each(function() {
+      this.each(coll, function() {
         var val;
         val = callback.invokeSplat(callback.args(arguments), idx);
         idx += 1;
@@ -1113,18 +1129,493 @@ http://www.rubyjs.org/LICENSE.txt
       });
       return coll;
     },
-    select: function(coll, block) {
+    each_with_object: function(coll, obj, block) {
+      var callback;
+      callback = _blockify(block, coll);
+      this.each(coll, function() {
+        var args;
+        args = BlockMulti.prototype.args(arguments);
+        return callback.invokeSplat(args, obj);
+      });
+      return obj;
+    },
+    find: function(coll, ifnone, block) {
+      var callback;
+      if (block == null) {
+        block = null;
+      }
+      if (block === null) {
+        block = ifnone;
+        ifnone = null;
+      }
+      callback = _blockify(block, this);
+      return this.catch_break(function(breaker) {
+        this.each(coll, function() {
+          if (!R.falsey(callback.invoke(arguments))) {
+            return breaker["break"](callback.args(arguments));
+          }
+        });
+        return typeof ifnone === "function" ? ifnone() : void 0;
+      });
+    },
+    find_all: function(coll, block) {
       var ary, callback;
       ary = [];
-      callback = R.blockify(block, coll);
-      coll.each(function() {
+      callback = _blockify(block, coll);
+      this.each(coll, function() {
         if (!R.falsey(callback.invoke(arguments))) {
           return ary.push(callback.args(arguments));
         }
       });
       return ary;
+    },
+    find_index: function(coll, value) {
+      var block, callback, idx;
+      value = R(value);
+      if (value.call != null) {
+        block = value;
+      } else {
+        if (value.rubyjs != null) {
+          block = function(el) {
+            return value['=='](el);
+          };
+        } else {
+          block = function(el) {
+            return el === value;
+          };
+        }
+      }
+      idx = 0;
+      callback = _blockify(block, coll);
+      return this.catch_break(function(breaker) {
+        this.each(coll, function() {
+          if (callback.invoke(arguments)) {
+            breaker["break"](idx);
+          }
+          return idx += 1;
+        });
+        return null;
+      });
+    },
+    first: function(coll, n) {
+      if (n == null) {
+        n = null;
+      }
+      if (n !== null) {
+        if (n < 0) {
+          throw new R.ArgumentError('ArgumentError');
+        }
+        return this.take(coll, n);
+      } else {
+        return this.take(coll, 1)[0];
+      }
+    },
+    include: function(coll, other) {
+      other = R(other);
+      return this.catch_break(function(breaker) {
+        this.each(coll, function(el) {
+          el = R(el);
+          if ((typeof el['=='] === "function" ? el['=='](other) : void 0) || (typeof other['=='] === "function" ? other['=='](el) : void 0) || el === other) {
+            return breaker["break"](true);
+          }
+        });
+        return false;
+      });
+    },
+    __inject_args__: function(initial, sym, block) {
+      var _method, _ref1;
+      if ((sym != null ? sym.call : void 0) != null) {
+        block = sym;
+      } else if (sym) {
+        block = function(memo, el) {
+          return memo[sym](el);
+        };
+      } else if (((_ref1 = R(initial)) != null ? _ref1.is_string : void 0) != null) {
+        _method = "" + initial;
+        block = function(memo, el) {
+          return memo[_method](el);
+        };
+        initial = void 0;
+      } else if (initial.call != null) {
+        block = initial;
+        initial = void 0;
+      }
+      return [initial, sym, block];
+    },
+    inject: function(coll, init, sym, block) {
+      var callback, _ref1;
+      _ref1 = this.__inject_args__(init, sym, block), init = _ref1[0], sym = _ref1[1], block = _ref1[2];
+      callback = R.blockify(block, coll);
+      this.each(coll, function() {
+        var args;
+        if (init === void 0) {
+          return init = callback.args(arguments);
+        } else {
+          args = BlockMulti.prototype.args(arguments);
+          return init = callback.invokeSplat(init, args);
+        }
+      });
+      return init;
+    },
+    grep: function(coll, pattern, block) {
+      var ary, callback;
+      ary = [];
+      pattern = R(pattern);
+      callback = R.blockify(block, coll);
+      if (block) {
+        this.each(coll, function(el) {
+          if (pattern['==='](el)) {
+            return ary.push(callback.invoke(arguments));
+          }
+        });
+      } else {
+        this.each(coll, function(el) {
+          if (pattern['==='](el)) {
+            return ary.push(el);
+          }
+        });
+      }
+      return ary;
+    },
+    group_by: function(coll, block) {
+      var callback, h;
+      callback = R.blockify(block, coll);
+      h = {};
+      this.each(coll, function() {
+        var args, key;
+        args = callback.args(arguments);
+        key = callback.invoke(arguments);
+        h[key] || (h[key] = []);
+        return h[key].push(args);
+      });
+      return h;
+    },
+    map: function(coll, block) {
+      var arr, callback;
+      callback = R.blockify(block, coll);
+      arr = [];
+      this.each(coll, function() {
+        return arr.push(callback.invoke(arguments));
+      });
+      return arr;
+    },
+    max: function(coll, block) {
+      var max;
+      max = void 0;
+      block || (block = R.Comparable.cmp);
+      this.each(coll, function(item) {
+        var comp;
+        if (max === void 0) {
+          return max = item;
+        } else {
+          comp = block(item, max);
+          if (comp === null) {
+            throw R.ArgumentError["new"]();
+          }
+          if (comp > 0) {
+            return max = item;
+          }
+        }
+      });
+      return max || null;
+    },
+    max_by: function(coll, block) {
+      var max;
+      max = void 0;
+      this.each(coll, function(item) {
+        var cmp;
+        if (max === void 0) {
+          return max = item;
+        } else {
+          cmp = R.Comparable.cmpstrict(block(item), block(max));
+          if (cmp > 0) {
+            return max = item;
+          }
+        }
+      });
+      return max || null;
+    },
+    min: function(coll, block) {
+      var min;
+      min = void 0;
+      block || (block = R.Comparable.cmp);
+      this.each(coll, function(item) {
+        var comp;
+        if (min === void 0) {
+          return min = item;
+        } else {
+          comp = block.call(this, item, min);
+          if (comp === null) {
+            throw R.ArgumentError["new"]();
+          }
+          if (comp < 0) {
+            return min = item;
+          }
+        }
+      });
+      return min || null;
+    },
+    min_by: function(coll, block) {
+      var min;
+      min = void 0;
+      this.each(coll, function(item) {
+        var cmp;
+        if (min === void 0) {
+          return min = item;
+        } else {
+          cmp = R.Comparable.cmpstrict(block(item), block(min));
+          if (cmp < 0) {
+            return min = item;
+          }
+        }
+      });
+      return min || null;
+    },
+    minmax: function(coll, block) {
+      return [this.min(coll, block), this.max(coll, block)];
+    },
+    minmax_by: function(coll, block) {
+      return [this.min_by(coll, block), this.max_by(coll, block)];
+    },
+    none: function(coll, block) {
+      return this.catch_break(function(breaker) {
+        var callback;
+        callback = R.blockify(block, coll);
+        this.each(coll, function(args) {
+          var result;
+          result = callback.invoke(arguments);
+          if (!R.falsey(result)) {
+            return breaker["break"](false);
+          }
+        });
+        return true;
+      });
+    },
+    one: function(coll, block) {
+      var counter;
+      counter = 0;
+      return this.catch_break(function(breaker) {
+        var callback;
+        callback = R.blockify(block, coll);
+        this.each(coll, function(args) {
+          var result;
+          result = callback.invoke(arguments);
+          if (!R.falsey(result)) {
+            counter += 1;
+          }
+          if (counter > 1) {
+            return breaker["break"](false);
+          }
+        });
+        return counter === 1;
+      });
+    },
+    partition: function(coll, block) {
+      var callback, left, right;
+      left = [];
+      right = [];
+      callback = R.blockify(block, coll);
+      this.each(coll, function() {
+        var args;
+        args = BlockMulti.prototype.args(arguments);
+        if (callback.invokeSplat(args)) {
+          return left.push(args);
+        } else {
+          return right.push(args);
+        }
+      });
+      return [left, right];
+    },
+    reject: function(coll, block) {
+      var ary, callback;
+      callback = R.blockify(block, coll);
+      ary = [];
+      this.each(coll, function() {
+        if (R.falsey(callback.invoke(arguments))) {
+          return ary.push(callback.args(arguments));
+        }
+      });
+      return ary;
+    },
+    reverse_each: function(coll, block) {
+      _arr.reverse_each(this.to_a(coll), block);
+      return coll;
+    },
+    slice_before: function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    },
+    sort: function(coll, block) {
+      block || (block = R.Comparable.cmpstrict);
+      if (coll.to_native != null) {
+        coll = coll.to_native();
+      }
+      return coll.sort(block);
+    },
+    sort_by: function(coll, block) {
+      var ary, callback;
+      callback = R.blockify(block, coll);
+      ary = [];
+      this.each(coll, function(value) {
+        return ary.push(new MYSortedElement(value, callback.invoke(arguments)));
+      });
+      ary = _arr.sort(ary, R.Comparable.cmpstrict);
+      return _arr.map(ary, function(se) {
+        return se.value;
+      });
+    },
+    take: function(coll, n) {
+      var ary;
+      if (n < 0) {
+        throw R.ArgumentError["new"]();
+      }
+      ary = [];
+      this.catch_break(function(breaker) {
+        return this.each(coll, function() {
+          if (ary.length === n) {
+            breaker["break"]();
+          }
+          return ary.push(BlockMulti.prototype.args(arguments));
+        });
+      });
+      return ary;
+    },
+    take_while: function(coll, block) {
+      var ary;
+      ary = [];
+      this.catch_break(function(breaker) {
+        return this.each(coll, function() {
+          if (R.falsey(block.apply(coll, arguments))) {
+            breaker["break"]();
+          }
+          return ary.push(BlockMulti.prototype.args(arguments));
+        });
+      });
+      return ary;
+    },
+    to_a: function(coll) {
+      var ary;
+      ary = [];
+      this.each(coll, function() {
+        ary.push(BlockMulti.prototype.args(arguments));
+        return null;
+      });
+      return ary;
+    },
+    to_enum: function() {
+      var args, iter;
+      iter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      if (iter == null) {
+        iter = "each";
+      }
+      return new R.Enumerator(this, iter, args);
+    },
+    zip: function() {
+      var block, idx, others, results;
+      others = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      block = this.__extract_block(others);
+      others = R(others).map(function(other) {
+        var o;
+        o = R(other);
+        if (o.to_ary != null) {
+          return o.to_ary();
+        } else {
+          return o.to_enum('each');
+        }
+      });
+      results = new R.Array([]);
+      idx = 0;
+      this.each(function(el) {
+        var inner;
+        inner = R([el]);
+        others.each(function(other) {
+          el = other.is_array != null ? other.at(idx) : other.next();
+          if (el === void 0) {
+            el = null;
+          }
+          return inner.append(el);
+        });
+        if (block) {
+          block(inner);
+        }
+        results.append(inner);
+        return idx += 1;
+      });
+      if (block) {
+        return null;
+      } else {
+        return results;
+      }
     }
   };
+
+  MYSortedElement = (function() {
+
+    function MYSortedElement(value, sort_by) {
+      this.value = value;
+      this.sort_by = sort_by;
+    }
+
+    MYSortedElement.prototype['<=>'] = function(other) {
+      var _ref1;
+      return (_ref1 = this.sort_by) != null ? _ref1['<=>'](other.sort_by) : void 0;
+    };
+
+    return MYSortedElement;
+
+  })();
+
+  REnumerable = RubyJS.Enumerable;
+
+  _enum.detect = _enum.find;
+
+  _enum.select = _enum.find_all;
+
+  _enum.collectConcat = _enum.collect_concat;
+
+  _enum.dropWhile = _enum.drop_while;
+
+  _enum.eachCons = _enum.each_cons;
+
+  _enum.eachEntry = _enum.each_entry;
+
+  _enum.eachSlice = _enum.each_slice;
+
+  _enum.eachWithIndex = _enum.each_with_index;
+
+  _enum.eachWithObject = _enum.each_with_object;
+
+  _enum.findAll = _enum.find_all;
+
+  _enum.findIndex = _enum.find_index;
+
+  _enum.flatMap = _enum.flat_map;
+
+  _enum.groupBy = _enum.group_by;
+
+  _enum.maxBy = _enum.max_by;
+
+  _enum.minBy = _enum.min_by;
+
+  _enum.minmaxBy = _enum.minmax_by;
+
+  _enum.reverseEach = _enum.reverse_each;
+
+  _enum.sliceBefore = _enum.slice_before;
+
+  _enum.sortBy = _enum.sort_by;
+
+  _enum.takeWhile = _enum.take_while;
+
+  _enum.toA = _enum.to_a;
+
+  _enum.collect = _enum.map;
+
+  _enum.member = _enum.include;
+
+  _enum.reduce = _enum.inject;
+
+  _enum.entries = _enum.to_a;
 
   RubyJS.Enumerable = (function() {
 
@@ -1173,14 +1664,14 @@ http://www.rubyjs.org/LICENSE.txt
       if (n < 0) {
         throw R.ArgumentError["new"]();
       }
-      return new R.Array(_enum.drop(this, n));
+      return new RArray(_enum.drop(this, n));
     };
 
     Enumerable.prototype.drop_while = function(block) {
       if (!(block && (block.call != null))) {
         return this.to_enum('drop_while');
       }
-      return new R.Array(_enum.drop_while(this, block));
+      return new RArray(_enum.drop_while(this, block));
     };
 
     Enumerable.prototype.each_cons = function() {
@@ -1233,141 +1724,58 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Enumerable.prototype.each_with_object = function(obj, block) {
-      var callback;
       if (!(block && (block.call != null))) {
         return this.to_enum('each_with_object', obj);
       }
-      callback = R.blockify(block, this);
-      this.each(function() {
-        var args;
-        args = BlockMulti.prototype.args(arguments);
-        return callback.invokeSplat(args, obj);
-      });
-      return obj;
+      return _enum.each_with_object(this, obj, block);
     };
 
     Enumerable.prototype.find = function(ifnone, block) {
-      var callback;
       if (block == null) {
         block = null;
       }
-      if (block === null) {
-        block = ifnone;
-        ifnone = null;
-      }
-      callback = R.blockify(block, this);
-      return this.catch_break(function(breaker) {
-        this.each(function() {
-          if (!R.falsey(callback.invoke(arguments))) {
-            return breaker["break"](callback.args(arguments));
-          }
-        });
-        return typeof ifnone === "function" ? ifnone() : void 0;
-      });
+      return _enum.find(this, ifnone, block);
     };
 
     Enumerable.prototype.detect = Enumerable.prototype.find;
 
     Enumerable.prototype.find_all = function(block) {
-      var ary;
       if (!(block && (block.call != null))) {
         return this.to_enum('find_all');
       }
-      ary = _enum.select(this, block);
-      return new R.Array(ary);
+      return new RArray(_enum.select(this, block));
     };
 
     Enumerable.prototype.select = Enumerable.prototype.find_all;
 
     Enumerable.prototype.find_index = function(value) {
-      var block, callback, idx;
+      var val;
       if (arguments.length === 0) {
         return this.to_enum('find_index');
       }
-      value = R(value);
-      if (value.call != null) {
-        block = value;
+      val = _enum.find_index(this, value);
+      if (val !== null) {
+        return new R.Fixnum(val);
       } else {
-        block = function(el) {
-          return R(el)['=='](value) || el === value;
-        };
+        return val;
       }
-      idx = 0;
-      callback = R.blockify(block, this);
-      return this.catch_break(function(breaker) {
-        this.each(function() {
-          if (callback.invoke(arguments)) {
-            breaker["break"](new R.Fixnum(idx));
-          }
-          return idx += 1;
-        });
-        return null;
-      });
     };
 
     Enumerable.prototype.first = function(n) {
-      if (n == null) {
-        n = null;
-      }
-      if (n !== null) {
-        n = CoerceProto.to_int_native(n);
-        if (n < 0) {
-          throw new R.ArgumentError('ArgumentError');
-        }
-        return this.take(n);
+      if (n === null || n === void 0) {
+        return _enum.first(this, null);
       } else {
-        return this.take(1).to_native()[0];
+        n = CoerceProto.to_int_native(n);
+        return new RArray(_enum.first(this, n));
       }
     };
 
     Enumerable.prototype.include = function(other) {
-      other = this.box(other);
-      return this.catch_break(function(breaker) {
-        this.each(function(el) {
-          el = R(el);
-          if ((typeof el['=='] === "function" ? el['=='](other) : void 0) || (typeof other['=='] === "function" ? other['=='](el) : void 0) || el === other) {
-            return breaker["break"](true);
-          }
-        });
-        return false;
-      });
-    };
-
-    Enumerable.prototype.__inject_args__ = function(initial, sym, block) {
-      var _method, _ref1;
-      if ((sym != null ? sym.call : void 0) != null) {
-        block = sym;
-      } else if (sym) {
-        block = function(memo, el) {
-          return memo[sym](el);
-        };
-      } else if (((_ref1 = this.box(initial)) != null ? _ref1.is_string : void 0) != null) {
-        _method = "" + initial;
-        block = function(memo, el) {
-          return memo[_method](el);
-        };
-        initial = void 0;
-      } else if (initial.call != null) {
-        block = initial;
-        initial = void 0;
-      }
-      return [initial, sym, block];
+      return _enum.include(this, other);
     };
 
     Enumerable.prototype.inject = function(init, sym, block) {
-      var callback, _ref1;
-      _ref1 = this.__inject_args__(init, sym, block), init = _ref1[0], sym = _ref1[1], block = _ref1[2];
-      callback = R.blockify(block, this);
-      this.each(function() {
-        var args;
-        if (init === void 0) {
-          return init = callback.args(arguments);
-        } else {
-          args = BlockMulti.prototype.args(arguments);
-          return init = callback.invokeSplat(init, args);
-        }
-      });
-      return init;
+      return _enum.inject(this, init, sym, block);
     };
 
     Enumerable.prototype.iterator = function() {
@@ -1375,41 +1783,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Enumerable.prototype.grep = function(pattern, block) {
-      var ary, callback;
-      ary = new R.Array([]);
-      pattern = R(pattern);
-      callback = R.blockify(block, this);
-      if (block) {
-        this.each(function(el) {
-          if (pattern['==='](el)) {
-            return ary.append(callback.invoke(arguments));
-          }
-        });
-      } else {
-        this.each(function(el) {
-          if (pattern['==='](el)) {
-            return ary.append(el);
-          }
-        });
-      }
-      return ary;
+      return new RArray(_enum.grep(this, pattern, block));
     };
 
     Enumerable.prototype.group_by = function(block) {
-      var callback, h;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('group_by');
       }
-      callback = R.blockify(block, this);
-      h = {};
-      this.each(function() {
-        var args, key;
-        args = callback.args(arguments);
-        key = callback.invoke(arguments);
-        h[key] || (h[key] = new R.Array([]));
-        return h[key].append(args);
-      });
-      return h;
+      return _enum.group_by(this, block);
     };
 
     Enumerable.prototype.map = function(block) {
@@ -1422,7 +1803,7 @@ http://www.rubyjs.org/LICENSE.txt
       this.each(function() {
         return arr.push(callback.invoke(arguments));
       });
-      return new R.Array(arr);
+      return new RArray(arr);
     };
 
     Enumerable.prototype.collect = Enumerable.prototype.map;
@@ -1430,189 +1811,69 @@ http://www.rubyjs.org/LICENSE.txt
     Enumerable.prototype.member = Enumerable.prototype.include;
 
     Enumerable.prototype.max = function(block) {
-      var max;
-      max = void 0;
-      block || (block = R.Comparable.cmp);
-      this.each(function(item) {
-        var comp;
-        if (max === void 0) {
-          return max = item;
-        } else {
-          comp = block(item, max);
-          if (comp === null) {
-            throw R.ArgumentError["new"]();
-          }
-          if (comp > 0) {
-            return max = item;
-          }
-        }
-      });
-      return max || null;
+      return _enum.max(this, block);
     };
 
     Enumerable.prototype.max_by = function(block) {
-      var max;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('max_by');
       }
-      max = void 0;
-      this.each(function(item) {
-        var cmp;
-        if (max === void 0) {
-          return max = item;
-        } else {
-          cmp = R.Comparable.cmpstrict(block(item), block(max));
-          if (cmp > 0) {
-            return max = item;
-          }
-        }
-      });
-      return max || null;
+      return _enum.max_by(this, block);
     };
 
     Enumerable.prototype.min = function(block) {
-      var arr, min, _min;
-      min = void 0;
-      block || (block = R.Comparable.cmp);
-      if (typeof this.__samesame__ === "function" ? this.__samesame__() : void 0) {
-        arr = this.__native__;
-        if (arr.length < 65535) {
-          _min = Math.min.apply(Math, arr);
-          if (_min !== NaN) {
-            return _min;
-          }
-        }
-      }
-      this.each(function(item) {
-        var comp;
-        if (min === void 0) {
-          return min = item;
-        } else {
-          comp = block.call(this, item, min);
-          if (comp === null) {
-            throw R.ArgumentError["new"]();
-          }
-          if (comp < 0) {
-            return min = item;
-          }
-        }
-      });
-      return min || null;
+      return _enum.min(this, block);
     };
 
     Enumerable.prototype.min_by = function(block) {
-      var min;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('min_by');
       }
-      min = void 0;
-      this.each(function(item) {
-        var cmp;
-        if (min === void 0) {
-          return min = item;
-        } else {
-          cmp = R.Comparable.cmpstrict(block(item), block(min));
-          if (cmp < 0) {
-            return min = item;
-          }
-        }
-      });
-      return min || null;
+      return _enum.min_by(this, block);
     };
 
     Enumerable.prototype.minmax = function(block) {
-      return R([this.min(block), this.max(block)]);
+      return new RArray(_enum.minmax(this, block));
     };
 
     Enumerable.prototype.minmax_by = function(block) {
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('minmax_by');
       }
-      return R([this.min_by(block), this.max_by(block)]);
+      return new RArray(_enum.minmax_by(this, block));
     };
 
     Enumerable.prototype.none = function(block) {
-      return this.catch_break(function(breaker) {
-        var callback;
-        callback = R.blockify(block, this);
-        this.each(function(args) {
-          var result;
-          result = callback.invoke(arguments);
-          if (!R.falsey(result)) {
-            return breaker["break"](false);
-          }
-        });
-        return true;
-      });
+      return _enum.none(this, block);
     };
-
-    Enumerable.prototype['none?'] = Enumerable.prototype.none;
 
     Enumerable.prototype.one = function(block) {
-      var counter;
-      counter = 0;
-      return this.catch_break(function(breaker) {
-        var callback;
-        callback = R.blockify(block, this);
-        this.each(function(args) {
-          var result;
-          result = callback.invoke(arguments);
-          if (!R.falsey(result)) {
-            counter += 1;
-          }
-          if (counter > 1) {
-            return breaker["break"](false);
-          }
-        });
-        return counter === 1;
-      });
+      return _enum.one(this, block);
     };
 
-    Enumerable.prototype['one?'] = Enumerable.prototype.one;
-
     Enumerable.prototype.partition = function(block) {
-      var callback, left, right;
+      var ary;
       if (!(block && (block.call != null))) {
         return this.to_enum('partition');
       }
-      left = [];
-      right = [];
-      callback = R.blockify(block, this);
-      this.each(function() {
-        var args;
-        args = BlockMulti.prototype.args(arguments);
-        if (callback.invokeSplat(args)) {
-          return left.push(args);
-        } else {
-          return right.push(args);
-        }
-      });
-      return new R.Array([new R.Array(left), new R.Array(right)]);
+      ary = _enum.partition(this, block);
+      return new RArray([new RArray(ary[0]), new RArray(ary[1])]);
     };
 
     Enumerable.prototype.reduce = Enumerable.prototype.inject;
 
     Enumerable.prototype.reject = function(block) {
-      var ary, callback;
       if (!(block && (block.call != null))) {
         return this.to_enum('reject');
       }
-      callback = R.blockify(block, this);
-      ary = [];
-      this.each(function() {
-        if (R.falsey(callback.invoke(arguments))) {
-          return ary.push(callback.args(arguments));
-        }
-      });
-      return new R.Array(ary);
+      return new RArray(_enum.reject(this, block));
     };
 
     Enumerable.prototype.reverse_each = function(block) {
       if (!(block && (block.call != null))) {
         return this.to_enum('reverse_each');
       }
-      this.to_a().reverse_each(block);
-      return this;
+      return _enum.reverse_each(this, block);
     };
 
     Enumerable.prototype.slice_before = function() {
@@ -1640,7 +1901,7 @@ http://www.rubyjs.org/LICENSE.txt
             }
             return accumulator = R([elem]);
           } else {
-            accumulator || (accumulator = new R.Array([]));
+            accumulator || (accumulator = new RArray([]));
             return accumulator.append(elem);
           }
         });
@@ -1651,72 +1912,34 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Enumerable.prototype.sort = function(block) {
-      var arr;
-      block || (block = R.Comparable.cmpstrict);
-      arr = this.to_a().to_native().sort(block);
-      return new R.Array(arr);
+      return new RArray(_enum.sort(this, block));
     };
 
     Enumerable.prototype.sort_by = function(block) {
-      var ary, callback;
       if (!(block && (block.call != null))) {
         return this.to_enum('sort_by');
       }
-      callback = R.blockify(block, this);
-      ary = [];
-      this.each(function(value) {
-        return ary.push(new R.Enumerable.SortedElement(value, callback.invoke(arguments)));
-      });
-      ary = new R.Array(ary);
-      return ary.sort(R.Comparable.cmpstrict).map(function(se) {
-        return se.value;
-      });
+      return new RArray(_enum.sort_by(this, block));
     };
 
     Enumerable.prototype.take = function(n) {
-      var arr;
       this.__ensure_args_length(arguments, 1);
       n = CoerceProto.to_int_native(n);
       if (n < 0) {
         throw R.ArgumentError["new"]();
       }
-      arr = [];
-      this.catch_break(function(breaker) {
-        return this.each(function() {
-          if (arr.length === n) {
-            breaker["break"]();
-          }
-          return arr.push(BlockMulti.prototype.args(arguments));
-        });
-      });
-      return new R.Array(arr);
+      return new RArray(_enum.take(this, n));
     };
 
     Enumerable.prototype.take_while = function(block) {
-      var ary;
       if (!(block && (block.call != null))) {
         return this.to_enum('take_while');
       }
-      ary = [];
-      this.catch_break(function(breaker) {
-        return this.each(function() {
-          if (R.falsey(block.apply(this, arguments))) {
-            breaker["break"]();
-          }
-          return ary.push(BlockMulti.prototype.args(arguments));
-        });
-      });
-      return new R.Array(ary);
+      return new RArray(_enum.take_while(this, block));
     };
 
     Enumerable.prototype.to_a = function() {
-      var ary;
-      ary = [];
-      this.each(function() {
-        ary.push(BlockMulti.prototype.args(arguments));
-        return null;
-      });
-      return new R.Array(ary);
+      return new RArray(_enum.to_a(this));
     };
 
     Enumerable.prototype.to_enum = function() {
@@ -1869,62 +2092,6 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    EnumerableArray.prototype.inject = function(initial, sym, block) {
-      var args, idx, _ref1;
-      _ref1 = this.__inject_args__(initial, sym, block), initial = _ref1[0], sym = _ref1[1], block = _ref1[2];
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        args = this.__native__[idx];
-        if (initial === void 0) {
-          initial = args;
-        } else {
-          initial = block.call(this, initial, args);
-        }
-      }
-      return initial;
-    };
-
-    EnumerableArray.prototype.each_entry = function(block) {
-      var idx;
-      if (arguments.length > 1) {
-        throw R.ArgumentError["new"]();
-      }
-      if (!(block && (block.call != null))) {
-        return this.to_enum('each_entry');
-      }
-      block = Block.supportMultipleArgs(block);
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        block(this.__native__[idx]);
-      }
-      return this;
-    };
-
-    EnumerableArray.prototype.each_with_index = function(block) {
-      var idx, item;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('each_with_index');
-      }
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        item = this.__native__[idx];
-        block(item, idx);
-      }
-      return this;
-    };
-
-    EnumerableArray.prototype.each_with_object = function(obj, block) {
-      var idx;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('each_with_object', obj);
-      }
-      idx = -1;
-      while (++idx < this.__native__.length) {
-        block(this.__native__[idx], obj);
-      }
-      return obj;
-    };
-
     EnumerableArray.prototype.find = function(ifnone, block) {
       var idx, item, len;
       if (block == null) {
@@ -1987,224 +2154,6 @@ http://www.rubyjs.org/LICENSE.txt
       }
       return null;
     };
-
-    EnumerableArray.prototype.include = function(other) {
-      var el, idx, item, len;
-      other = R(other);
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        el = R(item);
-        if ((typeof other['=='] === "function" ? other['=='](el) : void 0) || (typeof el['=='] === "function" ? el['=='](other) : void 0)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    EnumerableArray.prototype.grep = function(pattern, block) {
-      var ary, idx, item, len;
-      ary = new R.Array([]);
-      pattern = R(pattern);
-      block = Block.supportMultipleArgs(block);
-      idx = -1;
-      len = this.__native__.length;
-      if (block) {
-        while (++idx < len) {
-          item = this.__native__[idx];
-          if (pattern['==='](item)) {
-            ary.append(block(item));
-          }
-        }
-      } else {
-        while (++idx < len) {
-          item = this.__native__[idx];
-          if (pattern['==='](item)) {
-            ary.append(item);
-          }
-        }
-      }
-      return ary;
-    };
-
-    EnumerableArray.prototype.group_by = function(block) {
-      var hsh, idx, item, key, len;
-      if ((block != null ? block.call : void 0) == null) {
-        return this.to_enum('group_by');
-      }
-      block = Block.supportMultipleArgs(block);
-      hsh = {};
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        key = block(item);
-        hsh[key] || (hsh[key] = new R.Array([]));
-        hsh[key].append(item);
-      }
-      return hsh;
-    };
-
-    EnumerableArray.prototype.max = function(block) {
-      var arr, comp, idx, item, len, max, _max;
-      max = void 0;
-      block || (block = RubyJS.Comparable.cmp);
-      if (typeof this.__samesame__ === "function" ? this.__samesame__() : void 0) {
-        arr = this.__native__;
-        if (arr.length < 65535) {
-          _max = Math.max.apply(Math, arr);
-          if (_max !== NaN) {
-            return _max;
-          }
-        }
-      }
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        if (max === void 0) {
-          max = item;
-        } else {
-          comp = block(item, max);
-          if (comp === null) {
-            throw R.ArgumentError["new"]();
-          }
-          if (comp > 0) {
-            max = item;
-          }
-        }
-      }
-      return max || null;
-    };
-
-    EnumerableArray.prototype.max_by = function(block) {
-      var cmp, idx, item, len, max;
-      if ((block != null ? block.call : void 0) == null) {
-        return this.to_enum('max_by');
-      }
-      max = void 0;
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        if (max === void 0) {
-          max = item;
-        } else {
-          cmp = R.Comparable.cmpstrict(block(item), block(max));
-          if (cmp > 0) {
-            max = item;
-          }
-        }
-      }
-      return max || null;
-    };
-
-    EnumerableArray.prototype.min = function(block) {
-      var arr, cmp, idx, item, len, min, _min;
-      min = void 0;
-      block || (block = RubyJS.Comparable.cmp);
-      if (typeof this.__samesame__ === "function" ? this.__samesame__() : void 0) {
-        arr = this.__native__;
-        if (arr.length < 65535) {
-          _min = Math.min.apply(Math, arr);
-          if (_min !== NaN) {
-            return _min;
-          }
-        }
-      }
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        if (min === void 0) {
-          min = item;
-        } else {
-          cmp = block(item, min);
-          if (cmp === null) {
-            throw R.ArgumentError["new"]();
-          }
-          if (cmp < 0) {
-            min = item;
-          }
-        }
-      }
-      return min || null;
-    };
-
-    EnumerableArray.prototype.min_by = function(block) {
-      var cmp, idx, item, len, min;
-      if ((block != null ? block.call : void 0) == null) {
-        return this.to_enum('min_by');
-      }
-      min = void 0;
-      block || (block = function(el, min) {
-        return el['<=>'](min);
-      });
-      idx = -1;
-      len = this.__native__.length;
-      while (++idx < len) {
-        item = this.__native__[idx];
-        if (min === void 0) {
-          min = item;
-        } else {
-          cmp = RubyJS.Comparable.cmpstrict(block(item), block(min));
-          if (cmp < 0) {
-            min = item;
-          }
-        }
-      }
-      return min || null;
-    };
-
-    EnumerableArray.prototype.minmax = function(block) {
-      return R([this.min(block), this.max(block)]);
-    };
-
-    EnumerableArray.prototype.minmax_by = function(block) {
-      if ((block != null ? block.call : void 0) == null) {
-        return this.to_enum('minmax_by');
-      }
-      return R([this.min_by(block), this.max_by(block)]);
-    };
-
-    EnumerableArray.prototype.collectConcat = EnumerableArray.prototype.collect_concat;
-
-    EnumerableArray.prototype.dropWhile = EnumerableArray.prototype.drop_while;
-
-    EnumerableArray.prototype.eachCons = EnumerableArray.prototype.each_cons;
-
-    EnumerableArray.prototype.eachEntry = EnumerableArray.prototype.each_entry;
-
-    EnumerableArray.prototype.eachSlice = EnumerableArray.prototype.each_slice;
-
-    EnumerableArray.prototype.eachWithIndex = EnumerableArray.prototype.each_with_index;
-
-    EnumerableArray.prototype.eachWithObject = EnumerableArray.prototype.each_with_object;
-
-    EnumerableArray.prototype.findAll = EnumerableArray.prototype.find_all;
-
-    EnumerableArray.prototype.findIndex = EnumerableArray.prototype.find_index;
-
-    EnumerableArray.prototype.flatMap = EnumerableArray.prototype.flat_map;
-
-    EnumerableArray.prototype.groupBy = EnumerableArray.prototype.group_by;
-
-    EnumerableArray.prototype.maxBy = EnumerableArray.prototype.max_by;
-
-    EnumerableArray.prototype.minBy = EnumerableArray.prototype.min_by;
-
-    EnumerableArray.prototype.minmaxBy = EnumerableArray.prototype.minmax_by;
-
-    EnumerableArray.prototype.reverseEach = EnumerableArray.prototype.reverse_each;
-
-    EnumerableArray.prototype.sliceBefore = EnumerableArray.prototype.slice_before;
-
-    EnumerableArray.prototype.sortBy = EnumerableArray.prototype.sort_by;
-
-    EnumerableArray.prototype.takeWhile = EnumerableArray.prototype.take_while;
-
-    EnumerableArray.prototype.toA = EnumerableArray.prototype.to_a;
 
     return EnumerableArray;
 
@@ -2347,7 +2296,7 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(RubyJS.Object);
 
-  _arr = {
+  _arr = R._arr = {
     flatten: function(coll, recursion) {
       var arr;
       if (recursion == null) {
@@ -2383,8 +2332,23 @@ http://www.rubyjs.org/LICENSE.txt
       } else {
         return new R.Enumerator(coll, 'each');
       }
+    },
+    reverse_each: function(coll, block) {
+      var idx;
+      if (block.length > 0) {
+        block = Block.supportMultipleArgs(block);
+      }
+      idx = coll.length;
+      while (idx--) {
+        block(coll[idx]);
+      }
+      return coll;
     }
   };
+
+  _arr.map = _enum.map;
+
+  _arr.sort = _enum.sort;
 
   RubyJS.Array = (function(_super) {
 
@@ -3230,22 +3194,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.reverse_each = function(block) {
-      var idx;
       if (!(block && (block.call != null))) {
         return this.to_enum('reverse_each');
       }
-      if (block && (block.call != null)) {
-        if (block.length > 0) {
-          block = Block.supportMultipleArgs(block);
-        }
-        idx = this.__native__.length;
-        while (idx--) {
-          block(this.__native__[idx]);
-        }
-        return this;
-      } else {
-        return this.to_enum();
-      }
+      _arr.reverse_each(this.__native__, block);
+      return this;
     };
 
     Array.prototype.rotate = function(cnt) {
@@ -4509,12 +4462,9 @@ http://www.rubyjs.org/LICENSE.txt
 
   nativeString = root.String;
 
-  StringClassMethods = {
+  _str = R._str = {
     chars: function(str, block) {
       var idx, len;
-      if (!(block && (block.call != null))) {
-        return this.to_enum('chars');
-      }
       idx = -1;
       len = str.length;
       while (++idx < len) {
@@ -4552,7 +4502,6 @@ http://www.rubyjs.org/LICENSE.txt
       }
     },
     downcase: function(str) {
-      str = CoerceProto.to_str_native(str);
       if (!str.match(/[A-Z]/)) {
         return null;
       }
@@ -4565,7 +4514,7 @@ http://www.rubyjs.org/LICENSE.txt
       }).join('').to_native();
     },
     empty: function(str) {
-      return CoerceProto.to_str_native(str).length === 0;
+      return str.length === 0;
     },
     end_with: function(str, needles) {
       var str_len, w, _j, _len1, _ref1;
@@ -4585,7 +4534,6 @@ http://www.rubyjs.org/LICENSE.txt
       return false;
     },
     upcase: function(str) {
-      str = CoerceProto.to_str_native(str);
       if (!str.match(/[a-z]/)) {
         return null;
       }
@@ -4925,7 +4873,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.downcase_bang = function() {
       var str;
-      str = R.String.downcase(this.__native__);
+      str = _str.downcase(this.__native__);
       if (str === null) {
         return null;
       }
@@ -5787,7 +5735,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.upcase_bang = function() {
       var val;
-      val = R.String.upcase(this.__native__);
+      val = _str.upcase(this.__native__);
       if (val === null) {
         return null;
       }
@@ -5927,9 +5875,7 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  R.extend(RubyJS.String, StringClassMethods);
-
-  _str = R._str = RString = RubyJS.String;
+  RString = RubyJS.String;
 
   RubyJS.Regexp = (function(_super) {
 

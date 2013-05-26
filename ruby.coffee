@@ -143,7 +143,7 @@ class BlockSingle
     @block.apply(@thisArg, arguments)
 
 R.Block = Block
-R.blockify = Block.create
+R.blockify = _blockify = Block.create
 
 
 class RubyJS.Kernel
@@ -625,7 +625,7 @@ class RubyJS.Base extends RubyJS.Object
   # TODO: TEST
   pollute_global: ->
     if arguments.length is 0
-      args = ['_str', '_arr','proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['_str', '_arr', '_enum', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
@@ -807,29 +807,43 @@ class RubyJS.Comparable
   gteq: @prototype['>=']
 
 _enum = R._enum =
+  catch_break: R.Kernel.prototype.catch_break
+
+
+  each: (coll, block) ->
+    if coll.each?
+      coll.each(block)
+    else if RArray.isNativeArray(coll)
+      _arr.each(coll, block)
+    else
+      for own k,v of coll
+        block(k,v)
+    coll
+
+
   all: (coll, block) ->
-    R.catch_break (breaker) ->
-      callback = R.blockify(block, coll)
-      coll.each ->
+    @catch_break (breaker) ->
+      callback = _blockify(block, coll)
+      @each coll, ->
         result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
       true
 
 
   any: (coll, block) ->
-    R.catch_break (breaker) ->
-      callback = R.blockify(block, coll)
-      coll.each ->
+    @catch_break (breaker) ->
+      callback = _blockify(block, coll)
+      @each coll, ->
         result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
       false
 
 
   collect_concat: (coll, block = null) ->
-    callback = R.blockify(block, this)
+    callback = _blockify(block, this)
 
     ary = []
-    coll.each ->
+    @each coll, ->
       ary.push(callback.invoke(arguments))
 
     _arr.flatten(ary, 1)
@@ -841,17 +855,17 @@ _enum = R._enum =
   count: (coll, block) ->
     counter = 0
     if block is undefined
-      coll.each -> counter += 1
+      @each coll, -> counter += 1
     else if block is null
-      coll.each (el) -> counter += 1 if el is null
+      @each coll, (el) -> counter += 1 if el is null
     else if block.call?
-      callback = R.blockify(block, coll)
-      coll.each ->
+      callback = _blockify(block, coll)
+      @each coll, ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
       countable = R(block)
-      coll.each (el) ->
+      @each coll, (el) ->
         counter += 1 if countable['=='](el)
     counter
 
@@ -870,10 +884,10 @@ _enum = R._enum =
 
     return coll.to_enum('cycle', n) unless block
 
-    callback = R.blockify(block, coll)
+    callback = _blockify(block, coll)
 
     cache = new R.Array([])
-    coll.each ->
+    @each coll, ->
       args = callback.args(arguments)
       cache.append args
       callback.invoke(arguments)
@@ -903,12 +917,12 @@ _enum = R._enum =
 
 
   drop_while: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = _blockify(block, coll)
 
     ary = []
     dropping = true
 
-    coll.each ->
+    @each coll, ->
       unless dropping && callback.invoke(arguments)
         dropping = false
         ary.push(callback.args(arguments))
@@ -919,10 +933,10 @@ _enum = R._enum =
 
   each_cons: (coll, n, block) ->
     # TODO: use callback
-    callback = R.blockify(block, coll)
+    callback = _blockify(block, coll)
     len = block.length
     ary = []
-    coll.each ->
+    @each coll, ->
       ary.push(BlockMulti.prototype.args(arguments))
       ary.shift() if ary.length > n
       if ary.length is n
@@ -933,17 +947,13 @@ _enum = R._enum =
 
     null
 
-  # Calls block once for each element in self, passing that element as a
-  # parameter, converting multiple values from yield to an array.
-  #
-  # If no block is given, an enumerator is returned instead.
-  #
+
   each_entry: (coll, block) ->
     # hard code BlockMulti because each_entry converts multiple
     # yields into an array
     callback = new BlockMulti(block, coll)
     len = block.length
-    coll.each ->
+    @each coll, ->
       args = callback.args(arguments)
       if len > 1 and R.Array.isNativeArray(args)
         block.apply(coll, args)
@@ -952,23 +962,13 @@ _enum = R._enum =
 
     coll
 
-  # Iterates the given block for each slice of <n> elements. If no block is
-  # given, returns an enumerator.
-  #
-  # @example
-  #     (1..10).each_slice(3) {|a| p a}
-  #     # outputs below
-  #     [1, 2, 3]
-  #     [4, 5, 6]
-  #     [7, 8, 9]
-  #     [10]
-  #
+
   each_slice: (coll, n, block) ->
-    callback = R.blockify(block, coll)
+    callback = _blockify(block, coll)
     len      = block.length
     ary      = []
 
-    coll.each ->
+    @each coll, ->
       ary.push( BlockMulti.prototype.args(arguments) )
       if ary.length == n
         args = ary.slice(0)
@@ -989,10 +989,10 @@ _enum = R._enum =
 
 
   each_with_index: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = _blockify(block, coll)
 
     idx = 0
-    coll.each ->
+    @each coll, ->
       val = callback.invokeSplat(callback.args(arguments), idx)
       idx += 1
       val
@@ -1000,14 +1000,440 @@ _enum = R._enum =
     coll
 
 
-  select: (coll, block) ->
+  each_with_object: (coll, obj, block) ->
+    callback = _blockify(block, coll)
+
+    @each coll, ->
+      args = BlockMulti.prototype.args(arguments)
+      callback.invokeSplat(args, obj)
+
+    obj
+
+
+  find: (coll, ifnone, block = null) ->
+    if block == null
+      block  = ifnone
+      ifnone = null
+
+    callback = _blockify(block, this)
+    @catch_break (breaker) ->
+      @each coll, ->
+        unless R.falsey(callback.invoke(arguments))
+          breaker.break(callback.args(arguments))
+
+      ifnone?()
+
+
+  find_all: (coll, block) ->
     ary = []
-    callback = R.blockify(block, coll)
-    coll.each ->
+    callback = _blockify(block, coll)
+    @each coll, ->
       unless R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
     ary
+
+
+  find_index: (coll, value) ->
+    value = R(value)
+
+    if value.call?
+      block = value
+    else
+      if value.rubyjs?
+        block = (el) -> value['=='](el)
+      else
+        block = (el) -> el is value
+
+    idx = 0
+    callback = _blockify(block, coll)
+    @catch_break (breaker) ->
+      @each coll, ->
+        breaker.break(idx) if callback.invoke(arguments)
+        idx += 1
+
+      null
+
+
+  first: (coll, n = null) ->
+    if n != null
+      throw new R.ArgumentError('ArgumentError') if n < 0
+      @take(coll, n)
+    else
+      @take(coll, 1)[0]
+
+
+  # FIXME: This a very unfortunate solution just to enable the use of '=='
+  include: (coll, other) ->
+    other = R(other)
+
+    @catch_break (breaker) ->
+      @each coll, (el) ->
+        # TODO: this is special. we're trying to typecast el, so we can
+        # call == on it. This needs to be fixed, most probably with an R.equalss(a, b)
+        # which takes care of non-R objects.
+        el = R(el)
+        breaker.break(true) if el['==']?(other) or other['==']?(el) or el is other
+      false
+
+
+  # @private
+  __inject_args__: (initial, sym, block) ->
+    if sym?.call?
+      block = sym
+    else if sym
+      # for [1,2,3].inject(5, (memo, i) -> )
+      block = (memo, el) -> memo[sym](el)
+    else if R(initial)?.is_string?
+      # for [1,2,3].inject('-')
+      _method = "#{initial}"
+      block   = (memo, el) -> memo[_method](el)
+      initial = undefined
+    else if initial.call?
+      # for inject (memo,i) ->
+      block = initial
+      initial = undefined
+
+    [initial, sym, block]
+
+
+
+  inject: (coll, init, sym, block) ->
+    [init, sym, block] = @__inject_args__(init, sym, block)
+
+    callback = R.blockify(block, coll)
+    @each coll, ->
+      if init is undefined
+        init = callback.args(arguments)
+      else
+        args = BlockMulti.prototype.args(arguments)
+        init = callback.invokeSplat(init, args)
+
+    init
+
+
+  grep: (coll, pattern, block) ->
+    ary      = []
+    pattern  = R(pattern)
+    callback = R.blockify(block, coll)
+    if block
+      @each coll, (el) ->
+        if pattern['==='](el)
+          ary.push(callback.invoke(arguments))
+    else
+      @each coll, (el) ->
+        ary.push(el) if pattern['==='](el)
+    ary
+
+
+  group_by: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    h = {}
+    @each coll, ->
+      args = callback.args(arguments)
+      key  = callback.invoke(arguments)
+
+      h[key] ||= []
+      h[key].push(args)
+
+    h
+
+
+  map: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    arr = []
+    @each coll, ->
+      arr.push(callback.invoke(arguments))
+
+    arr
+
+
+  max: (coll, block) ->
+    max = undefined
+
+    block ||= R.Comparable.cmp
+
+    # # Following Optimization won't complain if:
+    # # [1,2,'3']
+    # #
+    # # optimization for elements that are arrays
+    # #
+    # if @__samesame__?()
+    #   arr = @__native__
+    #   if arr.length < 65535
+    #     _max = Math.max.apply(Math, arr)
+    #     return _max if _max isnt NaN
+
+    @each coll, (item) ->
+      if max is undefined
+        max = item
+      else
+        comp = block(item, max)
+        throw R.ArgumentError.new() if comp is null
+        max = item if comp > 0
+
+    max or null
+
+
+  max_by: (coll, block) ->
+    max = undefined
+    # OPTIMIZE: use sorted element
+    @each coll, (item) ->
+      if max is undefined
+        max = item
+      else
+        cmp = R.Comparable.cmpstrict(block(item), block(max))
+        max = item if cmp > 0
+    max or null
+
+
+  min: (coll, block) ->
+    min = undefined
+    block ||= R.Comparable.cmp
+
+    # Following Optimization won't complain if:
+    # [1,2,'3']
+    #
+    # optimization for elements that are arrays
+
+    @each coll, (item) ->
+      if min is undefined
+        min = item
+      else
+        comp = block.call(this, item, min)
+        throw R.ArgumentError.new() if comp is null
+        min = item if comp < 0
+
+    min or null
+
+
+
+  min_by: (coll, block) ->
+    min = undefined
+    # OPTIMIZE: use sorted element
+    @each coll, (item) ->
+      if min is undefined
+        min = item
+      else
+        cmp = R.Comparable.cmpstrict(block(item), block(min))
+        min = item if cmp < 0
+    min or null
+
+
+  minmax: (coll, block) ->
+    # TODO: optimize
+    [@min(coll, block), @max(coll, block)]
+
+
+  minmax_by: (coll, block) ->
+    [@min_by(coll, block), @max_by(coll, block)]
+
+
+  none: (coll, block) ->
+    @catch_break (breaker) ->
+      callback = R.blockify(block, coll)
+      @each coll, (args) ->
+        result = callback.invoke(arguments)
+        breaker.break(false) unless R.falsey(result)
+      true
+
+
+  one: (coll, block) ->
+    counter  = 0
+
+    @catch_break (breaker) ->
+      callback = R.blockify(block, coll)
+      @each coll, (args) ->
+        result = callback.invoke(arguments)
+        counter += 1 unless R.falsey(result)
+        breaker.break(false) if counter > 1
+      counter is 1
+
+
+
+  partition: (coll, block) ->
+    left  = []
+    right = []
+
+    callback = R.blockify(block, coll)
+
+    @each coll, ->
+      args = BlockMulti.prototype.args(arguments)
+
+      if callback.invokeSplat(args)
+        left.push(args)
+      else
+        right.push(args)
+
+    [left, right]
+
+
+  reject: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    ary = []
+    @each coll, ->
+      if R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
+
+    ary
+
+  reverse_each: (coll, block) ->
+    # There is no other way then to convert to an array first.
+    # Because Enumerable depends only on #each (through #to_a)
+    _arr.reverse_each(@to_a(coll), block )
+    coll
+
+  slice_before: (args...) ->
+    # TODO
+    # block = @__extract_block(args)
+    # # throw R.ArgumentError.new() if args.length == 1
+    # arg   = R(args[0])
+
+    # if block
+    #   has_init = !(arg is undefined)
+    # else
+    #   block = (elem) -> arg['==='] elem
+
+    # self = this
+    # R.Enumerator.create (yielder) ->
+    #   accumulator = null
+    #   self.each (elem) ->
+    #     start_new = if has_init then block(elem, arg.dup()) else block(elem)
+    #     if start_new
+    #       yielder.yield accumulator if accumulator
+    #       accumulator = R([elem])
+    #     else
+    #       accumulator ||= new RArray([])
+    #       accumulator.append elem
+    #   yielder.yield accumulator if accumulator
+
+
+  sort: (coll, block) ->
+    # TODO: throw Error when comparing different values.
+    block ||= R.Comparable.cmpstrict
+    coll = coll.to_native() if coll.to_native?
+    coll.sort(block)
+
+
+  sort_by: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    ary = []
+    @each coll, (value) ->
+      ary.push new MYSortedElement(value, callback.invoke(arguments))
+
+    ary = _arr.sort(ary, R.Comparable.cmpstrict)
+    _arr.map(ary, (se) -> se.value)
+
+
+  take: (coll, n) ->
+    throw R.ArgumentError.new() if n < 0
+    ary = []
+    @catch_break (breaker) ->
+      @each coll, ->
+        breaker.break() if ary.length is n
+        ary.push(BlockMulti.prototype.args(arguments))
+
+    ary
+
+
+
+  take_while: (coll, block) ->
+    ary = []
+
+    @catch_break (breaker) ->
+      @each coll, ->
+        breaker.break() if R.falsey block.apply(coll, arguments)
+        ary.push(BlockMulti.prototype.args(arguments))
+
+    ary
+
+
+  to_a: (coll) ->
+    ary = []
+
+    @each coll, ->
+      # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
+      ary.push(BlockMulti.prototype.args(arguments))
+      null
+
+    ary
+
+
+  to_enum: (iter = "each", args...) ->
+    new R.Enumerator(this, iter, args)
+
+
+  zip: (others...) ->
+    block = @__extract_block(others)
+
+    others = R(others).map (other) ->
+      o = R(other)
+      if o.to_ary? then o.to_ary() else o.to_enum('each')
+
+    results = new R.Array([])
+    idx     = 0
+    @each (el) ->
+      inner = R([el])
+      others.each (other) ->
+        el = if other.is_array? then other.at(idx) else other.next()
+        el = null if el is undefined
+        inner.append(el)
+
+      block( inner ) if block
+      results.append( inner )
+      idx += 1
+
+    if block then null else results
+
+
+
+# --- Aliases ---------------------------------------------------------------
+
+
+
+# `value` is the original element and `sort_by` the one to be sorted by
+#
+# @private
+class MYSortedElement
+  constructor: (@value, @sort_by) ->
+
+  '<=>': (other) ->
+    @sort_by?['<=>'](other.sort_by)
+
+
+
+REnumerable = RubyJS.Enumerable
+_enum.detect = _enum.find
+_enum.select = _enum.find_all
+_enum.collectConcat = _enum.collect_concat
+_enum.dropWhile = _enum.drop_while
+_enum.eachCons = _enum.each_cons
+_enum.eachEntry = _enum.each_entry
+_enum.eachSlice = _enum.each_slice
+_enum.eachWithIndex = _enum.each_with_index
+_enum.eachWithObject = _enum.each_with_object
+_enum.findAll = _enum.find_all
+_enum.findIndex = _enum.find_index
+_enum.flatMap = _enum.flat_map
+_enum.groupBy = _enum.group_by
+_enum.maxBy = _enum.max_by
+_enum.minBy = _enum.min_by
+_enum.minmaxBy = _enum.minmax_by
+_enum.reverseEach = _enum.reverse_each
+_enum.sliceBefore = _enum.slice_before
+_enum.sortBy = _enum.sort_by
+_enum.takeWhile = _enum.take_while
+_enum.toA = _enum.to_a
+
+
+_enum.collect = _enum.map
+_enum.member = _enum.include
+_enum.reduce = _enum.inject
+_enum.entries = _enum.to_a
 
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
@@ -1125,7 +1551,7 @@ class RubyJS.Enumerable
     n = CoerceProto.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
-    new R.Array(_enum.drop(this, n))
+    new RArray(_enum.drop(this, n))
 
 
   # Drops elements up to, but not including, the first element for which the
@@ -1140,7 +1566,7 @@ class RubyJS.Enumerable
   #
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
-    new R.Array(_enum.drop_while(this, block))
+    new RArray(_enum.drop_while(this, block))
 
 
   # Iterates the given block for each array of consecutive <n> elements. If no
@@ -1237,14 +1663,7 @@ class RubyJS.Enumerable
   #
   each_with_object: (obj, block) ->
     return @to_enum('each_with_object', obj) unless block && block.call?
-
-    callback = R.blockify(block, this)
-
-    @each ->
-      args = BlockMulti.prototype.args(arguments)
-      callback.invokeSplat(args, obj)
-
-    obj
+    _enum.each_with_object(this, obj, block)
 
   # Passes each entry in enum to block. Returns the first for which block is not
   # false. If no object matches, calls ifnone and returns its result when it is
@@ -1259,17 +1678,8 @@ class RubyJS.Enumerable
   # @alias #detect
   #
   find: (ifnone, block = null) ->
-    if block == null
-      block  = ifnone
-      ifnone = null
+    _enum.find(this, ifnone, block)
 
-    callback = R.blockify(block, this)
-    @catch_break (breaker) ->
-      @each ->
-        unless R.falsey(callback.invoke(arguments))
-          breaker.break(callback.args(arguments))
-
-      ifnone?()
 
   # @alias #find
   #
@@ -1286,10 +1696,7 @@ class RubyJS.Enumerable
   #
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
-
-    ary = _enum.select(this, block)
-
-    new R.Array(ary)
+    new RArray(_enum.select(this, block))
 
   select: @prototype.find_all
 
@@ -1306,21 +1713,11 @@ class RubyJS.Enumerable
   #
   find_index: (value) ->
     return @to_enum('find_index') if arguments.length == 0
-    value = R(value)
-
-    if value.call?
-      block = value
+    val = _enum.find_index(this, value)
+    if val != null
+      new R.Fixnum(val)
     else
-      block = (el) -> R(el)['=='](value) or el is value
-
-    idx = 0
-    callback = R.blockify(block, this)
-    @catch_break (breaker) ->
-      @each ->
-        breaker.break(new R.Fixnum(idx)) if callback.invoke(arguments)
-        idx += 1
-
-      null
+      val
 
   # Returns the first element, or the first n elements, of the enumerable. If
   # the enumerable is empty, the first form returns nil, and the second form
@@ -1332,45 +1729,17 @@ class RubyJS.Enumerable
   #     R.w('foo bar baz').first(10) #=> ["foo", "bar", "baz"]
   #     new R.Array([]).first()                  #=> null
   #
-  first: (n = null) ->
-    if n != null
-      n = CoerceProto.to_int_native(n)
-      throw new R.ArgumentError('ArgumentError') if n < 0
-      @take(n)
+  first: (n) ->
+    if n is null or n is undefined
+      _enum.first(this, null)
     else
-      @take(1).to_native()[0]
+      n = CoerceProto.to_int_native(n)
+      new RArray(_enum.first(this, n))
+
 
   # Returns true if any member of enum equals obj. Equality is tested using ==.
   include: (other) ->
-    other = @box(other)
-
-    @catch_break (breaker) ->
-      @each (el) ->
-        # TODO: this is special. we're trying to typecast el, so we can
-        # call == on it. This needs to be fixed, most probably with an R.equalss(a, b)
-        # which takes care of non-R objects.
-        el = R(el)
-        breaker.break(true) if el['==']?(other) or other['==']?(el) or el is other
-      false
-
-  # @private
-  __inject_args__: (initial, sym, block) ->
-    if sym?.call?
-      block = sym
-    else if sym
-      # for [1,2,3].inject(5, (memo, i) -> )
-      block = (memo, el) -> memo[sym](el)
-    else if @box(initial)?.is_string?
-      # for [1,2,3].inject('-')
-      _method = "#{initial}"
-      block   = (memo, el) -> memo[_method](el)
-      initial = undefined
-    else if initial.call?
-      # for inject (memo,i) ->
-      block = initial
-      initial = undefined
-
-    [initial, sym, block]
+    _enum.include(this, other)
 
 
   # Combines all elements of enum by applying a binary operation, specified by
@@ -1404,17 +1773,7 @@ class RubyJS.Enumerable
   # @todo implement inject('+')
   #
   inject: (init, sym, block) ->
-    [init, sym, block] = @__inject_args__(init, sym, block)
-
-    callback = R.blockify(block, this)
-    @each ->
-      if init is undefined
-        init = callback.args(arguments)
-      else
-        args = BlockMulti.prototype.args(arguments)
-        init = callback.invokeSplat(init, args)
-
-    init
+    _enum.inject(this, init, sym, block)
 
 
   # _ruby: returns an object that works with
@@ -1429,17 +1788,8 @@ class RubyJS.Enumerable
   #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
   #
   grep: (pattern, block) ->
-    ary      = new R.Array([])
-    pattern  = R(pattern)
-    callback = R.blockify(block, this)
-    if block
-      @each (el) ->
-        if pattern['==='](el)
-          ary.append(callback.invoke(arguments))
-    else
-      @each (el) ->
-        ary.append(el) if pattern['==='](el)
-    ary
+    new RArray(_enum.grep(this, pattern, block))
+
 
   # Returns a hash, which keys are evaluated result from the block, and values
   # are arrays of elements in enum corresponding to the key.
@@ -1452,18 +1802,7 @@ class RubyJS.Enumerable
   #
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
-
-    callback = R.blockify(block, this)
-
-    h = {}
-    @each ->
-      args = callback.args(arguments)
-      key  = callback.invoke(arguments)
-
-      h[key] ||= new R.Array([])
-      h[key].append(args)
-
-    h
+    _enum.group_by(this, block)
 
 
   # Returns a new array with the results of running block once for every
@@ -1493,7 +1832,7 @@ class RubyJS.Enumerable
     @each ->
       arr.push(callback.invoke(arguments))
 
-    new R.Array(arr)
+    new RArray(arr)
 
 
   # @alias #map
@@ -1515,30 +1854,7 @@ class RubyJS.Enumerable
   #     a.max (a,b) -> R(a.length)['<=>'] b.length }   #=> "albatross"
   #
   max: (block) ->
-    max = undefined
-
-    block ||= R.Comparable.cmp
-
-    # # Following Optimization won't complain if:
-    # # [1,2,'3']
-    # #
-    # # optimization for elements that are arrays
-    # #
-    # if @__samesame__?()
-    #   arr = @__native__
-    #   if arr.length < 65535
-    #     _max = Math.max.apply(Math, arr)
-    #     return _max if _max isnt NaN
-
-    @each (item) ->
-      if max is undefined
-        max = item
-      else
-        comp = block(item, max)
-        throw R.ArgumentError.new() if comp is null
-        max = item if comp > 0
-
-    max or null
+    _enum.max(this, block)
 
 
   # Returns the object in enum that gives the maximum value from the given
@@ -1552,15 +1868,7 @@ class RubyJS.Enumerable
   #
   max_by: (block) ->
     return @to_enum('max_by') unless block?.call?
-    max = undefined
-    # OPTIMIZE: use sorted element
-    @each (item) ->
-      if max is undefined
-        max = item
-      else
-        cmp = R.Comparable.cmpstrict(block(item), block(max))
-        max = item if cmp > 0
-    max or null
+    _enum.max_by(this, block)
 
 
   # Returns the object in enum with the minimum value. The first form assumes
@@ -1573,29 +1881,7 @@ class RubyJS.Enumerable
   #     a.min (a,b) -> R(a.length)['<=>'] b.length }   #=> "dog"
   #
   min: (block) ->
-    min = undefined
-    block ||= R.Comparable.cmp
-
-    # Following Optimization won't complain if:
-    # [1,2,'3']
-    #
-    # optimization for elements that are arrays
-    #
-    if @__samesame__?()
-      arr = @__native__
-      if arr.length < 65535
-        _min = Math.min.apply(Math, arr)
-        return _min if _min isnt NaN
-
-    @each (item) ->
-      if min is undefined
-        min = item
-      else
-        comp = block.call(this, item, min)
-        throw R.ArgumentError.new() if comp is null
-        min = item if comp < 0
-
-    min or null
+    _enum.min(this, block)
 
 
   # Returns the object in enum that gives the minimum value from the given
@@ -1609,16 +1895,7 @@ class RubyJS.Enumerable
   #
   min_by: (block) ->
     return @to_enum('min_by') unless block?.call?
-
-    min = undefined
-    # OPTIMIZE: use sorted element
-    @each (item) ->
-      if min is undefined
-        min = item
-      else
-        cmp = R.Comparable.cmpstrict(block(item), block(min))
-        min = item if cmp < 0
-    min or null
+    _enum.min_by(this, block)
 
 
   # Returns two elements array which contains the minimum and the maximum
@@ -1631,15 +1908,12 @@ class RubyJS.Enumerable
   #     a.minmax (a,b) -> a.length <=> b.length }   #=> ["dog", "albatross"]
   #
   minmax: (block) ->
-    # TODO: optimize
-    R([@min(block), @max(block)])
+    new RArray(_enum.minmax(this, block))
 
 
   minmax_by: (block) ->
     return @to_enum('minmax_by') unless block?.call?
-
-    # TODO: optimize
-    R([@min_by(block), @max_by(block)])
+    new RArray(_enum.minmax_by(this, block))
 
   # Passes each element of the collection to the given block. The method returns true if the block never returns true for all elements. If the block is not given, none? will return true only if none of the collection members is true.
   #
@@ -1651,14 +1925,8 @@ class RubyJS.Enumerable
   #     R([nil,false]).none()                                 # => true
   #
   none: (block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each (args) ->
-        result = callback.invoke(arguments)
-        breaker.break(false) unless R.falsey(result)
-      true
+    _enum.none(this, block)
 
-  'none?': @prototype.none
 
   # Passes each element of the collection to the given block. The method
   # returns true if the block returns true exactly once. If the block is not
@@ -1673,60 +1941,25 @@ class RubyJS.Enumerable
   #     R([ nil, true, false ]).one()                        # => true
   #
   one: (block) ->
-    counter  = 0
-
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each (args) ->
-        result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
-        breaker.break(false) if counter > 1
-      counter is 1
-
-  'one?': @prototype.one
+    _enum.one(this, block)
 
 
   partition: (block) ->
     return @to_enum('partition') unless block && block.call?
-
-    left  = []
-    right = []
-
-    callback = R.blockify(block, this)
-
-    @each ->
-      args = BlockMulti.prototype.args(arguments)
-
-      if callback.invokeSplat(args)
-        left.push(args)
-      else
-        right.push(args)
-
-    new R.Array([new R.Array(left), new R.Array(right)])
+    ary = _enum.partition(this, block)
+    new RArray([new RArray(ary[0]), new RArray(ary[1])])
 
   reduce: @prototype.inject
 
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
+    new RArray(_enum.reject(this, block))
 
-    callback = R.blockify(block, this)
-
-    ary = []
-    @each ->
-      if R.falsey(callback.invoke(arguments))
-        ary.push(callback.args(arguments))
-
-    new R.Array(ary)
 
   reverse_each: (block) ->
     return @to_enum('reverse_each') unless block && block.call?
+    _enum.reverse_each(this, block)
 
-    # There is no other way then to convert to an array first.
-    # Because Enumerable depends only on #each (through #to_a)
-
-    @to_a().reverse_each( block )
-
-    this
 
   slice_before: (args...) ->
     block = @__extract_block(args)
@@ -1747,30 +1980,19 @@ class RubyJS.Enumerable
           yielder.yield accumulator if accumulator
           accumulator = R([elem])
         else
-          accumulator ||= new R.Array([])
+          accumulator ||= new RArray([])
           accumulator.append elem
       yielder.yield accumulator if accumulator
 
 
   sort: (block) ->
     # TODO: throw Error when comparing different values.
-    block ||= R.Comparable.cmpstrict
-    arr = @to_a().to_native().sort(block)
-    new R.Array(arr)
+    new RArray(_enum.sort(this, block))
 
 
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
-
-    callback = R.blockify(block, this)
-
-    ary = []
-    @each (value) ->
-      ary.push new R.Enumerable.SortedElement(value, callback.invoke(arguments))
-
-    ary = new R.Array(ary)
-
-    ary.sort(R.Comparable.cmpstrict).map (se) -> se.value
+    new RArray(_enum.sort_by(this, block))
 
 
   take: (n) ->
@@ -1778,41 +2000,21 @@ class RubyJS.Enumerable
     n = CoerceProto.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
-    arr = []
-    @catch_break (breaker) ->
-      @each ->
-        breaker.break() if arr.length is n
-        arr.push(BlockMulti.prototype.args(arguments))
-
-    new R.Array(arr)
+    new RArray(_enum.take(this, n))
 
 
   take_while: (block) ->
     return @to_enum('take_while') unless block && block.call?
-
-    ary = []
-
-    @catch_break (breaker) ->
-      @each ->
-        breaker.break() if R.falsey block.apply(this, arguments)
-        ary.push(BlockMulti.prototype.args(arguments))
-
-    new R.Array(ary)
+    new RArray(_enum.take_while(this, block))
 
 
   to_a: () ->
-    ary = []
-
-    @each ->
-      # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
-      ary.push(BlockMulti.prototype.args(arguments))
-      null
-
-    new R.Array(ary)
+    new RArray(_enum.to_a(this))
 
 
   to_enum: (iter = "each", args...) ->
     new R.Enumerator(this, iter, args)
+
 
   entries: @prototype.to_a
 
@@ -1936,225 +2138,6 @@ class RubyJS.EnumerableArray
       [-1, len, nativeArray(len)]
 
 
-  inject: (initial, sym, block) ->
-    [initial, sym, block] = @__inject_args__(initial, sym, block)
-
-    idx = -1
-
-    while (++idx < @__native__.length)
-      args = @__native__[idx]
-      if initial is undefined
-        initial = args
-      else
-        initial = block.call(this, initial, args)
-
-    initial
-
-
-  # any: (block) ->
-  #   callback = $blockCallback(this, block)
-  #   len = @__native__.length
-  #   idx = -1
-  #   while ++idx < len
-  #     item = @__native__[idx]
-  #     if block_given
-  #       item = @__apply_block__(block, item)
-  #     return true if R.truthy( item )
-  #   false
-
-  # all: (block) ->
-  #   block_given = block && block.call?
-
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     if block_given
-  #       item = @__apply_block__(block, item)
-  #     return false if R.falsey(item)
-  #   true
-
-
-  # collect_concat: (block = null) ->
-  #   return @to_enum('collect_concat') unless block && block.call?
-
-  #   ary = []
-
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     ary.push @__apply_block__(block, item)
-
-  #   new R.Array(ary).flatten(1)
-
-
-  # count: (block) ->
-  #   counter = 0
-  #   idx = -1
-  #   len = @__size__()
-
-  #   if block is undefined
-  #     counter = len
-  #   else if block is null
-  #     while ++idx < len
-  #       counter += 1 if @__native__[idx] is null
-  #   else if block.call?
-  #     while ++idx < len
-  #       unless R.falsey(@__apply_block__(block, @__native__[idx]))
-  #         counter += 1
-  #   else
-  #     while ++idx < len
-  #       # OPTIMIZE:
-  #       counter += 1 if R(@__native__[idx])['=='](block)
-
-  #   new R.Fixnum(counter)
-
-
-  # cycle: (n, block) ->
-  #   throw R.ArgumentError.new() if arguments.length > 2
-
-  #   unless block
-  #     if n && n.call?
-  #       block = n
-  #       n     = null
-
-  #   if n is null or n is undefined
-  #     many = null
-  #   else
-  #     many  = CoerceProto.to_int_native(n)
-  #     return null if many <= 0
-
-  #   return @to_enum('cycle', n) unless block
-
-  #   idx   = -1
-  #   cache = []
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     cache.push item
-  #     @__apply_block__(block, item)
-
-  #   return null if cache.length is 0
-
-  #   if many is null
-  #     while true
-  #       idx = -1
-  #       len = cache.length
-  #       while ++idx < len
-  #         @__apply_block__(block, cache[idx])
-  #   else
-  #     i = 0
-  #     many = many - 1
-  #     while many > i
-  #       idx = -1
-  #       len = cache.length
-  #       while ++idx < len
-  #         @__apply_block__(block, cache[idx])
-  #         i += 1
-
-
-  # drop: (n) ->
-  #   @__ensure_args_length(arguments, 1)
-  #   n = CoerceProto.to_int_native(n)
-
-  #   throw R.ArgumentError.new() if n < 0
-
-  #   ary = []
-  #   len = @__native__.length
-  #   idx = -1
-  #   while ++idx < len
-  #     ary.push(@__native__[idx]) if n <= idx
-
-  #   new R.Array(ary)
-
-
-  # drop_while: (block) ->
-  #   return @to_enum('drop_while') unless block && block.call?
-
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     result = @__apply_block__(block, @__native__[idx])
-  #     break if R.falsey(result)
-
-  #   new R.Array(@__native__.slice(idx), false)
-
-
-  # each_cons: (args...) ->
-  #   block = @__extract_block(args)
-  #   return @to_enum('each_cons', args...) unless block && block.call?
-
-  #   @__ensure_args_length(args, 1)
-  #   n = CoerceProto.to_int_native(args[0])
-
-  #   throw R.ArgumentError.new() unless n > 0
-
-  #   ary = []
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     ary.push item
-  #     ary.shift() if ary.length > n
-  #     $exec(this, block, ary.slice(0))if ary.length is n
-  #     @__apply_block__(block, ary.slice(0)) if ary.length is n
-
-  #   null
-
-
-  each_entry: (block) ->
-    throw R.ArgumentError.new() if arguments.length > 1
-    return @to_enum('each_entry') unless block && block.call?
-
-    block = Block.supportMultipleArgs(block)
-    idx = -1
-    while ++idx < @__native__.length
-      block(@__native__[idx])
-
-    this
-
-
-  # each_slice: (n, block) ->
-  #   throw R.ArgumentError.new() unless n
-  #   n = CoerceProto.to_int_native(n)
-
-  #   throw R.ArgumentError.new() if n <= 0                  #each_slice(-1)
-  #   throw R.ArgumentError.new() if block && !block.call?   #each_slice(1, block)
-
-  #   return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
-
-  #   ary = []
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     ary.push( item )
-  #     if ary.length == n
-  #       @__apply_block__(block, ary.slice(0))
-  #       ary = []
-
-  #   unless ary.length == 0
-  #     # TODO: check single arg:
-  #     block(ary.slice(0))
-
-  #   null
-
-  each_with_index: (block) ->
-    return @to_enum('each_with_index') unless block && block.call?
-
-    idx = -1
-    while ++idx < @__native__.length
-      item = @__native__[idx]
-      block(item, idx)
-    this
-
-
-  each_with_object: (obj, block) ->
-    #throw RubyJS.ArgumentError.new() if block == undefined
-    return @to_enum('each_with_object', obj) unless block && block.call?
-
-    idx = -1
-    while ++idx < @__native__.length
-      block(@__native__[idx], obj)
-
-    obj
-
-
   find: (ifnone, block = null) ->
     if block == null
       block  = ifnone
@@ -2205,330 +2188,6 @@ class RubyJS.EnumerableArray
       item = @__native__[idx]
       return R(idx) if block(item)
     null
-
-
-  include: (other) ->
-    other = R(other)
-
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      item = @__native__[idx]
-      # TODO: this is special. we're trying to typecast el, so we can
-      # call == on it. This needs to be fixed, most probably with an R.equalss(a, b)
-      # which takes care of non-R objects.
-      # OPTIMIZE
-      el = R(item)
-      return true if other['==']?(el) or el['==']?(other)
-
-    false
-
-
-  grep: (pattern, block) ->
-    ary = new R.Array([])
-    pattern = R(pattern)
-
-    block = Block.supportMultipleArgs(block)
-
-    idx = -1
-    len = @__native__.length
-    if block
-      while ++idx < len
-        item = @__native__[idx]
-        ary.append(block(item)) if pattern['==='](item)
-    else
-      while ++idx < len
-        item = @__native__[idx]
-        ary.append(item) if pattern['==='](item)
-
-    ary
-
-
-  group_by: (block) ->
-    return @to_enum('group_by') unless block?.call?
-    block = Block.supportMultipleArgs(block)
-
-    hsh = {}
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      item = @__native__[idx]
-      key  = block(item)
-
-      hsh[key] ||= new R.Array([])
-      hsh[key].append(item)
-
-    hsh
-
-  # first: needs no specific changes
-
-  max: (block) ->
-    max = undefined
-    block ||= RubyJS.Comparable.cmp
-    # Following Optimization won't complain if:
-    # [1,2,'3']
-    # optimization for elements that are arrays
-    # OPTIMIZE: use normal iterator
-    if @__samesame__?()
-      arr = @__native__
-      if arr.length < 65535
-        _max = Math.max.apply(Math, arr)
-        return _max if _max isnt NaN
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      item = @__native__[idx]
-      if max is undefined
-        max = item
-      else
-        comp = block(item, max)
-        throw R.ArgumentError.new() if comp is null
-        max = item if comp > 0
-    max or null
-
-
-  max_by: (block) ->
-    return @to_enum('max_by') unless block?.call?
-
-    max = undefined
-    idx = -1
-    len = @__native__.length
-    # OPTIMIZE. uses SortedElement!
-    while ++idx < len
-      item = @__native__[idx]
-      if max is undefined
-        max = item
-      else
-        cmp = R.Comparable.cmpstrict(block(item), block(max))
-        max = item if cmp > 0
-    max or null
-
-  # The following breaks block arg specs:
-  # max_by: (block) ->
-  #   return @to_enum('max_by') unless block?.call?
-
-  #   max_val = undefined # the actual element
-  #   max_cmp = undefined # evaluated block value
-  #   idx = -1
-  #   len = @__native__.length
-  #   while ++idx < len
-  #     item = @__native__[idx]
-  #     if max_val is undefined
-  #       max_val = item
-  #       max_cmp = block(item)
-  #     else
-  #       item_cmp = block(item)
-  #       cmp = R.Comparable.cmpstrict(item_cmp, max_cmp)
-  #       if cmp > 0
-  #         max_val = item
-  #         max_cmp = item_cmp
-  #   max_val or null
-
-  min: (block) ->
-    min = undefined
-    block ||= RubyJS.Comparable.cmp
-    # Following Optimization won't complain if:
-    # [1,2,'3']
-    #
-    # optimization for elements that are arrays
-    #
-    if @__samesame__?()
-      arr = @__native__
-      if arr.length < 65535
-        _min = Math.min.apply(Math, arr)
-        return _min if _min isnt NaN
-    idx = -1
-    len = @__native__.length
-    # OPTIMIZE
-    while ++idx < len
-      item = @__native__[idx]
-      if min is undefined
-        min = item
-      else
-        cmp = block(item, min)
-        throw R.ArgumentError.new() if cmp is null
-        min = item if cmp < 0
-    min or null
-
-
-  min_by: (block) ->
-    return @to_enum('min_by') unless block?.call?
-
-    min = undefined
-    block ||= (el, min) -> el['<=>'](min)
-    idx = -1
-    len = @__native__.length
-    # OPTIMIZE. uses SortedElement!
-    while ++idx < len
-      item = @__native__[idx]
-      if min is undefined
-        min = item
-      else
-        cmp = RubyJS.Comparable.cmpstrict(block(item), block(min))
-        min = item if cmp < 0
-    min or null
-
-
-  minmax: (block) ->
-    # TODO: optimize
-    R([@min(block), @max(block)])
-
-
-  minmax_by: (block) ->
-    return @to_enum('minmax_by') unless block?.call?
-
-    # TODO: optimize
-    R([@min_by(block), @max_by(block)])
-
-
-  # none: (block) ->
-  #   block_given = block && block.call?
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     if block_given
-  #       item = @__apply_block__(block, item)
-  #     return false unless R.falsey( item )
-  #   true
-
-  # one: (block) ->
-  #   block_given = block && block.call?
-
-  #   cnt = 0
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     if block_given
-  #       item = @__apply_block__(block, item)
-  #     cnt += 1 unless R.falsey( item )
-  #     return false if cnt > 1
-
-  #   cnt is 1
-
-
-  # partition: (block) ->
-  #   return @to_enum('partition') unless block && block.call?
-
-  #   left  = []
-  #   right = []
-
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     if @__apply_block__(block, item)
-  #       left.push(item)
-  #     else
-  #       right.push(item)
-
-  #   new R.Array([new R.Array(left), new R.Array(right)])
-
-
-  # reject: (block) ->
-  #   return @to_enum('reject') unless block && block.call?
-
-  #   ary = []
-  #   idx = -1
-  #   while ++idx < @__native__.length
-  #     item = @__native__[idx]
-  #     if R.falsey(@__apply_block__(block, item))
-  #       ary.push(item)
-
-  #   new R.Array(ary)
-
-
-  # slice_before: (args...) ->
-  #   block = @__extract_block(args)
-  #   # throw R.ArgumentError.new() if args.length == 1
-  #   arg   = R(args[0])
-
-  #   if block
-  #     has_init = !(arg is undefined)
-  #   else
-  #     block = (elem) -> arg['==='] elem
-
-  #   arr = @__native__
-  #   idx = -1
-  #   len = arr.length
-  #   R.Enumerator.create (yielder) ->
-  #     accumulator = null
-  #     while ++idx < len
-  #       elem = arr[idx]
-  #       start_new = if has_init then block(elem, arg.dup()) else block(elem)
-  #       if start_new
-  #         yielder.yield accumulator if accumulator
-  #         accumulator = R([elem])
-  #       else
-  #         accumulator ||= new R.Array([])
-  #         accumulator.append elem
-  #     yielder.yield accumulator if accumulator
-
-
-  # sort_by: (block) ->
-  #   return @to_enum('sort_by') unless block && block.call?
-
-
-  #   idx = -1
-  #   len = @__native__.length
-  #   ary = nativeArray(len)
-  #   while ++idx < len
-  #     item = @__native__[idx]
-  #     ary[idx] = new R.Enumerable.SortedElement(item, @__apply_block__(block, item))
-
-  #   # OPTIMIZE
-  #   ary = new R.Array(ary)
-  #   ary.sort().map (se) -> se.value
-
-
-  # take: (n) ->
-  #   @__ensure_args_length(arguments, 1)
-  #   n = CoerceProto.to_int_native(n)
-  #   throw R.ArgumentError.new() if n < 0
-
-  #   ary = []
-  #   idx = -1
-  #   len = @__native__.length
-  #   while ++idx < len
-  #     break if ary.length is n
-  #     ary.push(@__native__[idx])
-
-  #   new R.Array(ary)
-
-
-  # take_while: (block) ->
-  #   return @to_enum('take_while') unless block && block.call?
-
-  #   ary = []
-  #   idx = -1
-  #   len = @__native__.length
-  #   while ++idx < len
-  #     item = @__native__[idx]
-  #     break if R.falsey block(item)
-  #     ary.push(item)
-
-  #   new R.Array(ary)
-
-
-  collectConcat:   @prototype.collect_concat
-  dropWhile:       @prototype.drop_while
-  eachCons:        @prototype.each_cons
-  eachEntry:       @prototype.each_entry
-  eachSlice:       @prototype.each_slice
-  eachWithIndex:   @prototype.each_with_index
-  eachWithObject:  @prototype.each_with_object
-  findAll:         @prototype.find_all
-  findIndex:       @prototype.find_index
-  flatMap:         @prototype.flat_map
-  groupBy:         @prototype.group_by
-  maxBy:           @prototype.max_by
-  minBy:           @prototype.min_by
-  minmaxBy:        @prototype.minmax_by
-  reverseEach:     @prototype.reverse_each
-  sliceBefore:     @prototype.slice_before
-  sortBy:          @prototype.sort_by
-  takeWhile:       @prototype.take_while
-  toA:             @prototype.to_a
-
-
 
 
 class RubyJS.Enumerator extends RubyJS.Object
@@ -2636,7 +2295,7 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
     @proc( new RubyJS.Enumerator.Yielder( enclosed_yield ) )
 
 
-_arr =
+_arr = R._arr =
   flatten: (coll, recursion = -1) ->
     recursion = CoerceProto.to_int_native(recursion)
 
@@ -2665,6 +2324,24 @@ _arr =
       this
     else
       new R.Enumerator(coll, 'each')
+
+
+  reverse_each: (coll, block) ->
+    if block.length > 0 # if needed for to_a
+      block = Block.supportMultipleArgs(block)
+
+    idx = coll.length
+    while idx--
+      block(coll[idx])
+
+    coll
+
+
+
+_arr.map = _enum.map
+_arr.sort = _enum.sort
+
+
 
 # Array wraps a javascript array.
 #
@@ -3873,19 +3550,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   reverse_each: (block) ->
     return @to_enum('reverse_each') unless block && block.call?
-
-    if block && block.call?
-
-      if block.length > 0 # if needed for to_a
-        block = Block.supportMultipleArgs(block)
-
-      idx = @__native__.length
-      while idx--
-        block(@__native__[idx])
-
-      this
-    else
-      @to_enum()
+    _arr.reverse_each(@__native__, block)
+    this
 
 
   # Returns new array by rotating self so that the element at cnt in self is
@@ -5492,9 +5158,8 @@ class RubyJS.MatchData extends RubyJS.Object
 # make String accessible within R.String
 nativeString = root.String
 
-StringClassMethods =
+_str = R._str =
   chars: (str, block) ->
-    return @to_enum('chars') unless block && block.call?
     idx = -1
     len = str.length
     while ++idx < len
@@ -5528,7 +5193,6 @@ StringClassMethods =
 
 
   downcase: (str) ->
-    str = CoerceProto.to_str_native(str)
     return null unless str.match(/[A-Z]/)
     # TODO: OPTIMIZE
     R(str.split('')).map((c) ->
@@ -5537,7 +5201,7 @@ StringClassMethods =
 
 
   empty: (str) ->
-    CoerceProto.to_str_native(str).length == 0
+    str.length == 0
 
 
   end_with: (str, needles) ->
@@ -5550,7 +5214,6 @@ StringClassMethods =
 
 
   upcase: (str) ->
-    str = CoerceProto.to_str_native(str)
     return null unless str.match(/[a-z]/)
 
     R(str.split('')).map((c) ->
@@ -6008,7 +5671,7 @@ class RubyJS.String extends RubyJS.Object
   # @note case replacement is effective only in ASCII region.
   #
   downcase_bang: () ->
-    str = R.String.downcase(@__native__)
+    str = _str.downcase(@__native__)
     return null if str is null
     @replace(str)
 
@@ -7317,7 +6980,7 @@ class RubyJS.String extends RubyJS.Object
   # case replacement is effective only in ASCII region.
   #
   upcase_bang: () ->
-    val = R.String.upcase(@__native__)
+    val = _str.upcase(@__native__)
     return null if val is null
     @replace(val)
 
@@ -7480,8 +7143,8 @@ class CharTable
       throw R.ArgumentError.new("ERROR: #{a} #{b}") if counter == 10000
     arr
 
-R.extend(RubyJS.String, StringClassMethods)
-_str = R._str = RString = RubyJS.String
+
+RString = RubyJS.String
 
 
 class RubyJS.Regexp extends RubyJS.Object
