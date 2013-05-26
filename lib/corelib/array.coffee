@@ -1,3 +1,33 @@
+_arr =
+  flatten: (coll, recursion = -1) ->
+    recursion = CoerceProto.to_int_native(recursion)
+
+    arr = []
+
+    @each coll, (element) ->
+      el = R(element)
+      if recursion != 0 && el?.to_ary?
+        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
+      else
+        arr.push(element)
+    arr
+
+
+  each: (coll, block) ->
+    if block && block.call?
+
+      if block.length > 0 # 'if' needed for to_a
+        block = Block.supportMultipleArgs(block)
+
+      idx = -1
+      len = coll.length
+      while ++idx < len
+        block(coll[idx])
+
+      this
+    else
+      new R.Enumerator(coll, 'each')
+
 # Array wraps a javascript array.
 #
 # @todo No proper support for handling recursive arrays. (e.g. a = [], a.push(a)).
@@ -740,17 +770,8 @@ class RubyJS.Array extends RubyJS.Object
   # @todo do not typecast elements!
   #
   flatten: (recursion = -1) ->
-    recursion = CoerceProto.to_int_native(recursion)
+    new RArray(_arr.flatten(@__native__, recursion))
 
-    arr = new R.Array([])
-
-    @each (element) ->
-      el = R(element)
-      if el?.to_ary? && !(recursion == 0)
-        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
-      else
-        arr.push(element)
-    arr
 
   # Inserts the given values before the element with the given index (which
   # may be negative).
@@ -1665,3 +1686,8 @@ class RubyJS.Array extends RubyJS.Object
     while ++idx < size
       ary[idx] = obj
     ary
+
+
+RArray = R.Array = RubyJS.Array
+R._arr = _arr
+

@@ -1,9 +1,74 @@
 # make String accessible within R.String
 nativeString = root.String
 
+StringClassMethods =
+  chars: (str, block) ->
+    return @to_enum('chars') unless block && block.call?
+    idx = -1
+    len = str.length
+    while ++idx < len
+      block(str[idx])
+    str
+
+
+  chomp: (str, sep = null) ->
+    if sep == null
+      if @empty(str) then "" else null
+    else
+      sep = CoerceProto.to_str_native(sep)
+      if sep.length == 0
+        regexp = /((\r\n)|\n)+$/
+      else if sep is "\n" or sep is "\r" or sep is "\r\n"
+        ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
+      else
+        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
+      str.replace(regexp, '')
+
+
+  chop: (str) ->
+    return str if str.length == 0
+
+    # DO:
+    # if @end_with("\r\n")
+    #   new R.String(@to_native().replace(/\r\n$/, ''))
+    # else
+    #   @slice 0, @size().minus(1)
+
+
+  downcase: (str) ->
+    str = CoerceProto.to_str_native(str)
+    return null unless str.match(/[A-Z]/)
+    # TODO: OPTIMIZE
+    R(str.split('')).map((c) ->
+      if c.match(/[A-Z]/) then c.toLowerCase() else c
+    ).join('').to_native()
+
+
+  empty: (str) ->
+    CoerceProto.to_str_native(str).length == 0
+
+
+  end_with: (str, needles) ->
+    needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
+
+    str_len = str.length
+    for w in needles.iterator()
+      return true if str.lastIndexOf(w) + w.length is str_len
+    false
+
+
+  upcase: (str) ->
+    str = CoerceProto.to_str_native(str)
+    return null unless str.match(/[a-z]/)
+
+    R(str.split('')).map((c) ->
+      if c.match(/[a-z]/) then c.toUpperCase() else c
+    ).join('').to_native()
+
+
 class RubyJS.String extends RubyJS.Object
   @include R.Comparable
-
   @fromCharCode: (obj) -> nativeString.fromCharCode(obj)
 
   # ---- Constructors & Typecast ----------------------------------------------
@@ -241,7 +306,7 @@ class RubyJS.String extends RubyJS.Object
   #
   capitalize_bang: ->
     return if @empty()
-
+    # FIXME
     # TODO remove dogfood
     str = @downcase()
     str = str.chr().upcase().concat(str.to_native().slice(1) || '')
@@ -302,12 +367,7 @@ class RubyJS.String extends RubyJS.Object
   #
   chars: (block) ->
     return @to_enum('chars') unless block && block.call?
-    # TODO: ideally make this possible:
-    # R.Array.prototype.each.call(@__char_natives__(), block)
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      block(@__native__[idx])
+    _str.chars(@__native__, block)
     this
 
 
@@ -326,7 +386,10 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").chomp("llo")       # => "he"
   #
   chomp: (sep = null) ->
-    @dup().tap (d) -> d.chomp_bang(sep)
+    if sep is null
+      this
+    else
+      new RString(_str.chomp(@__native__, sep))
 
 
   # Modifies str in place as described for String#chomp, returning str, or nil if no modifications were made.  #
@@ -334,20 +397,9 @@ class RubyJS.String extends RubyJS.Object
   # @todo finish specs
   #
   chomp_bang: (sep = null) ->
-    if sep == null
-      @replace("") if @empty()
+    if str = _str.chomp(@__native__, sep)
+      @replace(str)
     else
-      sep = @$String(sep)
-      # sep = new R.String(sep)
-      # sep = sep.to_str()
-      if sep.empty()
-        regexp = /((\r\n)|\n)+$/
-      else if sep.equals("\n") or sep.equals("\r") or sep.equals("\r\n")
-        ending = @to_native().match(/((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
-      else
-        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
-      @replace(@to_native().replace(regexp, ''))
       null
 
 
@@ -458,18 +510,16 @@ class RubyJS.String extends RubyJS.Object
   #     R("hEllO").downcase()   #=> "hello"
   #
   downcase: () ->
-    @dup().tap (s) -> s.downcase_bang()
+    new RString(_str.downcase(@__native__) || @__native__)
 
   # Downcases the contents of str, returning nil if no changes were made.
   #
   # @note case replacement is effective only in ASCII region.
   #
   downcase_bang: () ->
-    return null unless @to_native().match(/[A-Z]/)
-    # TODO: OPTIMIZE
-    @replace R(@__char_natives__()).map((c) ->
-      if c.match(/[A-Z]/) then c.toLowerCase() else c
-    ).join('').to_native()
+    str = R.String.downcase(@__native__)
+    return null if str is null
+    @replace(str)
 
   # Produces a version of str with all nonprinting characters replaced by \nnn
   # notation and all special characters escaped.
@@ -564,7 +614,7 @@ class RubyJS.String extends RubyJS.Object
   #     " ".empty()       #=> true
   #
   empty: ->
-    @to_native().length == 0
+    _str.empty(@__native__)
 
 
   #encode
@@ -575,10 +625,7 @@ class RubyJS.String extends RubyJS.Object
   # Returns true if str ends with one of the suffixes given.
   #
   end_with: (needles...) ->
-    needles = @$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
-    for w in needles.iterator()
-      return true if @to_native().lastIndexOf(w) + w.length is @to_native().length
-    false
+    _str.end_with(@__native__, needles)
 
 
   # Two strings are equal if they have the same length and content.
@@ -1754,6 +1801,15 @@ class RubyJS.String extends RubyJS.Object
 
   #unpack
 
+
+  @upcase: (str) ->
+    str = R.CoerceProto.to_str_native(str)
+    return null unless str.match(/[a-z]/)
+    R(str.split('')).map((c) ->
+      if c.match(/[a-z]/) then c.toUpperCase() else c
+    ).join('').to_native()
+
+
   # Returns a copy of str with all lowercase letters replaced with their
   # uppercase counterparts. The operation is locale insensitive—only
   # characters “a” to “z” are affected. Note: case replacement is effective
@@ -1763,17 +1819,16 @@ class RubyJS.String extends RubyJS.Object
   #     R("hEllO").upcase()   #=> "HELLO"
   #
   upcase: () ->
-    @dup().tap (s) -> s.upcase_bang()
-
+    str = _str.upcase(@__native__) || @__native__
+    new RString(str)
 
   # Upcases the contents of str, returning nil if no changes were made. Note:
   # case replacement is effective only in ASCII region.
   #
   upcase_bang: () ->
-    return null unless @to_native().match(/[a-z]/)
-    @replace R(@__char_natives__()).map((c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('').to_native()
+    val = R.String.upcase(@__native__)
+    return null if val is null
+    @replace(val)
 
 
   # Iterates through successive values, starting at str and ending at
@@ -1934,4 +1989,5 @@ class CharTable
       throw R.ArgumentError.new("ERROR: #{a} #{b}") if counter == 10000
     arr
 
-
+R.extend(RubyJS.String, StringClassMethods)
+_str = R._str = RString = RubyJS.String

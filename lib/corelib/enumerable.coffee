@@ -1,3 +1,206 @@
+_enum = R._enum =
+  all: (coll, block) ->
+    R.catch_break (breaker) ->
+      callback = R.blockify(block, coll)
+      coll.each ->
+        result = callback.invoke(arguments)
+        breaker.break(false) if R.falsey(result)
+      true
+
+
+  any: (coll, block) ->
+    R.catch_break (breaker) ->
+      callback = R.blockify(block, coll)
+      coll.each ->
+        result = callback.invoke(arguments)
+        breaker.break(true) unless R.falsey( result )
+      false
+
+
+  collect_concat: (coll, block = null) ->
+    callback = R.blockify(block, this)
+
+    ary = []
+    coll.each ->
+      ary.push(callback.invoke(arguments))
+
+    _arr.flatten(ary, 1)
+
+
+  flat_map: @collect_concat
+
+
+  count: (coll, block) ->
+    counter = 0
+    if block is undefined
+      coll.each -> counter += 1
+    else if block is null
+      coll.each (el) -> counter += 1 if el is null
+    else if block.call?
+      callback = R.blockify(block, coll)
+      coll.each ->
+        result = callback.invoke(arguments)
+        counter += 1 unless R.falsey(result)
+    else
+      countable = R(block)
+      coll.each (el) ->
+        counter += 1 if countable['=='](el)
+    counter
+
+
+  cycle: (coll, n, block) ->
+    unless block
+      if n && n.call?
+        block = n
+        n     = null
+
+    if !(n is null or n is undefined)
+      many  = CoerceProto.to_int_native(n)
+      return null if many <= 0
+    else
+      many = null
+
+    return coll.to_enum('cycle', n) unless block
+
+    callback = R.blockify(block, coll)
+
+    cache = new R.Array([])
+    coll.each ->
+      args = callback.args(arguments)
+      cache.append args
+      callback.invoke(arguments)
+
+    return null if cache.empty()
+
+    if many > 0                                  # cycle(2, () -> ... )
+      i = 0
+      many -= 1
+      while many > i
+        # OPTIMIZE use normal arrays and for el in cache
+        cache.each ->
+          callback.invoke(arguments)
+          i += 1
+    else
+      while true                                 # cycle(() -> ... )
+        cache.each ->
+          callback.invoke(arguments)
+
+
+  drop: (coll, n) ->
+    # TODO use splice when implemented
+    ary = []
+    @each_with_index coll, (el, idx) ->
+      ary.push(el) if n <= idx
+    ary
+
+
+  drop_while: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    ary = []
+    dropping = true
+
+    coll.each ->
+      unless dropping && callback.invoke(arguments)
+        dropping = false
+        ary.push(callback.args(arguments))
+
+    ary
+
+
+
+  each_cons: (coll, n, block) ->
+    # TODO: use callback
+    callback = R.blockify(block, coll)
+    len = block.length
+    ary = []
+    coll.each ->
+      ary.push(BlockMulti.prototype.args(arguments))
+      ary.shift() if ary.length > n
+      if ary.length is n
+        if len > 1
+          block.apply(coll, ary.slice(0))
+        else
+          block.call(coll, ary.slice(0))
+
+    null
+
+  # Calls block once for each element in self, passing that element as a
+  # parameter, converting multiple values from yield to an array.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  each_entry: (coll, block) ->
+    # hard code BlockMulti because each_entry converts multiple
+    # yields into an array
+    callback = new BlockMulti(block, coll)
+    len = block.length
+    coll.each ->
+      args = callback.args(arguments)
+      if len > 1 and R.Array.isNativeArray(args)
+        block.apply(coll, args)
+      else
+        block.call(coll, args)
+
+    coll
+
+  # Iterates the given block for each slice of <n> elements. If no block is
+  # given, returns an enumerator.
+  #
+  # @example
+  #     (1..10).each_slice(3) {|a| p a}
+  #     # outputs below
+  #     [1, 2, 3]
+  #     [4, 5, 6]
+  #     [7, 8, 9]
+  #     [10]
+  #
+  each_slice: (coll, n, block) ->
+    callback = R.blockify(block, coll)
+    len      = block.length
+    ary      = []
+
+    coll.each ->
+      ary.push( BlockMulti.prototype.args(arguments) )
+      if ary.length == n
+        args = ary.slice(0)
+        if len > 1
+          block.apply(coll, args)
+        else
+          block.call(coll, args)
+        ary = []
+
+    unless ary.length == 0
+      args = ary.slice(0)
+      if len > 1
+        block.apply(coll, args)
+      else
+        block.call(coll, args)
+
+    null
+
+
+  each_with_index: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    idx = 0
+    coll.each ->
+      val = callback.invokeSplat(callback.args(arguments), idx)
+      idx += 1
+      val
+
+    coll
+
+
+  select: (coll, block) ->
+    ary = []
+    callback = R.blockify(block, coll)
+    coll.each ->
+      unless R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
+
+    ary
+
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
 # However for performance reasons they are typically re-implemented in them
@@ -19,15 +222,11 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).all()                          # => false
   #
   all: (block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each ->
-        result = callback.invoke(arguments)
-        breaker.break(false) if R.falsey(result)
+    _enum.all(this, block)
 
-      true
 
   'all?': @prototype.all
+
 
   # Passes each element of the collection to the given block. The method
   # returns true if the block ever returns a value other than false or nil. If
@@ -40,12 +239,7 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).any()                          # => true
   #
   any: (block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each ->
-        result = callback.invoke(arguments)
-        breaker.break(true) unless R.falsey( result )
-      false
+    _enum.any(this, block)
 
 
   # Returns a new array with the concatenated results of running block once
@@ -60,12 +254,8 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    callback = R.blockify(block, this)
-    ary = []
-    @each ->
-      ary.push(callback.invoke(arguments))
+    new RArray(_enum.collect_concat(this, block))
 
-    new R.Array(ary).flatten(1)
 
   flat_map: @prototype.collect_concat
 
@@ -81,20 +271,7 @@ class RubyJS.Enumerable
   #     ary.count (x) -> x%2 == 0  #=> 3
   #
   count: (block) ->
-    counter = 0
-    if block is undefined
-      @each -> counter += 1
-    else if block is null
-      @each (el) -> counter += 1 if el is null
-    else if block.call?
-      callback = R.blockify(block, this)
-      @each ->
-        result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
-    else
-      @each (el) ->
-        counter += 1 if R(el)['=='](block)
-    @$Integer counter
+    new R.Fixnum(_enum.count(this, block))
 
   # this makes my head spin.
   # chunk: (initial_state = null, original_block) ->
@@ -127,41 +304,7 @@ class RubyJS.Enumerable
   cycle: (n, block) ->
     throw R.ArgumentError.new() if arguments.length > 2
 
-    unless block
-      if n && n.call?
-        block = n
-        n     = null
-
-    if !(n is null or n is undefined)
-      many  = CoerceProto.to_int_native(n)
-      return null if many <= 0
-    else
-      many = null
-
-    return @to_enum('cycle', n) unless block
-
-    callback = R.blockify(block, this)
-
-    cache = new R.Array([])
-    @each ->
-      args = callback.args(arguments)
-      cache.append args
-      callback.invoke(arguments)
-
-    return null if cache.empty()
-
-    if many > 0                                  # cycle(2, () -> ... )
-      i = 0
-      many -= 1
-      while many > i
-        # OPTIMIZE use normal arrays and for el in cache
-        cache.each ->
-          callback.invoke(arguments)
-          i += 1
-    else
-      while true                                 # cycle(() -> ... )
-        cache.each ->
-          callback.invoke(arguments)
+    _enum.cycle(this, n, block)
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -172,15 +315,9 @@ class RubyJS.Enumerable
   drop: (n) ->
     @__ensure_args_length(arguments, 1)
     n = CoerceProto.to_int_native(n)
-
     throw R.ArgumentError.new() if n < 0
 
-    # TODO use splice when implemented
-    ary = []
-    @each_with_index (el, idx) ->
-      ary.push(el) if n <= idx
-
-    new R.Array(ary)
+    new R.Array(_enum.drop(this, n))
 
 
   # Drops elements up to, but not including, the first element for which the
@@ -195,18 +332,8 @@ class RubyJS.Enumerable
   #
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
+    new R.Array(_enum.drop_while(this, block))
 
-    callback = R.blockify(block, this)
-
-    ary = []
-    dropping = true
-
-    @each ->
-      unless dropping && callback.invoke(arguments)
-        dropping = false
-        ary.push(callback.args(arguments))
-
-    new R.Array(ary)
 
   # Iterates the given block for each array of consecutive <n> elements. If no
   # block is given, returns an enumerator.
@@ -222,27 +349,11 @@ class RubyJS.Enumerable
   each_cons: (args...) ->
     block = @__extract_block(args)
     return @to_enum('each_cons', args...) unless block && block.call?
-
     @__ensure_args_length(args, 1)
     n = CoerceProto.to_int_native(args[0])
-
     throw R.ArgumentError.new() unless n > 0
 
-    # TODO: use callback
-    callback = R.blockify(block, this)
-    len = block.length
-    ary = []
-    @each ->
-      ary.push(BlockMulti.prototype.args(arguments))
-      ary.shift() if ary.length > n
-      if ary.length is n
-        if len > 1
-          block.apply(this, ary.slice(0))
-        else
-          block.call(this, ary.slice(0))
-
-
-    null
+    _enum.each_cons(this, n, block)
 
   # Calls block once for each element in self, passing that element as a
   # parameter, converting multiple values from yield to an array.
@@ -253,18 +364,7 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
-    # hard code BlockMulti because each_entry converts multiple
-    # yields into an array
-    callback = new BlockMulti(block, this)
-    len = block.length
-    @each ->
-      args = callback.args(arguments)
-      if len > 1 and R.Array.isNativeArray(args)
-        block.apply(this, args)
-      else
-        block.call(this, args)
-
-    this
+    _enum.each_entry(this, block)
 
   # Iterates the given block for each slice of <n> elements. If no block is
   # given, returns an enumerator.
@@ -286,28 +386,7 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    callback = R.blockify(block, this)
-    len      = block.length
-    ary      = []
-
-    @each ->
-      ary.push( BlockMulti.prototype.args(arguments) )
-      if ary.length == n
-        args = ary.slice(0)
-        if len > 1
-          block.apply(this, args)
-        else
-          block.call(this, args)
-        ary = []
-
-    unless ary.length == 0
-      args = ary.slice(0)
-      if len > 1
-        block.apply(this, args)
-      else
-        block.call(this, args)
-
-    null
+    _enum.each_slice(this, n, block)
 
 
   # # TODO: I'm not quite sure wether this is smart or stupid
@@ -322,6 +401,7 @@ class RubyJS.Enumerable
   #
   #   this
 
+
   # Calls block with two arguments, the item and its index, for each item in
   # enum. Given arguments are passed through to each().
   #
@@ -335,15 +415,7 @@ class RubyJS.Enumerable
   #
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
-
-    callback = R.blockify(block, this)
-
-    idx = 0
-    @each ->
-      val = callback.invokeSplat(callback.args(arguments), idx)
-      idx += 1
-      val
-    this
+    _enum.each_with_index(this, block)
 
 
   # Iterates the given block for each element with an arbitrary object given,
@@ -407,11 +479,7 @@ class RubyJS.Enumerable
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
 
-    ary = []
-    callback = R.blockify(block, this)
-    @each ->
-      unless R.falsey(callback.invoke(arguments))
-        ary.push(callback.args(arguments))
+    ary = _enum.select(this, block)
 
     new R.Array(ary)
 
@@ -1003,7 +1071,6 @@ class RubyJS.Enumerable
   toA:             @prototype.to_a
 
 
-
 # `value` is the original element and `sort_by` the one to be sorted by
 #
 # @private
@@ -1012,3 +1079,7 @@ class RubyJS.Enumerable.SortedElement
 
   '<=>': (other) ->
     @sort_by?['<=>'](other.sort_by)
+
+
+
+REnumerable = RubyJS.Enumerable

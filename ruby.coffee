@@ -280,9 +280,9 @@ class RubyJS.Kernel
 
   $Array:   (obj, recursive = false) ->
     if recursive is true
-      RubyJS.Array.new( @box(e) for e in obj )
+      R.Array.new( @box(e) for e in obj )
     else
-      RubyJS.Array.new(obj)
+      R.Array.new(obj)
 
   # TODO: Remove from code
   $Array_r: (obj) ->
@@ -290,49 +290,53 @@ class RubyJS.Kernel
 
   $Float: (obj) ->
     obj = @box(obj)
-    throw RubyJS.TypeError.new() if obj == null
-    throw RubyJS.TypeError.new() unless obj.to_f?
+    throw R.TypeError.new() if obj == null
+    throw R.TypeError.new() unless obj.to_f?
 
     if obj.is_float?
       obj
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Float(+stripped.to_native().replace(/_/g, ''))
+        new R.Float(+stripped.to_native().replace(/_/g, ''))
       else
-        throw RubyJS.ArgumentError.new()
+        throw R.ArgumentError.new()
     else if obj.rubyjs?
-      new RubyJS.Float(obj.to_native())
+      new R.Float(obj.to_native())
     else # is not a R object
-      new RubyJS.Float(obj)
+      new R.Float(obj)
 
   $Integer: (obj) ->
-    obj = @box(obj)
-    throw RubyJS.TypeError.new() if obj is null or obj is undefined
-    # throw RubyJS.TypeError.new() unless obj.to_i?
+    obj = R(obj)
+    throw R.TypeError.new() unless obj?
+    # throw R.TypeError.new() unless obj.to_i?
 
     if obj.is_integer?
       obj
     else if obj.is_string?
       stripped = obj.strip()
       if stripped.valid_float()
-        new RubyJS.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')))
+        new R.Fixnum(Math.floor(+stripped.to_native().replace(/_/g, '')))
       else
-        throw RubyJS.ArgumentError.new()
+        throw R.ArgumentError.new()
     else if obj.rubyjs?
-      # throw RubyJS.TypeError.new() unless obj.to_i?
-      new RubyJS.Fixnum(Math.floor(obj.to_native()))
+      # throw R.TypeError.new() unless obj.to_i?
+      new R.Fixnum(Math.floor(obj.to_native()))
     else # is not a R object
-      new RubyJS.Fixnum(Math.floor(obj))
+      new R.Fixnum(Math.floor(obj))
 
   $Integer: @prototype.$Integer
 
-  $String:  (obj) -> RubyJS.String.try_convert(obj) or throw(RubyJS.TypeError.new())
+
+  $String:  (obj) -> R.String.try_convert(obj) or throw(R.TypeError.new())
+
 
   $Range: (start,end,exclusive) ->
-    RubyJS.Range.new(start,end,exclusive)
+    R.Range.new(start,end,exclusive)
 
-  puts: (obj) -> console.log(obj)
+
+  puts: (obj) ->
+    console.log(obj)
 
 
   rand: (limit) ->
@@ -379,7 +383,7 @@ class Coerce
       obj = R(obj)
 
       unless obj[to_what]?
-        throw RubyJS.TypeError.new("TypeError: cant't convert ... into String")
+        throw R.TypeError.new("TypeError: cant't convert ... into String")
 
       if skip_native isnt undefined
         obj[to_what]().to_native()
@@ -489,17 +493,17 @@ class RubyJS.Object
   # RubyJS specific helper methods
   # @private
   __ensure_args_length: (args, length) ->
-    throw RubyJS.ArgumentError.new() unless args.length is length
+    throw R.ArgumentError.new() unless args.length is length
 
 
   # @private
   __ensure_numeric: (obj) ->
-    throw RubyJS.TypeError.new() unless obj?.is_numeric?
+    throw R.TypeError.new() unless obj?.is_numeric?
 
 
   # @private
   __ensure_string: (obj) ->
-    throw RubyJS.TypeError.new() unless obj?.is_string?
+    throw R.TypeError.new() unless obj?.is_string?
 
   # Finds, removes and returns the last block/function in arguments list.
   # This is a destructive method.
@@ -588,7 +592,7 @@ class RubyJS.Breaker
 # Methods in Base are added to `R`.
 #
 class RubyJS.Base extends RubyJS.Object
-  @include RubyJS.Kernel
+  @include R.Kernel
 
   #
   '$~': null
@@ -608,7 +612,7 @@ class RubyJS.Base extends RubyJS.Object
       'null'
     else if obj.inspect?
       obj.inspect()
-    else if RubyJS.Array.isNativeArray(obj)
+    else if R.Array.isNativeArray(obj)
       "[#{obj}]"
     else
       obj
@@ -621,7 +625,7 @@ class RubyJS.Base extends RubyJS.Object
   # TODO: TEST
   pollute_global: ->
     if arguments.length is 0
-      args = ['proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['_str', '_arr','proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
@@ -671,6 +675,25 @@ class RubyJS.Base extends RubyJS.Object
     obj[function_name] != undefined
 
 
+  # Optimized version of calling a.equals(b).
+  # Takes care of non rubyjs objects.
+  is_equal: (a, b) ->
+    if typeof a is 'object'
+      a.equals(b)
+    else if typeof b is 'object'
+      b.equals(a)
+    else
+      a == b
+
+  is_eql: (a, b) ->
+    if typeof a is 'object'
+      a.eql(b)
+    else if typeof b is 'object'
+      b.eql(a)
+    else
+      a == b
+
+
   extend: (obj, mixin) ->
     obj[name] = method for name, method of mixin
     obj
@@ -685,6 +708,7 @@ errors = [
   'ArgumentError'
   'RegexpError'
   'TypeError'
+  'KeyError'
   'IndexError'
   'FloatDomainError'
   'RangeError'
@@ -713,28 +737,28 @@ class RubyJS.Comparable
 
   '<': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp < 0
 
   '>': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp > 0
 
   '<=': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp <= 0
 
   '>=': (other) ->
     cmp = @['<=>'](other)
-    throw RubyJS.TypeError.new() if cmp is null
+    throw R.TypeError.new() if cmp is null
     cmp >= 0
 
   # Returns false if obj <=> min is less than zero or if anObject <=> max is
   # greater than zero, true otherwise.
   #
-  #
+  # @example
   #     R(3).between(1, 5)               # => true
   #     R(6).between(1, 5)               # => false
   #     R(3).between(3, 3)               # => true
@@ -782,6 +806,209 @@ class RubyJS.Comparable
   gt:   @prototype['>']
   gteq: @prototype['>=']
 
+_enum = R._enum =
+  all: (coll, block) ->
+    R.catch_break (breaker) ->
+      callback = R.blockify(block, coll)
+      coll.each ->
+        result = callback.invoke(arguments)
+        breaker.break(false) if R.falsey(result)
+      true
+
+
+  any: (coll, block) ->
+    R.catch_break (breaker) ->
+      callback = R.blockify(block, coll)
+      coll.each ->
+        result = callback.invoke(arguments)
+        breaker.break(true) unless R.falsey( result )
+      false
+
+
+  collect_concat: (coll, block = null) ->
+    callback = R.blockify(block, this)
+
+    ary = []
+    coll.each ->
+      ary.push(callback.invoke(arguments))
+
+    _arr.flatten(ary, 1)
+
+
+  flat_map: @collect_concat
+
+
+  count: (coll, block) ->
+    counter = 0
+    if block is undefined
+      coll.each -> counter += 1
+    else if block is null
+      coll.each (el) -> counter += 1 if el is null
+    else if block.call?
+      callback = R.blockify(block, coll)
+      coll.each ->
+        result = callback.invoke(arguments)
+        counter += 1 unless R.falsey(result)
+    else
+      countable = R(block)
+      coll.each (el) ->
+        counter += 1 if countable['=='](el)
+    counter
+
+
+  cycle: (coll, n, block) ->
+    unless block
+      if n && n.call?
+        block = n
+        n     = null
+
+    if !(n is null or n is undefined)
+      many  = CoerceProto.to_int_native(n)
+      return null if many <= 0
+    else
+      many = null
+
+    return coll.to_enum('cycle', n) unless block
+
+    callback = R.blockify(block, coll)
+
+    cache = new R.Array([])
+    coll.each ->
+      args = callback.args(arguments)
+      cache.append args
+      callback.invoke(arguments)
+
+    return null if cache.empty()
+
+    if many > 0                                  # cycle(2, () -> ... )
+      i = 0
+      many -= 1
+      while many > i
+        # OPTIMIZE use normal arrays and for el in cache
+        cache.each ->
+          callback.invoke(arguments)
+          i += 1
+    else
+      while true                                 # cycle(() -> ... )
+        cache.each ->
+          callback.invoke(arguments)
+
+
+  drop: (coll, n) ->
+    # TODO use splice when implemented
+    ary = []
+    @each_with_index coll, (el, idx) ->
+      ary.push(el) if n <= idx
+    ary
+
+
+  drop_while: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    ary = []
+    dropping = true
+
+    coll.each ->
+      unless dropping && callback.invoke(arguments)
+        dropping = false
+        ary.push(callback.args(arguments))
+
+    ary
+
+
+
+  each_cons: (coll, n, block) ->
+    # TODO: use callback
+    callback = R.blockify(block, coll)
+    len = block.length
+    ary = []
+    coll.each ->
+      ary.push(BlockMulti.prototype.args(arguments))
+      ary.shift() if ary.length > n
+      if ary.length is n
+        if len > 1
+          block.apply(coll, ary.slice(0))
+        else
+          block.call(coll, ary.slice(0))
+
+    null
+
+  # Calls block once for each element in self, passing that element as a
+  # parameter, converting multiple values from yield to an array.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  each_entry: (coll, block) ->
+    # hard code BlockMulti because each_entry converts multiple
+    # yields into an array
+    callback = new BlockMulti(block, coll)
+    len = block.length
+    coll.each ->
+      args = callback.args(arguments)
+      if len > 1 and R.Array.isNativeArray(args)
+        block.apply(coll, args)
+      else
+        block.call(coll, args)
+
+    coll
+
+  # Iterates the given block for each slice of <n> elements. If no block is
+  # given, returns an enumerator.
+  #
+  # @example
+  #     (1..10).each_slice(3) {|a| p a}
+  #     # outputs below
+  #     [1, 2, 3]
+  #     [4, 5, 6]
+  #     [7, 8, 9]
+  #     [10]
+  #
+  each_slice: (coll, n, block) ->
+    callback = R.blockify(block, coll)
+    len      = block.length
+    ary      = []
+
+    coll.each ->
+      ary.push( BlockMulti.prototype.args(arguments) )
+      if ary.length == n
+        args = ary.slice(0)
+        if len > 1
+          block.apply(coll, args)
+        else
+          block.call(coll, args)
+        ary = []
+
+    unless ary.length == 0
+      args = ary.slice(0)
+      if len > 1
+        block.apply(coll, args)
+      else
+        block.call(coll, args)
+
+    null
+
+
+  each_with_index: (coll, block) ->
+    callback = R.blockify(block, coll)
+
+    idx = 0
+    coll.each ->
+      val = callback.invokeSplat(callback.args(arguments), idx)
+      idx += 1
+      val
+
+    coll
+
+
+  select: (coll, block) ->
+    ary = []
+    callback = R.blockify(block, coll)
+    coll.each ->
+      unless R.falsey(callback.invoke(arguments))
+        ary.push(callback.args(arguments))
+
+    ary
+
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
 # However for performance reasons they are typically re-implemented in them
@@ -803,15 +1030,11 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).all()                          # => false
   #
   all: (block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each ->
-        result = callback.invoke(arguments)
-        breaker.break(false) if R.falsey(result)
+    _enum.all(this, block)
 
-      true
 
   'all?': @prototype.all
+
 
   # Passes each element of the collection to the given block. The method
   # returns true if the block ever returns a value other than false or nil. If
@@ -824,12 +1047,7 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).any()                          # => true
   #
   any: (block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each ->
-        result = callback.invoke(arguments)
-        breaker.break(true) unless R.falsey( result )
-      false
+    _enum.any(this, block)
 
 
   # Returns a new array with the concatenated results of running block once
@@ -844,12 +1062,8 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    callback = R.blockify(block, this)
-    ary = []
-    @each ->
-      ary.push(callback.invoke(arguments))
+    new RArray(_enum.collect_concat(this, block))
 
-    new R.Array(ary).flatten(1)
 
   flat_map: @prototype.collect_concat
 
@@ -865,20 +1079,7 @@ class RubyJS.Enumerable
   #     ary.count (x) -> x%2 == 0  #=> 3
   #
   count: (block) ->
-    counter = 0
-    if block is undefined
-      @each -> counter += 1
-    else if block is null
-      @each (el) -> counter += 1 if el is null
-    else if block.call?
-      callback = R.blockify(block, this)
-      @each ->
-        result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
-    else
-      @each (el) ->
-        counter += 1 if R(el)['=='](block)
-    @$Integer counter
+    new R.Fixnum(_enum.count(this, block))
 
   # this makes my head spin.
   # chunk: (initial_state = null, original_block) ->
@@ -911,41 +1112,7 @@ class RubyJS.Enumerable
   cycle: (n, block) ->
     throw R.ArgumentError.new() if arguments.length > 2
 
-    unless block
-      if n && n.call?
-        block = n
-        n     = null
-
-    if !(n is null or n is undefined)
-      many  = CoerceProto.to_int_native(n)
-      return null if many <= 0
-    else
-      many = null
-
-    return @to_enum('cycle', n) unless block
-
-    callback = R.blockify(block, this)
-
-    cache = new R.Array([])
-    @each ->
-      args = callback.args(arguments)
-      cache.append args
-      callback.invoke(arguments)
-
-    return null if cache.empty()
-
-    if many > 0                                  # cycle(2, () -> ... )
-      i = 0
-      many -= 1
-      while many > i
-        # OPTIMIZE use normal arrays and for el in cache
-        cache.each ->
-          callback.invoke(arguments)
-          i += 1
-    else
-      while true                                 # cycle(() -> ... )
-        cache.each ->
-          callback.invoke(arguments)
+    _enum.cycle(this, n, block)
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -956,15 +1123,9 @@ class RubyJS.Enumerable
   drop: (n) ->
     @__ensure_args_length(arguments, 1)
     n = CoerceProto.to_int_native(n)
-
     throw R.ArgumentError.new() if n < 0
 
-    # TODO use splice when implemented
-    ary = []
-    @each_with_index (el, idx) ->
-      ary.push(el) if n <= idx
-
-    new R.Array(ary)
+    new R.Array(_enum.drop(this, n))
 
 
   # Drops elements up to, but not including, the first element for which the
@@ -979,18 +1140,8 @@ class RubyJS.Enumerable
   #
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
+    new R.Array(_enum.drop_while(this, block))
 
-    callback = R.blockify(block, this)
-
-    ary = []
-    dropping = true
-
-    @each ->
-      unless dropping && callback.invoke(arguments)
-        dropping = false
-        ary.push(callback.args(arguments))
-
-    new R.Array(ary)
 
   # Iterates the given block for each array of consecutive <n> elements. If no
   # block is given, returns an enumerator.
@@ -1006,27 +1157,11 @@ class RubyJS.Enumerable
   each_cons: (args...) ->
     block = @__extract_block(args)
     return @to_enum('each_cons', args...) unless block && block.call?
-
     @__ensure_args_length(args, 1)
     n = CoerceProto.to_int_native(args[0])
-
     throw R.ArgumentError.new() unless n > 0
 
-    # TODO: use callback
-    callback = R.blockify(block, this)
-    len = block.length
-    ary = []
-    @each ->
-      ary.push(BlockMulti.prototype.args(arguments))
-      ary.shift() if ary.length > n
-      if ary.length is n
-        if len > 1
-          block.apply(this, ary.slice(0))
-        else
-          block.call(this, ary.slice(0))
-
-
-    null
+    _enum.each_cons(this, n, block)
 
   # Calls block once for each element in self, passing that element as a
   # parameter, converting multiple values from yield to an array.
@@ -1037,18 +1172,7 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
-    # hard code BlockMulti because each_entry converts multiple
-    # yields into an array
-    callback = new BlockMulti(block, this)
-    len = block.length
-    @each ->
-      args = callback.args(arguments)
-      if len > 1 and R.Array.isNativeArray(args)
-        block.apply(this, args)
-      else
-        block.call(this, args)
-
-    this
+    _enum.each_entry(this, block)
 
   # Iterates the given block for each slice of <n> elements. If no block is
   # given, returns an enumerator.
@@ -1070,28 +1194,7 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    callback = R.blockify(block, this)
-    len      = block.length
-    ary      = []
-
-    @each ->
-      ary.push( BlockMulti.prototype.args(arguments) )
-      if ary.length == n
-        args = ary.slice(0)
-        if len > 1
-          block.apply(this, args)
-        else
-          block.call(this, args)
-        ary = []
-
-    unless ary.length == 0
-      args = ary.slice(0)
-      if len > 1
-        block.apply(this, args)
-      else
-        block.call(this, args)
-
-    null
+    _enum.each_slice(this, n, block)
 
 
   # # TODO: I'm not quite sure wether this is smart or stupid
@@ -1106,6 +1209,7 @@ class RubyJS.Enumerable
   #
   #   this
 
+
   # Calls block with two arguments, the item and its index, for each item in
   # enum. Given arguments are passed through to each().
   #
@@ -1119,15 +1223,7 @@ class RubyJS.Enumerable
   #
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
-
-    callback = R.blockify(block, this)
-
-    idx = 0
-    @each ->
-      val = callback.invokeSplat(callback.args(arguments), idx)
-      idx += 1
-      val
-    this
+    _enum.each_with_index(this, block)
 
 
   # Iterates the given block for each element with an arbitrary object given,
@@ -1191,11 +1287,7 @@ class RubyJS.Enumerable
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
 
-    ary = []
-    callback = R.blockify(block, this)
-    @each ->
-      unless R.falsey(callback.invoke(arguments))
-        ary.push(callback.args(arguments))
+    ary = _enum.select(this, block)
 
     new R.Array(ary)
 
@@ -1243,7 +1335,7 @@ class RubyJS.Enumerable
   first: (n = null) ->
     if n != null
       n = CoerceProto.to_int_native(n)
-      throw new RubyJS.ArgumentError('ArgumentError') if n < 0
+      throw new R.ArgumentError('ArgumentError') if n < 0
       @take(n)
     else
       @take(1).to_native()[0]
@@ -1425,7 +1517,7 @@ class RubyJS.Enumerable
   max: (block) ->
     max = undefined
 
-    block ||= RubyJS.Comparable.cmp
+    block ||= R.Comparable.cmp
 
     # # Following Optimization won't complain if:
     # # [1,2,'3']
@@ -1482,7 +1574,7 @@ class RubyJS.Enumerable
   #
   min: (block) ->
     min = undefined
-    block ||= RubyJS.Comparable.cmp
+    block ||= R.Comparable.cmp
 
     # Following Optimization won't complain if:
     # [1,2,'3']
@@ -1716,11 +1808,11 @@ class RubyJS.Enumerable
       ary.push(BlockMulti.prototype.args(arguments))
       null
 
-    new RubyJS.Array(ary)
+    new R.Array(ary)
 
 
   to_enum: (iter = "each", args...) ->
-    new RubyJS.Enumerator(this, iter, args)
+    new R.Enumerator(this, iter, args)
 
   entries: @prototype.to_a
 
@@ -1787,7 +1879,6 @@ class RubyJS.Enumerable
   toA:             @prototype.to_a
 
 
-
 # `value` is the original element and `sort_by` the one to be sorted by
 #
 # @private
@@ -1797,6 +1888,9 @@ class RubyJS.Enumerable.SortedElement
   '<=>': (other) ->
     @sort_by?['<=>'](other.sort_by)
 
+
+
+REnumerable = RubyJS.Enumerable
 
 # EnumerableArray provides optimized Enumerable methods for Array
 #
@@ -2542,6 +2636,36 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
     @proc( new RubyJS.Enumerator.Yielder( enclosed_yield ) )
 
 
+_arr =
+  flatten: (coll, recursion = -1) ->
+    recursion = CoerceProto.to_int_native(recursion)
+
+    arr = []
+
+    @each coll, (element) ->
+      el = R(element)
+      if recursion != 0 && el?.to_ary?
+        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
+      else
+        arr.push(element)
+    arr
+
+
+  each: (coll, block) ->
+    if block && block.call?
+
+      if block.length > 0 # 'if' needed for to_a
+        block = Block.supportMultipleArgs(block)
+
+      idx = -1
+      len = coll.length
+      while ++idx < len
+        block(coll[idx])
+
+      this
+    else
+      new R.Enumerator(coll, 'each')
+
 # Array wraps a javascript array.
 #
 # @todo No proper support for handling recursive arrays. (e.g. a = [], a.push(a)).
@@ -2599,8 +2723,8 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
 #   @return [R.Array]
 #
 class RubyJS.Array extends RubyJS.Object
-  @include RubyJS.Enumerable
-  @include RubyJS.EnumerableArray, true
+  @include R.Enumerable
+  @include R.EnumerableArray, true
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -2668,7 +2792,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # @private
   @typecast: (arr, recursive) ->
-    new RubyJS.Array(arr, recursive)
+    new R.Array(arr, recursive)
 
   # @private
   @isNativeArray: nativeArray.isArray or (obj) ->
@@ -3284,17 +3408,8 @@ class RubyJS.Array extends RubyJS.Object
   # @todo do not typecast elements!
   #
   flatten: (recursion = -1) ->
-    recursion = R(recursion)
+    new RArray(_arr.flatten(@__native__, recursion))
 
-    arr = new R.Array([])
-
-    @each (el) ->
-      el = R(el)
-      if el?.to_ary? && !recursion.equals(0)
-        el.to_ary().flatten(recursion.minus(1)).each (e) -> arr.push(e)
-      else
-        arr.push(el)
-    arr
 
   # Inserts the given values before the element with the given index (which
   # may be negative).
@@ -4135,7 +4250,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # find a better way for this.
   to_enum: (iter = "each", args...) ->
-    new RubyJS.Enumerator(this, iter, args)
+    new R.Enumerator(this, iter, args)
 
 
   to_ary: () -> this
@@ -4211,17 +4326,25 @@ class RubyJS.Array extends RubyJS.Object
     ary
 
 
-# Not yet implemented
+RArray = R.Array = RubyJS.Array
+R._arr = _arr
+
+
+
+#
+# Unsupported: #value?() use @has_value?
+#
 class RubyJS.Hash extends RubyJS.Object
-  @include RubyJS.Enumerable
+  @include R.Enumerable
 
   # ---- Constructors & Typecast ----------------------------------------------
 
   @new: () ->
-    new RubyJS.Hash()
+    new R.Hash()
 
-  constructor: (obj) ->
-
+  constructor: (hsh, default_value) ->
+    @__native__  = hsh
+    @__default__ = default_value
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -4229,7 +4352,604 @@ class RubyJS.Hash extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
+  # Searches through the hash comparing obj with the key using ==. Returns the
+  # key-value pair (two elements array) or nil if no match is found. See
+  # Array#assoc.
+  #
+  # @example
+  #     h = R.hashify({colors: ["red", "blue", "green"], letters: ["a", "b", "c" ]})
+  #     h.assoc("letters")  #=> ["letters", ["a", "b", "c"]]
+  #     h.assoc("foo")      #=> null
+  #
+  assoc: (needle) ->
+    needle = R(needle)
+
+    arr = []
+    if needle.rubyjs?
+      for own k, v of @__native__
+        if needle.equals(k)
+          return new R.Array([k, v])
+    else
+      for own k, v of @__native__
+        if needle == k
+          return new R.Array([k, v])
+
+    null
+
+
+  # Removes all key-value pairs from hsh.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.clear()  #=> {}
+  #
+  # @return [this]
+  #
+  clear: ->
+    @__native__ = {}
+    this
+
+
+  # Returns the default value, the value that would be returned by hsh if key
+  # did not exist in hsh. See also Hash::new and Hash#default=.
+  #
+  # @example
+  #      h = R.Hash.new()                        #=> {}
+  #      h.default()                             #=> null
+  #      h.default(2)                            #=> null
+  #
+  #      h = R.Hash.new({}, "cat")               #=> {}
+  #      h.default( )                            #=> "cat"
+  #      h.default(2)                            #=> "cat"
+  #
+  #      h = R.Hash.new({}, function(h,k) { return h.set(k, k*10) }   #=> {}
+  #      h.default( )                            #=> null
+  #      h.default(2)                            #=> 20
+  #
+  # @return [Object, null]
+  #
+  default: (key) ->
+    if @__default__
+      if @__default__.call?
+        @__default__(this, key) unless key is undefined
+      else
+        @__default__
+    else
+      null
+
+
+  # If Hash.new was invoked with a block, return that block, otherwise return
+  # nil.
+  #
+  # @example
+  #     h = new R.Hash(function(h,k) { return h.set(k, k*k) }   #=> {}
+  #     p = h.default_proc()               #=> function
+  #
+  default_proc: ->
+    if @__default__?.call?
+      @__default__
+    else
+      null
+
+
+  # Deletes and returns a key-value pair from hsh whose key is equal to key.
+  # If the key is not found, returns the default value. If the optional code
+  # block is given and the key is not found, pass in the key and return the
+  # result of block.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.delete("a")                              #=> 100
+  #     h.delete("z")                              #=> nil
+  #     h.delete("z", function (el) { return "#{el} not found" )
+  #     #=> "z not found"
+  #
+  # @return [Object, null]
+  #
+  delete: (key, block) ->
+    if @has_key(key)
+      value = @get(key)
+      delete @__native__[key]
+      return value
+    else
+      if block?.call?
+        block(key)
+      else
+        null
+
+
+  # Deletes every key-value pair from hsh for which block evaluates to true.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200, c: 300 })
+  #     h.delete_if(function(key, value) {return key >= "b"}
+  #     #=> {"a"=>100}
+  #
+  # @return [this, R.Enumerator]
+  #
+  delete_if: (block) ->
+    if block?.call?
+      for own k,v of @__native__
+        if block(k,v)
+          delete @__native__[k]
+
+      this
+    else
+      @to_enum('delete_if')
+
+
+  # Calls block once for each key in hsh, passing the key-value pair as
+  # parameters.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.each(function (k,v) { R.puts "#{k} is #{v}" }
+  #     # produces:
+  #     # a is 100
+  #     # b is 200
+  #
+  # @return [this, R.Enumerator]
+  #
+  each: (block) ->
+    if block?.call?
+      for own k,v of @__native__
+        block(k,v)
+      this
+    else
+      @to_enum('each')
+
+
+
+  # Alias for {#each}
+  each_pair: @prototype.each
+
+
+  # Calls block once for each key in hsh, passing the key as a parameter.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 }
+  #     h.each_key (key) -> R.puts(key)
+  #     # produces:
+  #     # a
+  #     # b
+  #
+  # @return [this, R.Enumerator]
+  #
+  each_key: (block) ->
+    if block?.call?
+      for own k,v of @__native__
+        block(k)
+      this
+    else
+      @to_enum('each_key')
+
+
+  # Calls block once for each key in hsh, passing the value as a parameter.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.each(function (k,v) { R.puts v }
+  #     # produces:
+  #     # 100
+  #     # 200
+  #
+  # @return [this, R.Enumerator]
+  #
+  each_value: (block) ->
+    if block?.call?
+      for own k,v of @__native__
+        block(v)
+      this
+    else
+      @to_enum('each_value')
+
+  # Returns true if hsh contains no key-value pairs.
+  #
+  #     R.hashify({}).empty()   #=> true
+  #
+  # @return [Boolean]
+  #
+  empty: ->
+    for own k, v of @__native__
+      return false
+    true
+
+
+  eql: (other) ->
+    other = other.to_native?() || other
+
+    for own k,v of @__native__
+      if `k in other`
+        return false unless R.is_eql(other[k], v)
+      else
+        return false
+
+    true
+
+
+  # Returns a value from the hash for the given key. If the key can’t be
+  # found, there are several options: With no other arguments, it will raise
+  # an KeyError exception; if default is given, then that will be returned; if
+  # the optional code block is specified, then that will be run and its result
+  # returned.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.fetch("a")                            #=> 100
+  #     h.fetch("z", "go fish")                 #=> "go fish"
+  #     h.fetch("z", (el) -> "go fish, #{el}")  #=> "go fish, z"
+  #
+  # The following example shows that an exception is raised if the key is not
+  # found and a default value is not supplied.
+  #
+  #     h = { a: 100, b: 200 }
+  #     h.fetch("z")
+  #     produces:
+  #     # key not found (KeyError)
+  #
+  fetch: (key, default_value) ->
+    if arguments.length == 0
+      throw R.ArgumentError.new()
+
+    if @has_key(key)
+      @get(key)
+    else if default_value?.call? || arguments[2]?.call?
+      (arguments[2] || default_value)(key)
+    else if default_value != undefined
+      default_value
+    else
+      throw R.KeyError.new()
+
+
+  # Element Reference—Retrieves the value object corresponding to the key
+  # object. If not found, returns the default value (see Hash::new for
+  # details).
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.get("a")   #=> 100
+  #     h.get("c")   #=> nil
+  #
+  # @param [String] key
+  # @return [Object]
+  #
+  get: (key) ->
+    if @__default__? and !@has_key(key)
+      @default(key)
+    else
+      @__native__[key]
+
+
+  # Returns true if the given value is present for some key in hsh.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.has_value(100)   #=> true
+  #     h.has_value(999)   #=> false
+  #
+  # @return [Boolean]
+  #
+  has_value: (val) ->
+    val = R(val)
+
+    if val.rubyjs?
+      for own k, v of @__native__
+        return true if val.equals(v)
+    else
+      for own k, v of @__native__
+        return true if v == val
+
+    false
+
+
+  # Returns true if the given key is present in hsh.
+  #
+  # @example
+  #     h = R.hashify({a: 100, b: 200 })
+  #     h.has_key("a")   #=> true
+  #     h.has_key("z")   #=> false
+  #
+  # @alias #include, #member
+  #
+  has_key: (key) ->
+    `key in this.__native__`
+
+
+  include: @prototype.has_key
+  member: @prototype.has_key
+
+
+  # Deletes every key-value pair from hsh for which block evaluates to false.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @return [R.Hash] this
+  #
+  keep_if: (block) ->
+    return @to_enum('keep_if') unless block?.call?
+    @reject_bang(block)
+    this
+
+
+  # Returns the key of an occurrence of a given value. If the value is not
+  # found, returns nil.
+  #
+  # @example
+  #      h = R.hashify({ a: 100, b: 200, c: 300, d: 300 })
+  #      h.key(200)   #=> "b"
+  #      h.key(300)   #=> "c"
+  #      h.key(999)   #=> nil
+  #
+  # @return [String]
+  # @alias #index
+  #
+  key: (value) ->
+    # value = R(value)
+
+    if value.rubyjs?
+      for own k, v of @__native__
+        return k if value.equals(v)
+    else
+      for own k, v of @__native__
+        return k if v.valueOf() == value
+
+    null
+
+
+  index: @prototype.key
+
+
+  # Returns a new hash created by using hsh’s values as keys, and the keys as values.
+  #
+  # @example
+  #     h = { n: 100, m: 100, y: 300, d: 200, a: 0 }
+  #     h.invert()   #=> {0: a", 100: "m", 200: "d", 300: "y"}
+  #
+  # @return [R.Hash]
+  #
+  invert: ->
+    hsh = {}
+    for own k, v of @__native__
+      hsh[v] = k
+    new R.Hash(hsh)
+
+  # Returns a new array populated with the keys from this hash. See also
+  # Hash#values.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200, c: 300, d: 400 })
+  #     h.keys()   #=> ["a", "b", "c", "d"]
+  #
+  # @return [R.Array]
+  #
+  keys: ->
+    arr = for own k, v of @__native__
+      k
+    new R.Array(arr)
+
+
+  merge: (other, block) ->
+    hsh = {}
+    other = other.__native__ if other.rubyjs?
+
+    for own k, v of @__native__
+      hsh[k] = v
+    for own k, v of other
+      if block?.call? and `k in hsh`
+        hsh[k] = block(k, hsh[k], v)
+      else
+        hsh[k] = v
+
+    new R.Hash(hsh)
+
+
+  merge_bang: (other, block) ->
+    other = other.__native__ if other.rubyjs?
+
+    for own k, v of @__native__
+      @__native__[k] = v
+    for own k, v of other
+      if block?.call? and `k in this.__native__`
+        @__native__[k] = block(k, @__native__[k], v)
+      else
+        @__native__[k] = v
+
+    this
+
+
+  # Searches through the hash comparing obj with the value using ==. Returns the first key-value pair (two-element array) that matches. See also Array#rassoc.
+  #
+  # @example
+  #     a = R.hashify({1: "one", 2 : "two", 3 : "three", ii: "two"})
+  #     a.rassoc("two")    #=> [2, "two"]
+  #     a.rassoc("four")   #=> nil
+  #
+  # @return [R.Array]
+  #
+  rassoc: (needle) ->
+    needle = R(needle)
+
+    arr = []
+    if needle.rubyjs?
+      for own k, v of @__native__
+        if needle.equals(v)
+          return new R.Array([k, v])
+    else
+      for own k, v of @__native__
+        if needle == v
+          return new R.Array([k, v])
+
+    null
+
+
+
+
+  reject: (block) ->
+    return @to_enum('reject') unless block?.call?
+
+    dup = {}
+    for own k,v of @__native__
+      if !block(k, v)
+        dup[k] = v
+    new R.Hash(dup)
+
+
+  reject_bang: (block) ->
+    return @to_enum('reject_bang') unless block?.call?
+
+    changed = false
+    for own k,v of @__native__
+      if !block(k, v)
+        delete this.__native__[k]
+        changed = true
+
+    if changed then this else null
+
+  # Returns a new hash consisting of entries for which the block returns true.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #     h = { "a" => 100, "b" => 200, "c" => 300 }
+  #     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
+  #     h.select {|k,v| v < 200}  #=> {"a" => 100}
+  select: (block) ->
+    return @to_enum('select') unless block?.call?
+
+    dup = {}
+    for own k,v of @__native__
+      if block(k, v)
+        dup[k] = v
+
+    new R.Hash(dup)
+
+  select_bang: (block) ->
+    return @to_enum('select_bang') unless block?.call?
+
+    changed = false
+    for own k,v of @__native__
+      if block(k, v)
+        delete this.__native__[k]
+        changed = true
+
+    if changed then this else null
+
+
+  # Element Assignment—Associates the value given by value with the key given
+  # by key. key should not have its value changed while it is in use as a key
+  # (a String passed as a key will be duplicated and frozen).
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200 })
+  #     h.set("a", 9)
+  #     h.set("c", 4)
+  #     h   #=> {"a": 9, "b": 200, "c": 4}
+  #
+  # @param [Object] key hash key
+  # @param [Object] value
+  # @return [Object] value
+  #
+  set: (key, value) ->
+    @__native__[key] = value
+
+
+  flatten: (recursion = 1) ->
+    recursion = CoerceProto.to_int_native(recursion)
+    @to_a().flatten(recursion)
+
+  sort: (block) ->
+    @to_a().sort(block)
+
+
+
+  store: @prototype.set
+
+  # Returns the number of key-value pairs in the hash.
+  #
+  # @example
+  #     h = R.hashify({ d: 100, a: 200, v: 300, e: 400 })
+  #     h.size()        #=> 4
+  #     h.delete("a")   #=> 200
+  #     h.size()        #=> 3
+  #
+  # @return [R.Fixnum]
+  #
+  size: ->
+    counter = 0
+
+    for own k, v of @__native__
+      counter += 1
+
+    new R.Fixnum(counter)
+
+
+  # Converts hsh to a nested array of [ key, value ] arrays.
+  #
+  # @example
+  #     h = { c: 300, a: 100, d: 400, c: 300  }
+  #     h.to_a()   #=> [["c", 300], ["a", 100], ["d", 400]]
+  #
+  # @return [R.Array]
+  #
+  to_a: ->
+    arr = for own k, v of @__native__
+      [k, v]
+    new R.Array(arr)
+
+
+  # Returns self.
+  #
+  # @return [R.Hash]
+  #
+  to_hash: -> this
+
+
+  to_h: @prototype.to_hash
+
+
+  # @return [Object]
+  #
+  to_native: ->
+    @__native__
+
+
+  update: @prototype.merge_bang
+
+
+  # Returns a new array populated with the values from hsh. See also
+  # Hash#keys.
+  #
+  # @example
+  #     h = R.hashify({ a: 100, b: 200, c: 300 })
+  #     h.values()   #=> [100, 200, 300]
+  #
+  # @return [R.Array]
+  #
+  values: ->
+    arr = for own k, v of @__native__
+      v
+    new R.Array(arr)
+
+  values_at: (keys) ->
+    arr = for k in arguments
+      @get(k)
+    R(arr)
+
   # ---- Aliases --------------------------------------------------------------
+
+
+R.hashify = (obj, default_value) ->
+  new R.Hash(obj, default_value)
+
+R.h = R.hashify
 
 
 # R.Range.new()
@@ -4237,13 +4957,13 @@ class RubyJS.Hash extends RubyJS.Object
 # @include RubyJS.Enumerable
 #
 class RubyJS.Range extends RubyJS.Object
-  @include RubyJS.Enumerable
+  @include R.Enumerable
 
   # ---- Constructors & Typecast ----------------------------------------------
 
   # TODO: .new should BOX here:
   @new: (start, end, exclusive = false) ->
-    new RubyJS.Range(start, end, exclusive)
+    new R.Range(start, end, exclusive)
 
   # TODO: do not box here...
   constructor: (start, end, @exclusive = false) ->
@@ -4290,7 +5010,7 @@ class RubyJS.Range extends RubyJS.Object
   # @return true, false
   #
   '==': (other) ->
-    return false unless other instanceof RubyJS.Range
+    return false unless other instanceof R.Range
     @__end__['=='](other.end()) and @__start__['=='](other.start()) and @exclusive is other.exclude_end()
 
   # Returns true only if obj is a Range, has equivalent beginning and end items
@@ -4322,7 +5042,7 @@ class RubyJS.Range extends RubyJS.Object
   # @param other
   #
   cover: (obj) ->
-    throw RubyJS.ArgumentError.new() if arguments.length != 1
+    throw R.ArgumentError.new() if arguments.length != 1
     obj = obj
     return false if obj is null
     @equal_case(obj)
@@ -4495,8 +5215,8 @@ class RubyJS.Range extends RubyJS.Object
     this
 
   to_a: () ->
-    throw RubyJS.TypeError.new() if @__end__.is_float? && @__start__.is_float?
-    RubyJS.Enumerable.prototype.to_a.apply(this)
+    throw R.TypeError.new() if @__end__.is_float? && @__start__.is_float?
+    R.Enumerable.prototype.to_a.apply(this)
 
 
   to_s: @prototype.inspect
@@ -4754,7 +5474,7 @@ class RubyJS.MatchData extends RubyJS.Object
 
   # @unsupported extracting names is not supported in Javascript
   names: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # ---- Private methods ------------------------------------------------------
@@ -4769,12 +5489,77 @@ class RubyJS.MatchData extends RubyJS.Object
 
 
 
-# make String accessible within RubyJS.String
+# make String accessible within R.String
 nativeString = root.String
 
-class RubyJS.String extends RubyJS.Object
-  @include RubyJS.Comparable
+StringClassMethods =
+  chars: (str, block) ->
+    return @to_enum('chars') unless block && block.call?
+    idx = -1
+    len = str.length
+    while ++idx < len
+      block(str[idx])
+    str
 
+
+  chomp: (str, sep = null) ->
+    if sep == null
+      if @empty(str) then "" else null
+    else
+      sep = CoerceProto.to_str_native(sep)
+      if sep.length == 0
+        regexp = /((\r\n)|\n)+$/
+      else if sep is "\n" or sep is "\r" or sep is "\r\n"
+        ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
+      else
+        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
+      str.replace(regexp, '')
+
+
+  chop: (str) ->
+    return str if str.length == 0
+
+    # DO:
+    # if @end_with("\r\n")
+    #   new R.String(@to_native().replace(/\r\n$/, ''))
+    # else
+    #   @slice 0, @size().minus(1)
+
+
+  downcase: (str) ->
+    str = CoerceProto.to_str_native(str)
+    return null unless str.match(/[A-Z]/)
+    # TODO: OPTIMIZE
+    R(str.split('')).map((c) ->
+      if c.match(/[A-Z]/) then c.toLowerCase() else c
+    ).join('').to_native()
+
+
+  empty: (str) ->
+    CoerceProto.to_str_native(str).length == 0
+
+
+  end_with: (str, needles) ->
+    needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
+
+    str_len = str.length
+    for w in needles.iterator()
+      return true if str.lastIndexOf(w) + w.length is str_len
+    false
+
+
+  upcase: (str) ->
+    str = CoerceProto.to_str_native(str)
+    return null unless str.match(/[a-z]/)
+
+    R(str.split('')).map((c) ->
+      if c.match(/[a-z]/) then c.toUpperCase() else c
+    ).join('').to_native()
+
+
+class RubyJS.String extends RubyJS.Object
+  @include R.Comparable
   @fromCharCode: (obj) -> nativeString.fromCharCode(obj)
 
   # ---- Constructors & Typecast ----------------------------------------------
@@ -4864,7 +5649,7 @@ class RubyJS.String extends RubyJS.Object
   '*': (num) ->
     num = @box(num).to_int()
     @__ensure_numeric(num)
-    throw(RubyJS.ArgumentError.new()) if num.lt(0)
+    throw(R.ArgumentError.new()) if num.lt(0)
 
     str = ""
     str += this for n in [0...num.to_native()]
@@ -5012,7 +5797,7 @@ class RubyJS.String extends RubyJS.Object
   #
   capitalize_bang: ->
     return if @empty()
-
+    # FIXME
     # TODO remove dogfood
     str = @downcase()
     str = str.chr().upcase().concat(str.to_native().slice(1) || '')
@@ -5073,12 +5858,7 @@ class RubyJS.String extends RubyJS.Object
   #
   chars: (block) ->
     return @to_enum('chars') unless block && block.call?
-    # TODO: ideally make this possible:
-    # R.Array.prototype.each.call(@__char_natives__(), block)
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      block(@__native__[idx])
+    _str.chars(@__native__, block)
     this
 
 
@@ -5097,7 +5877,10 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").chomp("llo")       # => "he"
   #
   chomp: (sep = null) ->
-    @dup().tap (d) -> d.chomp_bang(sep)
+    if sep is null
+      this
+    else
+      new RString(_str.chomp(@__native__, sep))
 
 
   # Modifies str in place as described for String#chomp, returning str, or nil if no modifications were made.  #
@@ -5105,20 +5888,9 @@ class RubyJS.String extends RubyJS.Object
   # @todo finish specs
   #
   chomp_bang: (sep = null) ->
-    if sep == null
-      @replace("") if @empty()
+    if str = _str.chomp(@__native__, sep)
+      @replace(str)
     else
-      sep = @$String(sep)
-      # sep = new RubyJS.String(sep)
-      # sep = sep.to_str()
-      if sep.empty()
-        regexp = /((\r\n)|\n)+$/
-      else if sep.equals("\n") or sep.equals("\r") or sep.equals("\r\n")
-        ending = @to_native().match(/((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
-      else
-        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
-      @replace(@to_native().replace(regexp, ''))
       null
 
 
@@ -5180,7 +5952,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
   #
   count: (args...) ->
-    throw RubyJS.ArgumentError.new() if R(args.length).equals(0)
+    throw R.ArgumentError.new() if R(args.length).equals(0)
     tbl = new CharTable(args)
     # @to_native().match(rgxp).length
     @chars().count (chr) ->
@@ -5208,7 +5980,7 @@ class RubyJS.String extends RubyJS.Object
   # modified.
   #
   delete_bang: (args...) ->
-    throw RubyJS.ArgumentError.new() if R(args.length).equals(0)
+    throw R.ArgumentError.new() if R(args.length).equals(0)
     tbl = new CharTable(args)
 
     # OPTIMIZE:
@@ -5229,18 +6001,16 @@ class RubyJS.String extends RubyJS.Object
   #     R("hEllO").downcase()   #=> "hello"
   #
   downcase: () ->
-    @dup().tap (s) -> s.downcase_bang()
+    new RString(_str.downcase(@__native__) || @__native__)
 
   # Downcases the contents of str, returning nil if no changes were made.
   #
   # @note case replacement is effective only in ASCII region.
   #
   downcase_bang: () ->
-    return null unless @to_native().match(/[A-Z]/)
-    # TODO: OPTIMIZE
-    @replace R(@__char_natives__()).map((c) ->
-      if c.match(/[A-Z]/) then c.toLowerCase() else c
-    ).join('').to_native()
+    str = R.String.downcase(@__native__)
+    return null if str is null
+    @replace(str)
 
   # Produces a version of str with all nonprinting characters replaced by \nnn
   # notation and all special characters escaped.
@@ -5335,7 +6105,7 @@ class RubyJS.String extends RubyJS.Object
   #     " ".empty()       #=> true
   #
   empty: ->
-    @to_native().length == 0
+    _str.empty(@__native__)
 
 
   #encode
@@ -5346,10 +6116,7 @@ class RubyJS.String extends RubyJS.Object
   # Returns true if str ends with one of the suffixes given.
   #
   end_with: (needles...) ->
-    needles = @$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
-    for w in needles.iterator()
-      return true if @to_native().lastIndexOf(w) + w.length is @to_native().length
-    false
+    _str.end_with(@__native__, needles)
 
 
   # Two strings are equal if they have the same length and content.
@@ -6525,6 +7292,15 @@ class RubyJS.String extends RubyJS.Object
 
   #unpack
 
+
+  @upcase: (str) ->
+    str = R.CoerceProto.to_str_native(str)
+    return null unless str.match(/[a-z]/)
+    R(str.split('')).map((c) ->
+      if c.match(/[a-z]/) then c.toUpperCase() else c
+    ).join('').to_native()
+
+
   # Returns a copy of str with all lowercase letters replaced with their
   # uppercase counterparts. The operation is locale insensitive—only
   # characters “a” to “z” are affected. Note: case replacement is effective
@@ -6534,17 +7310,16 @@ class RubyJS.String extends RubyJS.Object
   #     R("hEllO").upcase()   #=> "HELLO"
   #
   upcase: () ->
-    @dup().tap (s) -> s.upcase_bang()
-
+    str = _str.upcase(@__native__) || @__native__
+    new RString(str)
 
   # Upcases the contents of str, returning nil if no changes were made. Note:
   # case replacement is effective only in ASCII region.
   #
   upcase_bang: () ->
-    return null unless @to_native().match(/[a-z]/)
-    @replace R(@__char_natives__()).map((c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('').to_native()
+    val = R.String.upcase(@__native__)
+    return null if val is null
+    @replace(val)
 
 
   # Iterates through successive values, starting at str and ending at
@@ -6576,7 +7351,7 @@ class RubyJS.String extends RubyJS.Object
       exclusive = false
 
     throw R.TypeError.new() unless stop?.is_string?
-    return RubyJS.Enumerator.new(this, 'upto', stop, exclusive) unless block && block.call?
+    return R.Enumerator.new(this, 'upto', stop, exclusive) unless block && block.call?
 
     # stop       = stop.to_str()
     # return this if @lt(stop)
@@ -6705,8 +7480,8 @@ class CharTable
       throw R.ArgumentError.new("ERROR: #{a} #{b}") if counter == 10000
     arr
 
-RStrProto = RubyJS.String.prototype
-
+R.extend(RubyJS.String, StringClassMethods)
+_str = R._str = RString = RubyJS.String
 
 
 class RubyJS.Regexp extends RubyJS.Object
@@ -6724,13 +7499,13 @@ class RubyJS.Regexp extends RubyJS.Object
     if typeof arg is 'string'
       # optimize R.Regexp.new("foo") with string primitive
       arg = @__compile__( arg )
-    else if RubyJS.Regexp.isRegexp(arg)
+    else if R.Regexp.isRegexp(arg)
     else if arg.is_regexp?
       arg = arg.to_native()
     else
       arg = @__compile__( CoerceProto.to_str_native(arg))
 
-    new RubyJS.Regexp(arg)
+    new R.Regexp(arg)
 
 
   @compile: @new
@@ -6831,7 +7606,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
   # @unsupported currently no support for encodings in RubyJS
   encoding: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @alias to #==
@@ -6840,12 +7615,12 @@ class RubyJS.Regexp extends RubyJS.Object
 
   # @unsupported currently no support for encodings in RubyJS
   fixed_encoding: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @unsupported currently no support for hash in RubyJS
   hash: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # Returns a MatchData object describing the match, or nil if there was no
@@ -7044,7 +7819,7 @@ class RubyJS.Regexp extends RubyJS.Object
       if arg.is_regexp? then arg.to_s() else CoerceProto.to_str(arg)
 
     # TODO: use proper Regexp.compile/new method
-    new RubyJS.Regexp(
+    new R.Regexp(
       new nativeRegExp( sources.join('|') ))
 
 
@@ -7066,17 +7841,17 @@ class RubyJS.Regexp extends RubyJS.Object
 
   # @unsupported named captures are not supported in JS
   names: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @unsupported named captures are not supported in JS
   named_captures: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # @unsupported JS options are different from Ruby options.
   options: ->
-    throw RubyJS.NotSupportedError.new()
+    throw R.NotSupportedError.new()
 
 
   # ---- Aliases --------------------------------------------------------------
@@ -7440,7 +8215,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   # ---- Constructors & Typecast ----------------------------------------------
 
   @new: (value) ->
-    new Integer(value)
+    new R.Integer(value)
 
 
   @isInteger: (obj) ->
@@ -7501,7 +8276,7 @@ class RubyJS.Integer extends RubyJS.Numeric
       throw R.ArgumentError.new()
 
     unless block?.call?
-      return RubyJS.Enumerator.new(this, 'downto', stop)
+      return R.Enumerator.new(this, 'downto', stop)
 
     stop = Math.ceil(stop)
     idx  = @to_native()
@@ -7746,7 +8521,7 @@ class RubyJS.Integer extends RubyJS.Numeric
 
 
 class RubyJS.Fixnum extends RubyJS.Integer
-  @include RubyJS.Comparable
+  @include R.Comparable
 
 
   # ---- Constructors & Typecast ----------------------------------------------
@@ -7759,12 +8534,12 @@ class RubyJS.Fixnum extends RubyJS.Integer
   @new: (val) ->
     # memo = @__memoized_fixnums__[val]
     # return memo if memo
-    new RubyJS.Fixnum(val)
+    new R.Fixnum(val)
 
 
   @try_convert: (obj) ->
     obj = R(obj)
-    throw RubyJS.TypeError.new() unless obj.to_int?
+    throw R.TypeError.new() unless obj.to_int?
     obj
 
   # Fixnums are unchangeable. Cache them for later use.
@@ -7803,8 +8578,8 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #equals
   #
   '==': (other) ->
-    if !@box(other).is_fixnum?
-      other['=='](this)
+    if !R(other).is_fixnum?
+      R(other)['=='](this)
     else
       @['<=>'](other) == 0
 
@@ -7825,7 +8600,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     unless typeof other is 'number'
       other = R(other)
       return null                  unless other.is_numeric?
-      throw RubyJS.TypeError.new() unless other.to_int?
+      throw R.TypeError.new() unless other.to_int?
       other = other.to_native()
 
     if @to_native() < other
@@ -7845,7 +8620,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #plus
   #
   '+': (other) ->
-    RubyJS.Numeric.typecast(@to_native() + CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() + CoerceProto.to_num_native(other))
 
   # Performs subtraction: the class of the resulting object depends on the
   # class of numeric and on the magnitude of the result.
@@ -7857,7 +8632,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #minus
   #
   '-': (other) ->
-    RubyJS.Numeric.typecast(@to_native() - CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() - CoerceProto.to_num_native(other))
 
   # Performs division: the class of the resulting object depends on the class
   # of numeric and on the magnitude of the result.
@@ -7878,7 +8653,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     else if +other == 0
       throw R.ZeroDivisionError.new()
     else
-      val = RubyJS.Numeric.typecast(@to_native() / other.to_native())
+      val = R.Numeric.typecast(@to_native() / other.to_native())
       if other.is_float? then val else val.floor()
 
 
@@ -7888,7 +8663,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #multiply
   #
   '*': (other) ->
-    RubyJS.Numeric.typecast(@to_native() * CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() * CoerceProto.to_num_native(other))
 
   # Raises fix to the numeric power, which may be negative or fractional.
   #
@@ -7924,7 +8699,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   fdiv: (other) ->
     other = R(other)
-    throw RubyJS.TypeError.new() unless other.is_numeric?
+    throw R.TypeError.new() unless other.is_numeric?
     @__ensure_args_length(arguments, 1)
     @to_f().divide(other.to_f())
 
@@ -7950,7 +8725,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   to_s: (base = 10) ->
     base = @box(base)
-    throw RubyJS.ArgumentError.new() if base.lt(2) || base.gt(36)
+    throw R.ArgumentError.new() if base.lt(2) || base.gt(36)
     @box("#{@to_native().toString(base.to_native())}")
 
 
@@ -7964,7 +8739,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
 #
 #
 class RubyJS.Float extends RubyJS.Numeric
-  @include RubyJS.Comparable
+  @include R.Comparable
 
   # FIXME: this should ideally be rubyjs.Floats
   @INFINITY:   1.0/0.0
@@ -7998,7 +8773,7 @@ class RubyJS.Float extends RubyJS.Numeric
 
 
   @isFloat: (obj) ->
-    RubyJS.Numeric.isNumeric(obj) && !RubyJS.Integer.isInteger(obj)
+    R.Numeric.isNumeric(obj) && !R.Integer.isInteger(obj)
 
 
   # ---- Instance methods -----------------------------------------------------
@@ -8079,7 +8854,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [R.Fixnum]
   #
   ceil: ->
-    new RubyJS.Fixnum(Math.ceil(@to_native()))
+    new R.Fixnum(Math.ceil(@to_native()))
 
 
   inspect: () ->
@@ -8220,14 +8995,14 @@ class RubyJS.Float extends RubyJS.Numeric
     throw new TypeError("FloatDomainError") if @infinite()
     throw new TypeError("RangeError")       if @nan()
 
-    return new RubyJS.Fixnum(Math.round(@to_native())) if n is 0
+    return new R.Fixnum(Math.round(@to_native())) if n is 0
 
     multiplier = Math.pow(10, n)
     rounded    = Math.round(@to_native() * multiplier) / multiplier
     if n > 0
-      new RubyJS.Float(rounded)
+      new R.Float(rounded)
     else
-      new RubyJS.Fixnum(rounded)
+      new R.Fixnum(rounded)
 
 
   # Returns a string containing a representation of self. As well as a fixed
@@ -8335,7 +9110,7 @@ class RubyJS.Time extends RubyJS.Object
   #     Time.new(y,m,d,h,m,s,utc_offset_in_seconds)
   #     Time.now() # in timezone
   #     Time.at() # local_time
-  @include RubyJS.Comparable
+  @include R.Comparable
 
   @LOCALE:
     'DAYS':         ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -8521,7 +9296,7 @@ class RubyJS.Time extends RubyJS.Object
   #
   @utc: (year, month, day, hour, min, sec) ->
     date = new Date(Date.UTC(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0))
-    new RubyJS.Time(date, 0)
+    new R.Time(date, 0)
 
 
   # @alias #utc
@@ -8533,7 +9308,7 @@ class RubyJS.Time extends RubyJS.Object
   # system time.
   #
   @now: ->
-    RubyJS.Time.new()
+    R.Time.new()
 
 
   # @private
@@ -8815,7 +9590,7 @@ class RubyJS.Time extends RubyJS.Object
 
   # @todo: implement %N
   strftime: (format) ->
-    locale = RubyJS.Time.LOCALE
+    locale = R.Time.LOCALE
 
     fill = @_rjust
 

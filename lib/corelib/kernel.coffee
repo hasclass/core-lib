@@ -180,12 +180,16 @@ class RubyJS.Kernel
 
   $Integer: @prototype.$Integer
 
+
   $String:  (obj) -> R.String.try_convert(obj) or throw(R.TypeError.new())
+
 
   $Range: (start,end,exclusive) ->
     R.Range.new(start,end,exclusive)
 
-  puts: (obj) -> console.log(obj)
+
+  puts: (obj) ->
+    console.log(obj)
 
 
   rand: (limit) ->
