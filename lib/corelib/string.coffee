@@ -1,9 +1,8 @@
 # make String accessible within R.String
 nativeString = root.String
 
-StringClassMethods =
+_str = R._str =
   chars: (str, block) ->
-    return @to_enum('chars') unless block && block.call?
     idx = -1
     len = str.length
     while ++idx < len
@@ -37,7 +36,6 @@ StringClassMethods =
 
 
   downcase: (str) ->
-    str = CoerceProto.to_str_native(str)
     return null unless str.match(/[A-Z]/)
     # TODO: OPTIMIZE
     R(str.split('')).map((c) ->
@@ -46,7 +44,7 @@ StringClassMethods =
 
 
   empty: (str) ->
-    CoerceProto.to_str_native(str).length == 0
+    str.length == 0
 
 
   end_with: (str, needles) ->
@@ -59,7 +57,6 @@ StringClassMethods =
 
 
   upcase: (str) ->
-    str = CoerceProto.to_str_native(str)
     return null unless str.match(/[a-z]/)
 
     R(str.split('')).map((c) ->
@@ -517,7 +514,7 @@ class RubyJS.String extends RubyJS.Object
   # @note case replacement is effective only in ASCII region.
   #
   downcase_bang: () ->
-    str = R.String.downcase(@__native__)
+    str = _str.downcase(@__native__)
     return null if str is null
     @replace(str)
 
@@ -1826,7 +1823,7 @@ class RubyJS.String extends RubyJS.Object
   # case replacement is effective only in ASCII region.
   #
   upcase_bang: () ->
-    val = R.String.upcase(@__native__)
+    val = _str.upcase(@__native__)
     return null if val is null
     @replace(val)
 
@@ -1989,5 +1986,5 @@ class CharTable
       throw R.ArgumentError.new("ERROR: #{a} #{b}") if counter == 10000
     arr
 
-R.extend(RubyJS.String, StringClassMethods)
-_str = R._str = RString = RubyJS.String
+
+RString = RubyJS.String
