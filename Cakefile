@@ -13,6 +13,8 @@ appFiles  = [
   'corelib/breaker'
   'corelib/base'
 
+  'corelib/_num'
+
   'corelib/errors'
   'corelib/comparable'
   'corelib/_enum'

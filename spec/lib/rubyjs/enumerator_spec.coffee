@@ -15,7 +15,7 @@ describe "Enumerator", ->
     en = R(1).upto(5)
 
     arr = []
-    arr.push(i.unbox() + 1) for i in en.iterator()
+    arr.push(i + 1) for i in en.iterator()
     expect( arr ).toEqual [2,3,4,5,6]
 
     expect( R(en.iterator()).inspect() ).toEqual R('[1, 2, 3, 4, 5]')
@@ -24,7 +24,7 @@ describe "Enumerator", ->
     expect( en.all((i)-> i < 9) ).toEqual true
     expect( en.all((i)-> i < 4) ).toEqual false
 
-    expect( en.select((i)-> +i.modulo(2) == 0).inspect() ).toEqual R('[2, 4]')
+    expect( en.select((i)-> + i % 2 == 0).inspect() ).toEqual R('[2, 4]')
     expect( en.each_with_index().to_a().inspect() ).toEqual R('[[1,0], [2,1], [3,2], [4,3], [5,4]]')
     #expect( en.each_with_index().collect((w,i) -> i).inspect() ).toEqual R('[0, 1, 2, 3, 4]')
     # differs from rubyspec
@@ -58,13 +58,13 @@ describe "Enumerator", ->
     arr = []
 
     en = RubyJS.Enumerator.new(R(1), 'upto', 3)
-    en.each (i) -> arr.push(i.unbox())
+    en.each (i) -> arr.push(i)
     expect( arr ).toEqual([1,2,3])
 
     en = RubyJS.Enumerator.new(R(1), 'upto', 3)
     expect( en.each() ).toBeInstanceOf(RubyJS.Enumerator)
 
-    expect( en.next()?.unbox() ).toEqual(1)
-    expect( en.next()?.unbox() ).toEqual(2)
-    expect( en.next()?.unbox() ).toEqual(3)
-    expect( en.next()?.unbox() ).toEqual(null)
+    expect( en.next() ).toEqual(1)
+    expect( en.next() ).toEqual(2)
+    expect( en.next() ).toEqual(3)
+    expect( en.next() ).toEqual(null)

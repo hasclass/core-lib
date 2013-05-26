@@ -35,7 +35,7 @@ describe "Numeric#step", ->
       expect( R(1).step(2, 3) ).toBeInstanceOf(R.Enumerator)
 
     xit "returns an Enumerator that uses the given step", ->
-      expect( R(0).step(5, 2).to_a().unbox(true) ).toEqual [0, 2, 4]
+      expect( R(0).step(5, 2).to_a() ).toEqual R([0, 2, 4])
 
 # Not testing mocked behaviour for now...
 #
@@ -115,13 +115,13 @@ describe "Numeric#step", ->
 
   describe "Numeric#step with [stop, step]", ->
     it "yields only Floats when self is a Float", ->
-      R(1.5).step(5, 1, (x) -> expect( x ).toBeInstanceOf(R.Float) )
+      R(1.5).step(5, 1, (x) -> expect( typeof x is 'number' ).toEqual true )
 
     it "yields only Floats when stop is a Float", ->
-      R(1).step(R(5.0).to_f(), 1, (x) -> expect( x ).toBeInstanceOf(R.Float) )
+      R(1).step(R(5.0).to_f(), 1, (x) -> expect( typeof x is 'number' ).toEqual true )
 
     it "yields only Floats when step is a Float", ->
-      R(1).step(5, R(1.0).to_f(), (x) -> expect( x ).toBeInstanceOf(R.Float) )
+      R(1).step(5, R(1.0).to_f(), (x) -> expect( typeof x is 'number' ).toEqual true )
 
   describe "Numeric#step with [stop, +step] when self, stop or step is a Float", ->
     it "yields while increasing self by step while < stop", ->

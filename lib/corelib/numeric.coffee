@@ -262,54 +262,10 @@ class RubyJS.Numeric extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   step: (limit, step = 1, block) ->
-    limit = R(limit)
     unless block?.call?
-      block = step
-      step  = 1
-    step = R(step)
+      return @to_enum('step', limit, step) unless step?.call?
 
-    unless block?.call?
-      return @to_enum('step', limit, step)
-
-    if step.equals(0)
-      throw new R.ArgumentError("ArgumentError")
-
-    float_mode = @is_float? or limit.is_float? or step.is_float?
-
-    limit = limit.to_native()
-    step  = step.to_native()
-    value = @to_native()
-
-    # eps = 0.0000000000000002220446049250313080847263336181640625
-    if float_mode
-      # For some reason the following ported code is not needed.
-      # it appears to work properly in js withouth the Float::EPSILON
-      # err = (value.abs().plus(limit.abs()).plus(limit.minus(value).abs()).divide(step.abs())).multiply(eps)
-      # err = 0.5 if err.gt(0.5)
-      # n   = (limit.minus(value)).divide(step.plus(err)).floor()
-      n = (limit - value) / step
-      i = 0
-      if step > 0
-        while i <= n
-          d = i * step + value
-          d = limit if limit < d
-          block(new R.Float(d))
-          i += 1
-      else
-        while i <= n
-          d = i * step + value
-          d = limit if limit > d
-          block(new R.Float(d))
-          i += 1
-    else
-      if step > 0
-        until value > limit
-          block(new R.Fixnum(value))
-          value += step
-      else
-        until value < limit
-          block(new R.Fixnum(value))
-          value += step
+    _num.step(@__native__, limit, step, block)
     this
 
 

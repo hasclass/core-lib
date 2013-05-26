@@ -70,13 +70,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     unless block?.call?
       return R.Enumerator.new(this, 'downto', stop)
 
-    stop = Math.ceil(stop)
-    idx  = @to_native()
-
-    while idx >= stop
-      block( new R.Fixnum(idx) )
-      idx -= 1
-
+    _num.downto(@__native__, stop, block)
     this
 
 
@@ -282,14 +276,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     unless block?.call?
       return R.Enumerator.new(this, 'upto', stop)
 
-    stop = Math.floor(stop)
-    idx = @to_native()
-
-    while idx <= stop
-      block( new R.Fixnum(idx) ) #for i in [@to_native()..stop]
-      idx += 1
-
-    this
+    _num.upto(@__native__, stop, block)
 
 
   # @return [String]

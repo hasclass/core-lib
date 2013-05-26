@@ -159,7 +159,7 @@ describe "Integer block args", ->
 
   it "#upto", ->
     num = R(1)
-    z = R(1)
+    z = 1
     num.upto(1, (a   ) -> expect( a ).toEqual(  z   ))
     num.upto(1, (a...) -> expect( a ).toEqual( [z]  ))
     num.upto(1, (a, b) -> expect( a ).toEqual(  z   ))
