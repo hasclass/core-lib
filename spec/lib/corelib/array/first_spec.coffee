@@ -10,21 +10,21 @@ describe "Array#first", ->
     expect( R([true, false, true, null, false]).first(2).unbox()).toEqual [true, false]
 
   it "returns an empty array when passed count on an empty array", ->
-    expect( R([]).first(0).unbox() ).toEqual []
-    expect( R([]).first(1).unbox() ).toEqual []
-    expect( R([]).first(2).unbox() ).toEqual []
+    expect( R([]).first(0) ).toEqual R([])
+    expect( R([]).first(1) ).toEqual R([])
+    expect( R([]).first(2) ).toEqual R([])
 
   it "returns an empty array when passed count == 0", ->
-    expect( R([1, 2, 3, 4, 5]).first(0).unbox()).toEqual []
+    expect( R([1, 2, 3, 4, 5]).first(0)).toEqual R([])
 
   it "returns an array containing the first element when passed count == 1", ->
-    expect( R([1, 2, 3, 4, 5]).first(1).unbox() ).toEqual [1]
+    expect( R([1, 2, 3, 4, 5]).first(1) ).toEqual R([1])
 
   it "raises an ArgumentError when count is negative", ->
     expect( -> R([1, 2]).first(-1) ).toThrow("ArgumentError")
 
   it "returns the entire array when count > length", ->
-    expect( R([1, 2, 3, 4, 5, 9]).first(10).unbox()).toEqual [1, 2, 3, 4, 5, 9]
+    expect( R([1, 2, 3, 4, 5, 9]).first(10)).toEqual R([1, 2, 3, 4, 5, 9])
 
   # it "returns an array which is independent to the original when passed count", ->
   #   ary = [1, 2, 3, 4, 5]

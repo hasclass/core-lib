@@ -1,32 +1,4 @@
-_arr =
-  flatten: (coll, recursion = -1) ->
-    recursion = CoerceProto.to_int_native(recursion)
 
-    arr = []
-
-    @each coll, (element) ->
-      el = R(element)
-      if recursion != 0 && el?.to_ary?
-        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
-      else
-        arr.push(element)
-    arr
-
-
-  each: (coll, block) ->
-    if block && block.call?
-
-      if block.length > 0 # 'if' needed for to_a
-        block = Block.supportMultipleArgs(block)
-
-      idx = -1
-      len = coll.length
-      while ++idx < len
-        block(coll[idx])
-
-      this
-    else
-      new R.Enumerator(coll, 'each')
 
 # Array wraps a javascript array.
 #
@@ -1235,19 +1207,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   reverse_each: (block) ->
     return @to_enum('reverse_each') unless block && block.call?
-
-    if block && block.call?
-
-      if block.length > 0 # if needed for to_a
-        block = Block.supportMultipleArgs(block)
-
-      idx = @__native__.length
-      while idx--
-        block(@__native__[idx])
-
-      this
-    else
-      @to_enum()
+    _arr.reverse_each(@__native__, block)
+    this
 
 
   # Returns new array by rotating self so that the element at cnt in self is

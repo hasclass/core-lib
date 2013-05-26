@@ -20,6 +20,9 @@ class EnumerableSpecs.Numerous extends RubyJS.Object
     else
       @list.unbox() # @to_enum('each')
 
+  to_native: ->
+    @list.__native__
+
 
 class EnumerableSpecs.NumerousLiteral extends RubyJS.Object
   @include RubyJS.Enumerable
@@ -37,6 +40,8 @@ class EnumerableSpecs.NumerousLiteral extends RubyJS.Object
     else
       @list.unbox() # @to_enum('each')
 
+  to_native: ->
+    @list.__native__
 
 class EnumerableSpecs.ComparesByVowelCount
   @wrap: (args...) ->

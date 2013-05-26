@@ -14,11 +14,12 @@ appFiles  = [
   'corelib/base'
 
   'corelib/errors'
-
   'corelib/comparable'
+  'corelib/_enum'
   'corelib/enumerable'
   'corelib/enumerable_array'
   'corelib/enumerator'
+  'corelib/_arr'
   'corelib/array'
   'corelib/hash'
   'corelib/range'

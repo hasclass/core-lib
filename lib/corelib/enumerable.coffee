@@ -469,30 +469,7 @@ class RubyJS.Enumerable
   #     a.max (a,b) -> R(a.length)['<=>'] b.length }   #=> "albatross"
   #
   max: (block) ->
-    max = undefined
-
-    block ||= R.Comparable.cmp
-
-    # # Following Optimization won't complain if:
-    # # [1,2,'3']
-    # #
-    # # optimization for elements that are arrays
-    # #
-    # if @__samesame__?()
-    #   arr = @__native__
-    #   if arr.length < 65535
-    #     _max = Math.max.apply(Math, arr)
-    #     return _max if _max isnt NaN
-
-    @each (item) ->
-      if max is undefined
-        max = item
-      else
-        comp = block(item, max)
-        throw R.ArgumentError.new() if comp is null
-        max = item if comp > 0
-
-    max or null
+    _enum.max(this, block)
 
 
   # Returns the object in enum that gives the maximum value from the given
@@ -506,15 +483,7 @@ class RubyJS.Enumerable
   #
   max_by: (block) ->
     return @to_enum('max_by') unless block?.call?
-    max = undefined
-    # OPTIMIZE: use sorted element
-    @each (item) ->
-      if max is undefined
-        max = item
-      else
-        cmp = R.Comparable.cmpstrict(block(item), block(max))
-        max = item if cmp > 0
-    max or null
+    _enum.max_by(this, block)
 
 
   # Returns the object in enum with the minimum value. The first form assumes
@@ -527,29 +496,7 @@ class RubyJS.Enumerable
   #     a.min (a,b) -> R(a.length)['<=>'] b.length }   #=> "dog"
   #
   min: (block) ->
-    min = undefined
-    block ||= R.Comparable.cmp
-
-    # Following Optimization won't complain if:
-    # [1,2,'3']
-    #
-    # optimization for elements that are arrays
-    #
-    if @__samesame__?()
-      arr = @__native__
-      if arr.length < 65535
-        _min = Math.min.apply(Math, arr)
-        return _min if _min isnt NaN
-
-    @each (item) ->
-      if min is undefined
-        min = item
-      else
-        comp = block.call(this, item, min)
-        throw R.ArgumentError.new() if comp is null
-        min = item if comp < 0
-
-    min or null
+    _enum.min(this, block)
 
 
   # Returns the object in enum that gives the minimum value from the given
@@ -563,16 +510,7 @@ class RubyJS.Enumerable
   #
   min_by: (block) ->
     return @to_enum('min_by') unless block?.call?
-
-    min = undefined
-    # OPTIMIZE: use sorted element
-    @each (item) ->
-      if min is undefined
-        min = item
-      else
-        cmp = R.Comparable.cmpstrict(block(item), block(min))
-        min = item if cmp < 0
-    min or null
+    _enum.min_by(this, block)
 
 
   # Returns two elements array which contains the minimum and the maximum
@@ -585,15 +523,12 @@ class RubyJS.Enumerable
   #     a.minmax (a,b) -> a.length <=> b.length }   #=> ["dog", "albatross"]
   #
   minmax: (block) ->
-    # TODO: optimize
-    R([@min(block), @max(block)])
+    new RArray(_enum.minmax(this, block))
 
 
   minmax_by: (block) ->
     return @to_enum('minmax_by') unless block?.call?
-
-    # TODO: optimize
-    R([@min_by(block), @max_by(block)])
+    new RArray(_enum.minmax_by(this, block))
 
   # Passes each element of the collection to the given block. The method returns true if the block never returns true for all elements. If the block is not given, none? will return true only if none of the collection members is true.
   #
@@ -605,14 +540,8 @@ class RubyJS.Enumerable
   #     R([nil,false]).none()                                 # => true
   #
   none: (block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each (args) ->
-        result = callback.invoke(arguments)
-        breaker.break(false) unless R.falsey(result)
-      true
+    _enum.none(this, block)
 
-  'none?': @prototype.none
 
   # Passes each element of the collection to the given block. The method
   # returns true if the block returns true exactly once. If the block is not
@@ -627,60 +556,25 @@ class RubyJS.Enumerable
   #     R([ nil, true, false ]).one()                        # => true
   #
   one: (block) ->
-    counter  = 0
-
-    @catch_break (breaker) ->
-      callback = R.blockify(block, this)
-      @each (args) ->
-        result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
-        breaker.break(false) if counter > 1
-      counter is 1
-
-  'one?': @prototype.one
+    _enum.one(this, block)
 
 
   partition: (block) ->
     return @to_enum('partition') unless block && block.call?
-
-    left  = []
-    right = []
-
-    callback = R.blockify(block, this)
-
-    @each ->
-      args = BlockMulti.prototype.args(arguments)
-
-      if callback.invokeSplat(args)
-        left.push(args)
-      else
-        right.push(args)
-
-    new RArray([new RArray(left), new RArray(right)])
+    ary = _enum.partition(this, block)
+    new RArray([new RArray(ary[0]), new RArray(ary[1])])
 
   reduce: @prototype.inject
 
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
+    new RArray(_enum.reject(this, block))
 
-    callback = R.blockify(block, this)
-
-    ary = []
-    @each ->
-      if R.falsey(callback.invoke(arguments))
-        ary.push(callback.args(arguments))
-
-    new RArray(ary)
 
   reverse_each: (block) ->
     return @to_enum('reverse_each') unless block && block.call?
+    _enum.reverse_each(this, block)
 
-    # There is no other way then to convert to an array first.
-    # Because Enumerable depends only on #each (through #to_a)
-
-    @to_a().reverse_each( block )
-
-    this
 
   slice_before: (args...) ->
     block = @__extract_block(args)
@@ -708,23 +602,12 @@ class RubyJS.Enumerable
 
   sort: (block) ->
     # TODO: throw Error when comparing different values.
-    block ||= R.Comparable.cmpstrict
-    arr = @to_a().to_native().sort(block)
-    new RArray(arr)
+    new RArray(_enum.sort(this, block))
 
 
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
-
-    callback = R.blockify(block, this)
-
-    ary = []
-    @each (value) ->
-      ary.push new R.Enumerable.SortedElement(value, callback.invoke(arguments))
-
-    ary = new R.Array(ary)
-
-    ary.sort(R.Comparable.cmpstrict).map (se) -> se.value
+    new RArray(_enum.sort_by(this, block))
 
 
   take: (n) ->
@@ -737,30 +620,16 @@ class RubyJS.Enumerable
 
   take_while: (block) ->
     return @to_enum('take_while') unless block && block.call?
-
-    ary = []
-
-    @catch_break (breaker) ->
-      @each ->
-        breaker.break() if R.falsey block.apply(this, arguments)
-        ary.push(BlockMulti.prototype.args(arguments))
-
-    new R.Array(ary)
+    new RArray(_enum.take_while(this, block))
 
 
   to_a: () ->
-    ary = []
-
-    @each ->
-      # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
-      ary.push(BlockMulti.prototype.args(arguments))
-      null
-
-    new R.Array(ary)
+    new RArray(_enum.to_a(this))
 
 
   to_enum: (iter = "each", args...) ->
     new R.Enumerator(this, iter, args)
+
 
   entries: @prototype.to_a
 
