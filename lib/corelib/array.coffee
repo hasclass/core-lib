@@ -114,7 +114,7 @@ class RubyJS.Array extends RubyJS.Object
     return new R.Array(size) if @isNativeArray(size)
     return size.to_ary()     if size.to_ary? && obj is undefined
 
-    size = CoerceProto.to_int_native(size)
+    size = RCoerce.to_int_native(size)
     throw R.ArgumentError.new() if size < 0
     obj = null if obj is undefined
 
@@ -217,7 +217,7 @@ class RubyJS.Array extends RubyJS.Object
 
 
   '&': (other) ->
-    other = CoerceProto.to_ary(other)
+    other = RCoerce.to_ary(other)
     arr   = new R.Array([])
     # TODO suboptimal solution.
     @each (el) -> arr.push(el) if other.include(el)
@@ -227,7 +227,7 @@ class RubyJS.Array extends RubyJS.Object
   '<=>': (other) ->
     return null unless other?
     try
-      other = CoerceProto.to_ary(other)
+      other = RCoerce.to_ary(other)
     catch e
       return null
     return 0    if @equals(other)
@@ -260,7 +260,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   at: (index) ->
     # UNSUPPORTED: @__ensure_args_length(arguments, 1)
-    index = CoerceProto.to_int_native(index)
+    index = RCoerce.to_int_native(index)
 
     if index < 0
       @__native__[@__size__() + index]
@@ -328,7 +328,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   combination: (args...) ->
     block = @__extract_block(args)
-    num   = CoerceProto.to_int_native args[0]
+    num   = RCoerce.to_int_native args[0]
 
     return @to_enum('combination', num) unless block?.call?
 
@@ -411,7 +411,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return R.Array
   #
   concat: (other) ->
-    other = R(other).to_ary() # TODO: use CoerceProto
+    other = R(other).to_ary() # TODO: use RCoerce
     @replace @__native__.concat(other.to_native())
 
 
@@ -459,7 +459,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return obj or null
   #
   delete_at: (idx) ->
-    idx = CoerceProto.to_int_native(idx)
+    idx = RCoerce.to_int_native(idx)
 
     idx = idx + @__size__() if idx < 0
     return null if idx < 0 or idx >= @__size__()
@@ -590,7 +590,7 @@ class RubyJS.Array extends RubyJS.Object
     if arguments.length is 3
       return @set$int$int.apply(this, arguments)
 
-    idx = CoerceProto.to_int_native(idx)
+    idx = RCoerce.to_int_native(idx)
     @__native__[idx] = obj
 
     obj
@@ -628,7 +628,7 @@ class RubyJS.Array extends RubyJS.Object
   fetch: (args...) ->
     block    = @__extract_block(args)
     orig     = args[0]
-    idx      = CoerceProto.to_int_native(args[0])
+    idx      = RCoerce.to_int_native(args[0])
     _default = args[1]
 
     len = @__size__()
@@ -688,13 +688,13 @@ class RubyJS.Array extends RubyJS.Object
       throw R.NotImplementedError.new()
 
     else if one isnt undefined && one isnt null
-      left = CoerceProto.to_int_native(one)
+      left = RCoerce.to_int_native(one)
       left = left + size    if left < 0
       left = 0              if left < 0
 
       if two isnt undefined && two isnt null
         try
-          right = CoerceProto.to_int_native(two)
+          right = RCoerce.to_int_native(two)
         catch e
           throw R.ArgumentError.new("second argument must be a Fixnum")
         return this if right is 0
@@ -759,7 +759,7 @@ class RubyJS.Array extends RubyJS.Object
     return this if items.length == 0
 
     # Adjust the index for correct insertion
-    idx = CoerceProto.to_int_native(idx)
+    idx = RCoerce.to_int_native(idx)
     idx = idx + @__size__() + 1 if idx < 0 # Negatives add AFTER the element
 
     # TODO: add message "#{idx} out of bounds"
@@ -807,7 +807,7 @@ class RubyJS.Array extends RubyJS.Object
     return R('') if @empty()
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    separator = CoerceProto.to_str_native(separator)
+    separator = RCoerce.to_str_native(separator)
 
     new R.String(@__native__.join(separator))
 
@@ -845,7 +845,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo recursive arrays not tested
   #
   minus: (other) ->
-    other = CoerceProto.to_ary(other)
+    other = RCoerce.to_ary(other)
 
     ary = []
     @each (el) ->
@@ -870,7 +870,7 @@ class RubyJS.Array extends RubyJS.Object
     if multiplier.to_str?
       return @join(multiplier)
     else
-      multiplier = CoerceProto.to_int_native(multiplier)
+      multiplier = RCoerce.to_int_native(multiplier)
 
       throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
 
@@ -905,7 +905,7 @@ class RubyJS.Array extends RubyJS.Object
 
     return @at(-1) if n is undefined
 
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     return new R.Array([]) if n is 0
 
     throw R.ArgumentError.new("count must be positive") if n < 0
@@ -922,7 +922,7 @@ class RubyJS.Array extends RubyJS.Object
   #   num   = args[0]
   #   return @to_enum('permutation', num) unless block?.call?
 
-  #   num = if num is undefined then @size() else CoerceProto.to_int(num)
+  #   num = if num is undefined then @size() else RCoerce.to_int(num)
 
   #   if num.lt(0) || @size().lt num
   #     # no permutations, yield nothing
@@ -1002,7 +1002,7 @@ class RubyJS.Array extends RubyJS.Object
     if many is undefined
       @__native__.pop()
     else
-      many = CoerceProto.to_int_native(many)
+      many = RCoerce.to_int_native(many)
       throw R.ArgumentError.new("negative array size") if many < 0
       first = @__size__() - many
       first = 0 if first < 0
@@ -1136,7 +1136,7 @@ class RubyJS.Array extends RubyJS.Object
   sample: (n, range = undefined) ->
     return @at(@rand(@size())) if n is undefined
 
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
     size = @__size__()
@@ -1175,7 +1175,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   replace: (val) ->
     @__ensure_args_length(arguments, 1)
-    # TODO: Use CoerceProto.to_ary_native
+    # TODO: Use RCoerce.to_ary_native
     @__native__ = if val.to_ary? then val.to_ary().to_native().slice(0) else val.slice(0)
     this
 
@@ -1224,7 +1224,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   rotate: (cnt) ->
     cnt = 1 if cnt is undefined
-    cnt = CoerceProto.to_int_native(cnt)
+    cnt = RCoerce.to_int_native(cnt)
 
     ary = @dup()
     return ary             if @__size__() is 1
@@ -1249,7 +1249,7 @@ class RubyJS.Array extends RubyJS.Object
       cnt = 1
       @replace @rotate(cnt)
     else
-      cnt = CoerceProto.to_int_native(cnt)
+      cnt = RCoerce.to_int_native(cnt)
       return this if cnt is 0 or cnt is 1
       @replace @rotate(cnt)
 
@@ -1298,7 +1298,7 @@ class RubyJS.Array extends RubyJS.Object
       @replace @__native__.slice(1)
       el
     else
-      n = CoerceProto.to_int_native(n)
+      n = RCoerce.to_int_native(n)
       throw R.ArgumentError.new() if n < 0
       ret  = @first(n)
       @replace @__native__.slice(n)
@@ -1366,8 +1366,8 @@ class RubyJS.Array extends RubyJS.Object
 
     if idx?.is_range?
       range = idx
-      range_start = CoerceProto.to_int_native(range.begin())
-      range_end   = CoerceProto.to_int_native(range.end()  )
+      range_start = RCoerce.to_int_native(range.begin())
+      range_end   = RCoerce.to_int_native(range.end()  )
       range_start = range_start + size if range_start < 0
 
       if range_end < 0
@@ -1380,7 +1380,7 @@ class RubyJS.Array extends RubyJS.Object
       return null if range_start > size  or range_start < 0
       return new R.Array(@__native__.slice(range_start, range_end))
     else
-      idx = CoerceProto.to_int_native(idx)
+      idx = RCoerce.to_int_native(idx)
 
     idx = size + idx if idx < 0
     # return @$String('') if is_range and idx.lteq(size) and idx.gt(length)
@@ -1389,7 +1389,7 @@ class RubyJS.Array extends RubyJS.Object
       return null if idx < 0 or idx >= size
       @at(idx)
     else
-      length = CoerceProto.to_int_native(length)
+      length = RCoerce.to_int_native(length)
       return null if idx < 0 or idx > size or length < 0
       new R.Array(@__native__.slice(idx, length + idx))
 
@@ -1416,8 +1416,8 @@ class RubyJS.Array extends RubyJS.Object
     if idx.is_range?
       range = idx
       ary   = @slice(range)
-      rng_start = CoerceProto.to_int_native(range.begin())
-      rng_end   = CoerceProto.to_int_native(range.end()  )
+      rng_start = RCoerce.to_int_native(range.begin())
+      rng_end   = RCoerce.to_int_native(range.end()  )
       rng_start = rng_start + size if rng_start < 0
 
       if rng_end < 0
@@ -1433,8 +1433,8 @@ class RubyJS.Array extends RubyJS.Object
         @__delete_range(rng_start, rng_length)
 
     else if length isnt undefined
-      idx    = CoerceProto.to_int_native(idx)
-      length = CoerceProto.to_int_native(length)
+      idx    = RCoerce.to_int_native(idx)
+      length = RCoerce.to_int_native(length)
 
       return null if idx > size
       return new R.Array([]) if length is 0
@@ -1443,7 +1443,7 @@ class RubyJS.Array extends RubyJS.Object
       @__delete_range(idx, length)
 
     else
-      idx = CoerceProto.to_int_native(idx)
+      idx = RCoerce.to_int_native(idx)
       ary = @delete_at(idx)
 
     ary
@@ -1495,7 +1495,7 @@ class RubyJS.Array extends RubyJS.Object
 
     # TODO: dogfood
     @each (ary) ->
-      ary = CoerceProto.to_ary(ary)
+      ary = RCoerce.to_ary(ary)
       max ||= ary.size()
 
       # Catches too-large as well as too-small (for which #fetch would suffice)
@@ -1594,7 +1594,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   values_at: (args...) ->
     ary = for idx in args
-      @at(CoerceProto.to_int_native(idx)) || null
+      @at(RCoerce.to_int_native(idx)) || null
 
     new R.Array(ary)
 
@@ -1642,7 +1642,7 @@ class RubyJS.Array extends RubyJS.Object
   # ---- Private --------------------------------------------------------------
 
   __native_array_with__: (size, obj) ->
-    ary = nativeArray(CoerceProto.to_int_native(size))
+    ary = nativeArray(RCoerce.to_int_native(size))
     idx = -1
     while ++idx < size
       ary[idx] = obj

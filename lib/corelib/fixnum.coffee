@@ -98,7 +98,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #plus
   #
   '+': (other) ->
-    R.Numeric.typecast(@to_native() + CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() + RCoerce.to_num_native(other))
 
   # Performs subtraction: the class of the resulting object depends on the
   # class of numeric and on the magnitude of the result.
@@ -110,7 +110,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #minus
   #
   '-': (other) ->
-    R.Numeric.typecast(@to_native() - CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() - RCoerce.to_num_native(other))
 
   # Performs division: the class of the resulting object depends on the class
   # of numeric and on the magnitude of the result.
@@ -141,7 +141,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #multiply
   #
   '*': (other) ->
-    R.Numeric.typecast(@to_native() * CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() * RCoerce.to_num_native(other))
 
   # Raises fix to the numeric power, which may be negative or fractional.
   #

@@ -1,6 +1,6 @@
 _arr = R._arr =
   flatten: (coll, recursion = -1) ->
-    recursion = CoerceProto.to_int_native(recursion)
+    recursion = RCoerce.to_int_native(recursion)
 
     arr = []
 

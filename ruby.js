@@ -9,7 +9,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var Block, BlockArgs, BlockMulti, BlockSingle, CharTable, Coerce, CoerceProto, MYSortedElement, RArray, REnumerable, RString, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _blockify, _enum, _fn, _i, _len, _ref, _slice_, _str, _toString_,
+  var Block, BlockArgs, BlockMulti, BlockSingle, CharTable, MYSortedElement, RArray, RCoerce, REnumerable, RString, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _blockify, _enum, _fn, _i, _len, _ref, _slice_, _str, _toString_,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -115,7 +115,7 @@ http://www.rubyjs.org/LICENSE.txt
     }
 
     BlockArgs.prototype.invoke = function(args) {
-      return CoerceProto.single_block_args(args, this.block);
+      return RCoerce.single_block_args(args, this.block);
     };
 
     return BlockArgs;
@@ -385,11 +385,8 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  Coerce = (function() {
-
-    function Coerce() {}
-
-    Coerce.prototype.single_block_args = function(args, block) {
+  RCoerce = R._coerce = {
+    single_block_args: function(args, block) {
       if (block) {
         if (block.length !== 1) {
           if (args.length > 1) {
@@ -407,9 +404,8 @@ http://www.rubyjs.org/LICENSE.txt
           return args[0];
         }
       }
-    };
-
-    Coerce.prototype.coerce = function(obj, to_what, skip_native) {
+    },
+    coerce: function(obj, to_what, skip_native) {
       if (skip_native !== void 0 && skip_native === typeof obj) {
         return obj;
       } else {
@@ -426,9 +422,8 @@ http://www.rubyjs.org/LICENSE.txt
           return obj[to_what]();
         }
       }
-    };
-
-    Coerce.prototype.to_num_native = function(obj) {
+    },
+    to_num_native: function(obj) {
       if (typeof obj === 'number') {
         return obj;
       } else {
@@ -438,39 +433,29 @@ http://www.rubyjs.org/LICENSE.txt
         }
         return obj.to_native();
       }
-    };
-
-    Coerce.prototype.to_int = function(obj) {
+    },
+    to_int: function(obj) {
       return this.coerce(obj, 'to_int');
-    };
-
-    Coerce.prototype.to_int_native = function(obj) {
+    },
+    to_int_native: function(obj) {
       if (typeof obj === 'number' && (obj % 1 === 0)) {
         return obj;
       } else {
         return this.coerce(obj, 'to_int').to_native();
       }
-    };
-
-    Coerce.prototype.to_str = function(obj) {
+    },
+    to_str: function(obj) {
       return this.coerce(obj, 'to_str');
-    };
-
-    Coerce.prototype.to_str_native = function(obj) {
+    },
+    to_str_native: function(obj) {
       return this.coerce(obj, 'to_str', 'string');
-    };
-
-    Coerce.prototype.to_ary = function(obj) {
+    },
+    to_ary: function(obj) {
       return this.coerce(obj, 'to_ary');
-    };
+    }
+  };
 
-    return Coerce;
-
-  })();
-
-  CoerceProto = Coerce.prototype;
-
-  R.CoerceProto = Coerce.prototype;
+  R.RCoerce = RCoerce;
 
   RubyJS.Object = (function() {
 
@@ -989,7 +974,7 @@ http://www.rubyjs.org/LICENSE.txt
         }
       }
       if (!(n === null || n === void 0)) {
-        many = CoerceProto.to_int_native(n);
+        many = RCoerce.to_int_native(n);
         if (many <= 0) {
           return null;
         }
@@ -1510,43 +1495,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
       return new R.Enumerator(this, iter, args);
     },
-    zip: function() {
-      var block, idx, others, results;
-      others = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      block = this.__extract_block(others);
-      others = R(others).map(function(other) {
-        var o;
-        o = R(other);
-        if (o.to_ary != null) {
-          return o.to_ary();
-        } else {
-          return o.to_enum('each');
-        }
-      });
-      results = new R.Array([]);
-      idx = 0;
-      this.each(function(el) {
-        var inner;
-        inner = R([el]);
-        others.each(function(other) {
-          el = other.is_array != null ? other.at(idx) : other.next();
-          if (el === void 0) {
-            el = null;
-          }
-          return inner.append(el);
-        });
-        if (block) {
-          block(inner);
-        }
-        results.append(inner);
-        return idx += 1;
-      });
-      if (block) {
-        return null;
-      } else {
-        return results;
-      }
-    }
+    zip: function(coll, others) {}
   };
 
   MYSortedElement = (function() {
@@ -1621,15 +1570,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     function Enumerable() {}
 
-    Enumerable.prototype.is_enumerable = function() {
-      return true;
-    };
-
     Enumerable.prototype.all = function(block) {
       return _enum.all(this, block);
     };
-
-    Enumerable.prototype['all?'] = Enumerable.prototype.all;
 
     Enumerable.prototype.any = function(block) {
       return _enum.any(this, block);
@@ -1660,7 +1603,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Enumerable.prototype.drop = function(n) {
       this.__ensure_args_length(arguments, 1);
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (n < 0) {
         throw R.ArgumentError["new"]();
       }
@@ -1682,7 +1625,7 @@ http://www.rubyjs.org/LICENSE.txt
         return this.to_enum.apply(this, ['each_cons'].concat(__slice.call(args)));
       }
       this.__ensure_args_length(args, 1);
-      n = CoerceProto.to_int_native(args[0]);
+      n = RCoerce.to_int_native(args[0]);
       if (!(n > 0)) {
         throw R.ArgumentError["new"]();
       }
@@ -1703,7 +1646,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!n) {
         throw R.ArgumentError["new"]();
       }
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (n <= 0) {
         throw R.ArgumentError["new"]();
       }
@@ -1765,7 +1708,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (n === null || n === void 0) {
         return _enum.first(this, null);
       } else {
-        n = CoerceProto.to_int_native(n);
+        n = RCoerce.to_int_native(n);
         return new RArray(_enum.first(this, n));
       }
     };
@@ -1924,7 +1867,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Enumerable.prototype.take = function(n) {
       this.__ensure_args_length(arguments, 1);
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (n < 0) {
         throw R.ArgumentError["new"]();
       }
@@ -2302,7 +2245,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (recursion == null) {
         recursion = -1;
       }
-      recursion = CoerceProto.to_int_native(recursion);
+      recursion = RCoerce.to_int_native(recursion);
       arr = [];
       this.each(coll, function(element) {
         var el;
@@ -2399,7 +2342,7 @@ http://www.rubyjs.org/LICENSE.txt
       if ((size.to_ary != null) && obj === void 0) {
         return size.to_ary();
       }
-      size = CoerceProto.to_int_native(size);
+      size = RCoerce.to_int_native(size);
       if (size < 0) {
         throw R.ArgumentError["new"]();
       }
@@ -2504,7 +2447,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Array.prototype['&'] = function(other) {
       var arr;
-      other = CoerceProto.to_ary(other);
+      other = RCoerce.to_ary(other);
       arr = new R.Array([]);
       this.each(function(el) {
         if (other.include(el)) {
@@ -2520,7 +2463,7 @@ http://www.rubyjs.org/LICENSE.txt
         return null;
       }
       try {
-        other = CoerceProto.to_ary(other);
+        other = RCoerce.to_ary(other);
       } catch (e) {
         return null;
       }
@@ -2541,7 +2484,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.at = function(index) {
-      index = CoerceProto.to_int_native(index);
+      index = RCoerce.to_int_native(index);
       if (index < 0) {
         return this.__native__[this.__size__() + index];
       } else {
@@ -2570,7 +2513,7 @@ http://www.rubyjs.org/LICENSE.txt
       var args, block, chosen, done, i, lev, num, stack;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       block = this.__extract_block(args);
-      num = CoerceProto.to_int_native(args[0]);
+      num = RCoerce.to_int_native(args[0]);
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('combination', num);
       }
@@ -2680,7 +2623,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Array.prototype.delete_at = function(idx) {
       var val;
-      idx = CoerceProto.to_int_native(idx);
+      idx = RCoerce.to_int_native(idx);
       if (idx < 0) {
         idx = idx + this.__size__();
       }
@@ -2767,7 +2710,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (arguments.length === 3) {
         return this.set$int$int.apply(this, arguments);
       }
-      idx = CoerceProto.to_int_native(idx);
+      idx = RCoerce.to_int_native(idx);
       this.__native__[idx] = obj;
       return obj;
     };
@@ -2789,7 +2732,7 @@ http://www.rubyjs.org/LICENSE.txt
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       block = this.__extract_block(args);
       orig = args[0];
-      idx = CoerceProto.to_int_native(args[0]);
+      idx = RCoerce.to_int_native(args[0]);
       _default = args[1];
       len = this.__size__();
       if (idx < 0) {
@@ -2832,7 +2775,7 @@ http://www.rubyjs.org/LICENSE.txt
       if ((one != null ? one.is_range : void 0) != null) {
         throw R.NotImplementedError["new"]();
       } else if (one !== void 0 && one !== null) {
-        left = CoerceProto.to_int_native(one);
+        left = RCoerce.to_int_native(one);
         if (left < 0) {
           left = left + size;
         }
@@ -2841,7 +2784,7 @@ http://www.rubyjs.org/LICENSE.txt
         }
         if (two !== void 0 && two !== null) {
           try {
-            right = CoerceProto.to_int_native(two);
+            right = RCoerce.to_int_native(two);
           } catch (e) {
             throw R.ArgumentError["new"]("second argument must be a Fixnum");
           }
@@ -2894,7 +2837,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (items.length === 0) {
         return this;
       }
-      idx = CoerceProto.to_int_native(idx);
+      idx = RCoerce.to_int_native(idx);
       if (idx < 0) {
         idx = idx + this.__size__() + 1;
       }
@@ -2926,7 +2869,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (separator === null) {
         separator = '';
       }
-      separator = CoerceProto.to_str_native(separator);
+      separator = RCoerce.to_str_native(separator);
       return new R.String(this.__native__.join(separator));
     };
 
@@ -2950,7 +2893,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Array.prototype.minus = function(other) {
       var ary;
-      other = CoerceProto.to_ary(other);
+      other = RCoerce.to_ary(other);
       ary = [];
       this.each(function(el) {
         if (!other.include(el)) {
@@ -2970,7 +2913,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (multiplier.to_str != null) {
         return this.join(multiplier);
       } else {
-        multiplier = CoerceProto.to_int_native(multiplier);
+        multiplier = RCoerce.to_int_native(multiplier);
         if (multiplier < 0) {
           throw R.ArgumentError["new"]("count cannot be negative");
         }
@@ -3002,7 +2945,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (n === void 0) {
         return this.at(-1);
       }
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (n === 0) {
         return new R.Array([]);
       }
@@ -3033,7 +2976,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (many === void 0) {
         return this.__native__.pop();
       } else {
-        many = CoerceProto.to_int_native(many);
+        many = RCoerce.to_int_native(many);
         if (many < 0) {
           throw R.ArgumentError["new"]("negative array size");
         }
@@ -3144,7 +3087,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (n === void 0) {
         return this.at(this.rand(this.size()));
       }
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (n < 0) {
         throw R.ArgumentError["new"]();
       }
@@ -3206,7 +3149,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (cnt === void 0) {
         cnt = 1;
       }
-      cnt = CoerceProto.to_int_native(cnt);
+      cnt = RCoerce.to_int_native(cnt);
       ary = this.dup();
       if (this.__size__() === 1) {
         return ary;
@@ -3224,7 +3167,7 @@ http://www.rubyjs.org/LICENSE.txt
         cnt = 1;
         return this.replace(this.rotate(cnt));
       } else {
-        cnt = CoerceProto.to_int_native(cnt);
+        cnt = RCoerce.to_int_native(cnt);
         if (cnt === 0 || cnt === 1) {
           return this;
         }
@@ -3255,7 +3198,7 @@ http://www.rubyjs.org/LICENSE.txt
         this.replace(this.__native__.slice(1));
         return el;
       } else {
-        n = CoerceProto.to_int_native(n);
+        n = RCoerce.to_int_native(n);
         if (n < 0) {
           throw R.ArgumentError["new"]();
         }
@@ -3301,8 +3244,8 @@ http://www.rubyjs.org/LICENSE.txt
       size = this.__size__();
       if ((idx != null ? idx.is_range : void 0) != null) {
         range = idx;
-        range_start = CoerceProto.to_int_native(range.begin());
-        range_end = CoerceProto.to_int_native(range.end());
+        range_start = RCoerce.to_int_native(range.begin());
+        range_end = RCoerce.to_int_native(range.end());
         if (range_start < 0) {
           range_start = range_start + size;
         }
@@ -3318,7 +3261,7 @@ http://www.rubyjs.org/LICENSE.txt
         }
         return new R.Array(this.__native__.slice(range_start, range_end));
       } else {
-        idx = CoerceProto.to_int_native(idx);
+        idx = RCoerce.to_int_native(idx);
       }
       if (idx < 0) {
         idx = size + idx;
@@ -3329,7 +3272,7 @@ http://www.rubyjs.org/LICENSE.txt
         }
         return this.at(idx);
       } else {
-        length = CoerceProto.to_int_native(length);
+        length = RCoerce.to_int_native(length);
         if (idx < 0 || idx > size || length < 0) {
           return null;
         }
@@ -3347,8 +3290,8 @@ http://www.rubyjs.org/LICENSE.txt
       if (idx.is_range != null) {
         range = idx;
         ary = this.slice(range);
-        rng_start = CoerceProto.to_int_native(range.begin());
-        rng_end = CoerceProto.to_int_native(range.end());
+        rng_start = RCoerce.to_int_native(range.begin());
+        rng_end = RCoerce.to_int_native(range.end());
         if (rng_start < 0) {
           rng_start = rng_start + size;
         }
@@ -3365,8 +3308,8 @@ http://www.rubyjs.org/LICENSE.txt
           this.__delete_range(rng_start, rng_length);
         }
       } else if (length !== void 0) {
-        idx = CoerceProto.to_int_native(idx);
-        length = CoerceProto.to_int_native(length);
+        idx = RCoerce.to_int_native(idx);
+        length = RCoerce.to_int_native(length);
         if (idx > size) {
           return null;
         }
@@ -3376,7 +3319,7 @@ http://www.rubyjs.org/LICENSE.txt
         ary = this.slice(idx, length);
         this.__delete_range(idx, length);
       } else {
-        idx = CoerceProto.to_int_native(idx);
+        idx = RCoerce.to_int_native(idx);
         ary = this.delete_at(idx);
       }
       return ary;
@@ -3418,7 +3361,7 @@ http://www.rubyjs.org/LICENSE.txt
       max = null;
       this.each(function(ary) {
         var entry, idx, len, _results;
-        ary = CoerceProto.to_ary(ary);
+        ary = RCoerce.to_ary(ary);
         max || (max = ary.size());
         if (!ary.size().equals(max)) {
           throw R.IndexError["new"]();
@@ -3494,7 +3437,7 @@ http://www.rubyjs.org/LICENSE.txt
         _results = [];
         for (_j = 0, _len1 = args.length; _j < _len1; _j++) {
           idx = args[_j];
-          _results.push(this.at(CoerceProto.to_int_native(idx)) || null);
+          _results.push(this.at(RCoerce.to_int_native(idx)) || null);
         }
         return _results;
       }).call(this);
@@ -3549,7 +3492,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Array.prototype.__native_array_with__ = function(size, obj) {
       var ary, idx;
-      ary = nativeArray(CoerceProto.to_int_native(size));
+      ary = nativeArray(RCoerce.to_int_native(size));
       idx = -1;
       while (++idx < size) {
         ary[idx] = obj;
@@ -4020,7 +3963,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (recursion == null) {
         recursion = 1;
       }
-      recursion = CoerceProto.to_int_native(recursion);
+      recursion = RCoerce.to_int_native(recursion);
       return this.to_a().flatten(recursion);
     };
 
@@ -4279,7 +4222,7 @@ http://www.rubyjs.org/LICENSE.txt
         first = first.to_f();
         last = last.to_f();
       } else {
-        step_size = CoerceProto.to_int_native(step_size);
+        step_size = RCoerce.to_int_native(step_size);
       }
       if (step_size <= 0) {
         if (step_size < 0) {
@@ -4484,7 +4427,7 @@ http://www.rubyjs.org/LICENSE.txt
           return null;
         }
       } else {
-        sep = CoerceProto.to_str_native(sep);
+        sep = RCoerce.to_str_native(sep);
         if (sep.length === 0) {
           regexp = /((\r\n)|\n)+$/;
         } else if (sep === "\n" || sep === "\r" || sep === "\r\n") {
@@ -4659,7 +4602,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype['+'] = function(other) {
-      other = CoerceProto.to_str_native(other);
+      other = RCoerce.to_str_native(other);
       return new R.String(this.to_native() + other);
     };
 
@@ -4758,7 +4701,7 @@ http://www.rubyjs.org/LICENSE.txt
         padString = ' ';
       }
       length = this.box(length);
-      padString = CoerceProto.to_str(padString);
+      padString = RCoerce.to_str(padString);
       this.__ensure_numeric(length);
       this.__ensure_string(padString);
       if (padString.empty()) {
@@ -4952,7 +4895,7 @@ http://www.rubyjs.org/LICENSE.txt
     String.prototype.set = function(idx, other) {
       var chrs, index;
       idx = R(idx);
-      other = CoerceProto.to_str(other);
+      other = RCoerce.to_str(other);
       index = null;
       if (idx.to_int != null) {
         index = idx.to_int().to_native();
@@ -4989,13 +4932,13 @@ http://www.rubyjs.org/LICENSE.txt
       if (!pattern.global) {
         throw "String#gsub: " + pattern + " has not set the global flag 'g'. " + pattern + "g";
       }
-      replacement = CoerceProto.to_str(replacement).to_native();
+      replacement = RCoerce.to_str(replacement).to_native();
       gsubbed = this.to_native().replace(pattern, replacement);
       return new this.constructor(gsubbed);
     };
 
     String.prototype.include = function(other) {
-      other = CoerceProto.to_str_native(other);
+      other = RCoerce.to_str_native(other);
       return this.to_native().indexOf(other) >= 0;
     };
 
@@ -5006,7 +4949,7 @@ http://www.rubyjs.org/LICENSE.txt
         needle = needle.to_str();
       }
       if (offset) {
-        offset = CoerceProto.to_int(offset);
+        offset = RCoerce.to_int(offset);
         if (offset.lt(0)) {
           offset = this.size().minus(offset.abs());
         }
@@ -5029,8 +4972,8 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.insert = function(idx, other) {
       var after, before, chrs, insert;
-      idx = CoerceProto.to_int(idx);
-      other = CoerceProto.to_str(other);
+      idx = RCoerce.to_int(idx);
+      other = RCoerce.to_str(other);
       idx = idx.to_native();
       if (idx < 0) {
         idx = this.length - Math.abs(idx) + 1;
@@ -5056,12 +4999,12 @@ http://www.rubyjs.org/LICENSE.txt
       if (padString == null) {
         padString = " ";
       }
-      width = CoerceProto.to_int_native(width);
+      width = RCoerce.to_int_native(width);
       len = this.__native__.length;
       if (len >= width) {
         return this.clone();
       } else {
-        padString = CoerceProto.to_str_native(padString);
+        padString = RCoerce.to_str_native(padString);
         if (padString.length === 0) {
           throw R.ArgumentError["new"]();
         }
@@ -5125,7 +5068,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.partition = function(pattern) {
       var a, b, c, idx, len, start;
-      pattern = CoerceProto.to_str(pattern).to_str();
+      pattern = RCoerce.to_str(pattern).to_str();
       if (idx = this.index(pattern)) {
         start = idx + pattern.length;
         len = this.size() - start;
@@ -5140,7 +5083,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.prepend = function(other) {
-      other = CoerceProto.to_str_native(other);
+      other = RCoerce.to_str_native(other);
       return this.replace(other + this.to_native());
     };
 
@@ -5234,7 +5177,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (padString == null) {
         padString = " ";
       }
-      width = CoerceProto.to_int(width);
+      width = RCoerce.to_int(width);
       if (this.length >= width) {
         return this.clone();
       } else {
@@ -5252,7 +5195,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.rpartition = function(pattern) {
       var a, b, c, idx, len, start;
-      pattern = CoerceProto.to_str(pattern).to_str();
+      pattern = RCoerce.to_str(pattern).to_str();
       if (idx = this.rindex(pattern)) {
         start = idx + pattern.length;
         len = this.size() - start;
@@ -5285,7 +5228,7 @@ http://www.rubyjs.org/LICENSE.txt
         block = null;
       }
       if (!R.Regexp.isRegexp(pattern)) {
-        pattern = CoerceProto.to_str_native(pattern);
+        pattern = RCoerce.to_str_native(pattern);
         pattern = R.Regexp.quote(pattern);
       }
       index = 0;
@@ -5349,8 +5292,8 @@ http://www.rubyjs.org/LICENSE.txt
         if (index.is_regexp != null) {
 
         } else {
-          length = CoerceProto.to_int_native(other);
-          start = CoerceProto.to_int_native(index);
+          length = RCoerce.to_int_native(other);
+          start = RCoerce.to_int_native(index);
           if (start < 0) {
             start += size;
           }
@@ -5373,8 +5316,8 @@ http://www.rubyjs.org/LICENSE.txt
           return null;
         }
       } else if (index.is_range != null) {
-        start = CoerceProto.to_int_native(index.begin());
-        length = CoerceProto.to_int_native(index.end());
+        start = RCoerce.to_int_native(index.begin());
+        length = RCoerce.to_int_native(index.end());
         if (start < 0) {
           start += size;
         }
@@ -5400,7 +5343,7 @@ http://www.rubyjs.org/LICENSE.txt
         substr = this.to_native().slice(start, start + length);
         return new R.String(substr);
       } else {
-        index = CoerceProto.to_int_native(index);
+        index = RCoerce.to_int_native(index);
         len = this.size().to_native();
         if (index < 0) {
           index += len;
@@ -5418,7 +5361,7 @@ http://www.rubyjs.org/LICENSE.txt
         pattern = " ";
       }
       if (!R.Regexp.isRegexp(pattern)) {
-        pattern = CoerceProto.to_str(pattern).to_native();
+        pattern = RCoerce.to_str(pattern).to_native();
       }
       ret = this.to_native().split(pattern);
       ret = R((function() {
@@ -5525,7 +5468,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (pattern.global) {
         throw "String#sub: " + pattern + " has set the global flag 'g'. " + pattern + "g";
       }
-      replacement = CoerceProto.to_str_native(replacement);
+      replacement = RCoerce.to_str_native(replacement);
       subbed = this.to_native().replace(pattern, replacement);
       return this.replace(subbed);
     };
@@ -5654,7 +5597,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (base === void 0) {
         base = 10;
       }
-      base = CoerceProto.to_int_native(base);
+      base = RCoerce.to_int_native(base);
       if (base < 0 || base > 36 || base === 1) {
         throw R.ArgumentError["new"]();
       }
@@ -5714,7 +5657,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.upcase = function(str) {
-      str = R.CoerceProto.to_str_native(str);
+      str = RCoerce.to_str_native(str);
       if (!str.match(/[a-z]/)) {
         return null;
       }
@@ -5744,7 +5687,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.upto = function(stop, exclusive, block) {
       var compare_fn, counter, stop_size;
-      stop = CoerceProto.to_str(stop);
+      stop = RCoerce.to_str(stop);
       exclusive || (exclusive = false);
       if (block === void 0 && ((exclusive != null ? exclusive.call : void 0) != null)) {
         block = exclusive;
@@ -5802,7 +5745,7 @@ http://www.rubyjs.org/LICENSE.txt
       _ref1 = this.patterns;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         w = _ref1[_j];
-        v = CoerceProto.to_str(w).to_native();
+        v = RCoerce.to_str(w).to_native();
         if (v.length === 0) {
 
         } else if (v[0] === '^' && v.length > 1) {
@@ -5899,7 +5842,7 @@ http://www.rubyjs.org/LICENSE.txt
       } else if (arg.is_regexp != null) {
         arg = arg.to_native();
       } else {
-        arg = this.__compile__(CoerceProto.to_str_native(arg));
+        arg = this.__compile__(RCoerce.to_str_native(arg));
       }
       return new R.Regexp(arg);
     };
@@ -5977,7 +5920,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (str === null) {
         R['$~'] = null;
       } else {
-        str = CoerceProto.to_str_native(str);
+        str = RCoerce.to_str_native(str);
         opts = {
           string: str,
           regexp: this
@@ -6052,7 +5995,7 @@ http://www.rubyjs.org/LICENSE.txt
           if (arg.is_regexp != null) {
             _results.push(arg.to_s());
           } else {
-            _results.push(CoerceProto.to_str(arg));
+            _results.push(RCoerce.to_str(arg));
           }
         }
         return _results;
@@ -6229,7 +6172,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Numeric.prototype.fdiv = function(other) {
-      other = CoerceProto.to_num_native(other);
+      other = RCoerce.to_num_native(other);
       return this.to_f()['/'](other);
     };
 
@@ -6402,7 +6345,7 @@ http://www.rubyjs.org/LICENSE.txt
     Integer.prototype.downto = function(stop, block) {
       var idx;
       try {
-        stop = CoerceProto.to_num_native(stop);
+        stop = RCoerce.to_num_native(stop);
       } catch (err) {
         throw R.ArgumentError["new"]();
       }
@@ -6483,7 +6426,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (n === void 0) {
         return this;
       }
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (n > 0) {
         return this.to_f();
       } else if (n === 0) {
@@ -6521,7 +6464,7 @@ http://www.rubyjs.org/LICENSE.txt
     Integer.prototype.upto = function(stop, block) {
       var idx;
       try {
-        stop = CoerceProto.to_num_native(stop);
+        stop = RCoerce.to_num_native(stop);
       } catch (err) {
         throw R.ArgumentError["new"]();
       }
@@ -6639,11 +6582,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Fixnum.prototype['+'] = function(other) {
-      return R.Numeric.typecast(this.to_native() + CoerceProto.to_num_native(other));
+      return R.Numeric.typecast(this.to_native() + RCoerce.to_num_native(other));
     };
 
     Fixnum.prototype['-'] = function(other) {
-      return R.Numeric.typecast(this.to_native() - CoerceProto.to_num_native(other));
+      return R.Numeric.typecast(this.to_native() - RCoerce.to_num_native(other));
     };
 
     Fixnum.prototype['/'] = function(other) {
@@ -6668,7 +6611,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Fixnum.prototype['*'] = function(other) {
-      return R.Numeric.typecast(this.to_native() * CoerceProto.to_num_native(other));
+      return R.Numeric.typecast(this.to_native() * RCoerce.to_num_native(other));
     };
 
     Fixnum.prototype['**'] = function(other) {
@@ -6785,7 +6728,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (!(this.box(other).is_numeric != null)) {
         return null;
       }
-      other = CoerceProto.to_num_native(other);
+      other = RCoerce.to_num_native(other);
       if (this.to_native() === other) {
         return 0;
       }
@@ -6803,23 +6746,23 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Float.prototype['+'] = function(other) {
-      return new Float(this.to_native() + CoerceProto.to_num_native(other));
+      return new Float(this.to_native() + RCoerce.to_num_native(other));
     };
 
     Float.prototype['-'] = function(other) {
-      return new Float(this.to_native() - CoerceProto.to_num_native(other));
+      return new Float(this.to_native() - RCoerce.to_num_native(other));
     };
 
     Float.prototype['*'] = function(other) {
-      return new Float(this.to_native() * CoerceProto.to_num_native(other));
+      return new Float(this.to_native() * RCoerce.to_num_native(other));
     };
 
     Float.prototype['/'] = function(other) {
-      return new Float(this.to_native() / CoerceProto.to_num_native(other));
+      return new Float(this.to_native() / RCoerce.to_num_native(other));
     };
 
     Float.prototype['**'] = function(other) {
-      return new Float(Math.pow(this.to_native(), CoerceProto.to_num_native(other)) + 0);
+      return new Float(Math.pow(this.to_native(), RCoerce.to_num_native(other)) + 0);
     };
 
     Float.prototype['%'] = function(other) {
@@ -6919,7 +6862,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (n == null) {
         n = 0;
       }
-      n = CoerceProto.to_int_native(n);
+      n = RCoerce.to_int_native(n);
       if (this.infinite()) {
         throw new TypeError("FloatDomainError");
       }
@@ -7140,7 +7083,7 @@ http://www.rubyjs.org/LICENSE.txt
         if (microseconds === null || (R(microseconds).is_string != null)) {
           throw R.TypeError["new"]();
         } else {
-          microseconds = CoerceProto.to_num_native(microseconds);
+          microseconds = RCoerce.to_num_native(microseconds);
         }
       } else {
         microseconds = 0;

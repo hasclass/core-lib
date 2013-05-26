@@ -104,7 +104,7 @@ class BlockArgs
   constructor: (@block, @thisArg) ->
 
   invoke: (args) ->
-    CoerceProto.single_block_args(args, @block)
+    RCoerce.single_block_args(args, @block)
 
 # @private
 class BlockMulti
@@ -352,12 +352,12 @@ class RubyJS.Kernel
 #
 # to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
 #
-# There is a shortcut for Coerce.prototype: CoerceProto.
+# There is a shortcut for Coerce.prototype: RCoerce.
 #
-#     CoerceProto.to_num_native(1)
+#     RCoerce.to_num_native(1)
 #
 # @private
-class Coerce
+RCoerce = R._coerce =
   # TODO: replace class with some more lightweight.
 
   # Mimicks rubys single block args behaviour
@@ -427,8 +427,7 @@ class Coerce
     @coerce(obj, 'to_ary')
 
 
-CoerceProto = Coerce.prototype
-R.CoerceProto = Coerce.prototype
+R.RCoerce = RCoerce
 
 
 
@@ -877,7 +876,7 @@ _enum = R._enum =
         n     = null
 
     if !(n is null or n is undefined)
-      many  = CoerceProto.to_int_native(n)
+      many  = RCoerce.to_int_native(n)
       return null if many <= 0
     else
       many = null
@@ -1367,27 +1366,8 @@ _enum = R._enum =
     new R.Enumerator(this, iter, args)
 
 
-  zip: (others...) ->
-    block = @__extract_block(others)
-
-    others = R(others).map (other) ->
-      o = R(other)
-      if o.to_ary? then o.to_ary() else o.to_enum('each')
-
-    results = new R.Array([])
-    idx     = 0
-    @each (el) ->
-      inner = R([el])
-      others.each (other) ->
-        el = if other.is_array? then other.at(idx) else other.next()
-        el = null if el is undefined
-        inner.append(el)
-
-      block( inner ) if block
-      results.append( inner )
-      idx += 1
-
-    if block then null else results
+  zip: (coll, others) ->
+    # TODO
 
 
 
@@ -1443,7 +1423,6 @@ _enum.entries = _enum.to_a
 #
 # @mixin
 class RubyJS.Enumerable
-  is_enumerable: -> true
 
   # Passes each element of the collection to the given block. The method
   # returns true if the block never returns false or nil. If the block is not
@@ -1458,8 +1437,6 @@ class RubyJS.Enumerable
   all: (block) ->
     _enum.all(this, block)
 
-
-  'all?': @prototype.all
 
 
   # Passes each element of the collection to the given block. The method
@@ -1548,7 +1525,7 @@ class RubyJS.Enumerable
   #
   drop: (n) ->
     @__ensure_args_length(arguments, 1)
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
     new RArray(_enum.drop(this, n))
@@ -1584,7 +1561,7 @@ class RubyJS.Enumerable
     block = @__extract_block(args)
     return @to_enum('each_cons', args...) unless block && block.call?
     @__ensure_args_length(args, 1)
-    n = CoerceProto.to_int_native(args[0])
+    n = RCoerce.to_int_native(args[0])
     throw R.ArgumentError.new() unless n > 0
 
     _enum.each_cons(this, n, block)
@@ -1613,7 +1590,7 @@ class RubyJS.Enumerable
   #
   each_slice: (n, block) ->
     throw R.ArgumentError.new() unless n
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
 
     throw R.ArgumentError.new() if n <= 0                  #each_slice(-1)
     throw R.ArgumentError.new() if block && !block.call?   #each_slice(1, block)
@@ -1733,7 +1710,7 @@ class RubyJS.Enumerable
     if n is null or n is undefined
       _enum.first(this, null)
     else
-      n = CoerceProto.to_int_native(n)
+      n = RCoerce.to_int_native(n)
       new RArray(_enum.first(this, n))
 
 
@@ -1997,7 +1974,7 @@ class RubyJS.Enumerable
 
   take: (n) ->
     @__ensure_args_length(arguments, 1)
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
     new RArray(_enum.take(this, n))
@@ -2037,6 +2014,7 @@ class RubyJS.Enumerable
   #
   # @todo dont yield R.Arrays
   zip: (others...) ->
+    # TODO: fix specs
     block = @__extract_block(others)
 
     others = R(others).map (other) ->
@@ -2297,7 +2275,7 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
 
 _arr = R._arr =
   flatten: (coll, recursion = -1) ->
-    recursion = CoerceProto.to_int_native(recursion)
+    recursion = RCoerce.to_int_native(recursion)
 
     arr = []
 
@@ -2457,7 +2435,7 @@ class RubyJS.Array extends RubyJS.Object
     return new R.Array(size) if @isNativeArray(size)
     return size.to_ary()     if size.to_ary? && obj is undefined
 
-    size = CoerceProto.to_int_native(size)
+    size = RCoerce.to_int_native(size)
     throw R.ArgumentError.new() if size < 0
     obj = null if obj is undefined
 
@@ -2560,7 +2538,7 @@ class RubyJS.Array extends RubyJS.Object
 
 
   '&': (other) ->
-    other = CoerceProto.to_ary(other)
+    other = RCoerce.to_ary(other)
     arr   = new R.Array([])
     # TODO suboptimal solution.
     @each (el) -> arr.push(el) if other.include(el)
@@ -2570,7 +2548,7 @@ class RubyJS.Array extends RubyJS.Object
   '<=>': (other) ->
     return null unless other?
     try
-      other = CoerceProto.to_ary(other)
+      other = RCoerce.to_ary(other)
     catch e
       return null
     return 0    if @equals(other)
@@ -2603,7 +2581,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   at: (index) ->
     # UNSUPPORTED: @__ensure_args_length(arguments, 1)
-    index = CoerceProto.to_int_native(index)
+    index = RCoerce.to_int_native(index)
 
     if index < 0
       @__native__[@__size__() + index]
@@ -2671,7 +2649,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   combination: (args...) ->
     block = @__extract_block(args)
-    num   = CoerceProto.to_int_native args[0]
+    num   = RCoerce.to_int_native args[0]
 
     return @to_enum('combination', num) unless block?.call?
 
@@ -2754,7 +2732,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return R.Array
   #
   concat: (other) ->
-    other = R(other).to_ary() # TODO: use CoerceProto
+    other = R(other).to_ary() # TODO: use RCoerce
     @replace @__native__.concat(other.to_native())
 
 
@@ -2802,7 +2780,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return obj or null
   #
   delete_at: (idx) ->
-    idx = CoerceProto.to_int_native(idx)
+    idx = RCoerce.to_int_native(idx)
 
     idx = idx + @__size__() if idx < 0
     return null if idx < 0 or idx >= @__size__()
@@ -2933,7 +2911,7 @@ class RubyJS.Array extends RubyJS.Object
     if arguments.length is 3
       return @set$int$int.apply(this, arguments)
 
-    idx = CoerceProto.to_int_native(idx)
+    idx = RCoerce.to_int_native(idx)
     @__native__[idx] = obj
 
     obj
@@ -2971,7 +2949,7 @@ class RubyJS.Array extends RubyJS.Object
   fetch: (args...) ->
     block    = @__extract_block(args)
     orig     = args[0]
-    idx      = CoerceProto.to_int_native(args[0])
+    idx      = RCoerce.to_int_native(args[0])
     _default = args[1]
 
     len = @__size__()
@@ -3031,13 +3009,13 @@ class RubyJS.Array extends RubyJS.Object
       throw R.NotImplementedError.new()
 
     else if one isnt undefined && one isnt null
-      left = CoerceProto.to_int_native(one)
+      left = RCoerce.to_int_native(one)
       left = left + size    if left < 0
       left = 0              if left < 0
 
       if two isnt undefined && two isnt null
         try
-          right = CoerceProto.to_int_native(two)
+          right = RCoerce.to_int_native(two)
         catch e
           throw R.ArgumentError.new("second argument must be a Fixnum")
         return this if right is 0
@@ -3102,7 +3080,7 @@ class RubyJS.Array extends RubyJS.Object
     return this if items.length == 0
 
     # Adjust the index for correct insertion
-    idx = CoerceProto.to_int_native(idx)
+    idx = RCoerce.to_int_native(idx)
     idx = idx + @__size__() + 1 if idx < 0 # Negatives add AFTER the element
 
     # TODO: add message "#{idx} out of bounds"
@@ -3150,7 +3128,7 @@ class RubyJS.Array extends RubyJS.Object
     return R('') if @empty()
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    separator = CoerceProto.to_str_native(separator)
+    separator = RCoerce.to_str_native(separator)
 
     new R.String(@__native__.join(separator))
 
@@ -3188,7 +3166,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo recursive arrays not tested
   #
   minus: (other) ->
-    other = CoerceProto.to_ary(other)
+    other = RCoerce.to_ary(other)
 
     ary = []
     @each (el) ->
@@ -3213,7 +3191,7 @@ class RubyJS.Array extends RubyJS.Object
     if multiplier.to_str?
       return @join(multiplier)
     else
-      multiplier = CoerceProto.to_int_native(multiplier)
+      multiplier = RCoerce.to_int_native(multiplier)
 
       throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
 
@@ -3248,7 +3226,7 @@ class RubyJS.Array extends RubyJS.Object
 
     return @at(-1) if n is undefined
 
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     return new R.Array([]) if n is 0
 
     throw R.ArgumentError.new("count must be positive") if n < 0
@@ -3265,7 +3243,7 @@ class RubyJS.Array extends RubyJS.Object
   #   num   = args[0]
   #   return @to_enum('permutation', num) unless block?.call?
 
-  #   num = if num is undefined then @size() else CoerceProto.to_int(num)
+  #   num = if num is undefined then @size() else RCoerce.to_int(num)
 
   #   if num.lt(0) || @size().lt num
   #     # no permutations, yield nothing
@@ -3345,7 +3323,7 @@ class RubyJS.Array extends RubyJS.Object
     if many is undefined
       @__native__.pop()
     else
-      many = CoerceProto.to_int_native(many)
+      many = RCoerce.to_int_native(many)
       throw R.ArgumentError.new("negative array size") if many < 0
       first = @__size__() - many
       first = 0 if first < 0
@@ -3479,7 +3457,7 @@ class RubyJS.Array extends RubyJS.Object
   sample: (n, range = undefined) ->
     return @at(@rand(@size())) if n is undefined
 
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
     size = @__size__()
@@ -3518,7 +3496,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   replace: (val) ->
     @__ensure_args_length(arguments, 1)
-    # TODO: Use CoerceProto.to_ary_native
+    # TODO: Use RCoerce.to_ary_native
     @__native__ = if val.to_ary? then val.to_ary().to_native().slice(0) else val.slice(0)
     this
 
@@ -3567,7 +3545,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   rotate: (cnt) ->
     cnt = 1 if cnt is undefined
-    cnt = CoerceProto.to_int_native(cnt)
+    cnt = RCoerce.to_int_native(cnt)
 
     ary = @dup()
     return ary             if @__size__() is 1
@@ -3592,7 +3570,7 @@ class RubyJS.Array extends RubyJS.Object
       cnt = 1
       @replace @rotate(cnt)
     else
-      cnt = CoerceProto.to_int_native(cnt)
+      cnt = RCoerce.to_int_native(cnt)
       return this if cnt is 0 or cnt is 1
       @replace @rotate(cnt)
 
@@ -3641,7 +3619,7 @@ class RubyJS.Array extends RubyJS.Object
       @replace @__native__.slice(1)
       el
     else
-      n = CoerceProto.to_int_native(n)
+      n = RCoerce.to_int_native(n)
       throw R.ArgumentError.new() if n < 0
       ret  = @first(n)
       @replace @__native__.slice(n)
@@ -3709,8 +3687,8 @@ class RubyJS.Array extends RubyJS.Object
 
     if idx?.is_range?
       range = idx
-      range_start = CoerceProto.to_int_native(range.begin())
-      range_end   = CoerceProto.to_int_native(range.end()  )
+      range_start = RCoerce.to_int_native(range.begin())
+      range_end   = RCoerce.to_int_native(range.end()  )
       range_start = range_start + size if range_start < 0
 
       if range_end < 0
@@ -3723,7 +3701,7 @@ class RubyJS.Array extends RubyJS.Object
       return null if range_start > size  or range_start < 0
       return new R.Array(@__native__.slice(range_start, range_end))
     else
-      idx = CoerceProto.to_int_native(idx)
+      idx = RCoerce.to_int_native(idx)
 
     idx = size + idx if idx < 0
     # return @$String('') if is_range and idx.lteq(size) and idx.gt(length)
@@ -3732,7 +3710,7 @@ class RubyJS.Array extends RubyJS.Object
       return null if idx < 0 or idx >= size
       @at(idx)
     else
-      length = CoerceProto.to_int_native(length)
+      length = RCoerce.to_int_native(length)
       return null if idx < 0 or idx > size or length < 0
       new R.Array(@__native__.slice(idx, length + idx))
 
@@ -3759,8 +3737,8 @@ class RubyJS.Array extends RubyJS.Object
     if idx.is_range?
       range = idx
       ary   = @slice(range)
-      rng_start = CoerceProto.to_int_native(range.begin())
-      rng_end   = CoerceProto.to_int_native(range.end()  )
+      rng_start = RCoerce.to_int_native(range.begin())
+      rng_end   = RCoerce.to_int_native(range.end()  )
       rng_start = rng_start + size if rng_start < 0
 
       if rng_end < 0
@@ -3776,8 +3754,8 @@ class RubyJS.Array extends RubyJS.Object
         @__delete_range(rng_start, rng_length)
 
     else if length isnt undefined
-      idx    = CoerceProto.to_int_native(idx)
-      length = CoerceProto.to_int_native(length)
+      idx    = RCoerce.to_int_native(idx)
+      length = RCoerce.to_int_native(length)
 
       return null if idx > size
       return new R.Array([]) if length is 0
@@ -3786,7 +3764,7 @@ class RubyJS.Array extends RubyJS.Object
       @__delete_range(idx, length)
 
     else
-      idx = CoerceProto.to_int_native(idx)
+      idx = RCoerce.to_int_native(idx)
       ary = @delete_at(idx)
 
     ary
@@ -3838,7 +3816,7 @@ class RubyJS.Array extends RubyJS.Object
 
     # TODO: dogfood
     @each (ary) ->
-      ary = CoerceProto.to_ary(ary)
+      ary = RCoerce.to_ary(ary)
       max ||= ary.size()
 
       # Catches too-large as well as too-small (for which #fetch would suffice)
@@ -3937,7 +3915,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   values_at: (args...) ->
     ary = for idx in args
-      @at(CoerceProto.to_int_native(idx)) || null
+      @at(RCoerce.to_int_native(idx)) || null
 
     new R.Array(ary)
 
@@ -3985,7 +3963,7 @@ class RubyJS.Array extends RubyJS.Object
   # ---- Private --------------------------------------------------------------
 
   __native_array_with__: (size, obj) ->
-    ary = nativeArray(CoerceProto.to_int_native(size))
+    ary = nativeArray(RCoerce.to_int_native(size))
     idx = -1
     while ++idx < size
       ary[idx] = obj
@@ -4528,7 +4506,7 @@ class RubyJS.Hash extends RubyJS.Object
 
 
   flatten: (recursion = 1) ->
-    recursion = CoerceProto.to_int_native(recursion)
+    recursion = RCoerce.to_int_native(recursion)
     @to_a().flatten(recursion)
 
   sort: (block) ->
@@ -4854,7 +4832,7 @@ class RubyJS.Range extends RubyJS.Object
       first     = first.to_f()
       last      = last.to_f()
     else
-      step_size = CoerceProto.to_int_native(step_size)
+      step_size = RCoerce.to_int_native(step_size)
 
     if step_size <= 0
       throw R.ArgumentError.new() if step_size < 0 # step can't be negative
@@ -5171,7 +5149,7 @@ _str = R._str =
     if sep == null
       if @empty(str) then "" else null
     else
-      sep = CoerceProto.to_str_native(sep)
+      sep = RCoerce.to_str_native(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
@@ -5326,7 +5304,7 @@ class RubyJS.String extends RubyJS.Object
   #      #=> "Hello from main"
   #
   '+': (other) ->
-    other = CoerceProto.to_str_native(other)
+    other = RCoerce.to_str_native(other)
     new R.String(@to_native() + other) # don't return subclasses
 
 
@@ -5494,7 +5472,7 @@ class RubyJS.String extends RubyJS.Object
   center: (length, padString = ' ') ->
     # TODO: dogfood
     length    = @box(length)
-    padString = CoerceProto.to_str(padString)
+    padString = RCoerce.to_str(padString)
 
     @__ensure_numeric(length)
     @__ensure_string(padString)
@@ -5740,7 +5718,7 @@ class RubyJS.String extends RubyJS.Object
       return
 
     separator = R(if args[0] is undefined then R['$/'] else args[0])
-    # TODO: Use CoerceProto?
+    # TODO: Use RCoerce?
     throw R.TypeError.new() unless separator.to_str?
     separator = separator.to_str()
     separator = "\n\n" if separator.length is 0 # '' goes into "paragraph" mode
@@ -5810,7 +5788,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo idx as Regexp
   set: (idx, other) ->
     idx   = R(idx)
-    other = CoerceProto.to_str(other)
+    other = RCoerce.to_str(other)
     index = null
 
     if idx.to_int?
@@ -5885,7 +5863,7 @@ class RubyJS.String extends RubyJS.Object
     unless pattern.global
       throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
 
-    replacement = CoerceProto.to_str(replacement).to_native()
+    replacement = RCoerce.to_str(replacement).to_native()
     gsubbed     = @to_native().replace(pattern, replacement)
 
     new @constructor(gsubbed) # makes String subclasseable
@@ -5904,7 +5882,7 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").include hh     #=> true
   #
   include: (other) ->
-    other = CoerceProto.to_str_native(other)
+    other = RCoerce.to_str_native(other)
     @to_native().indexOf(other) >= 0
 
   # Returns the index of the first occurrence of the given substring or pattern
@@ -5925,7 +5903,7 @@ class RubyJS.String extends RubyJS.Object
     needle = needle.to_str() if needle.to_str?
 
     if offset
-      offset = CoerceProto.to_int(offset)
+      offset = RCoerce.to_int(offset)
       offset = @size().minus(offset.abs()) if offset.lt 0
 
     unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
@@ -5959,8 +5937,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("abcd").insert(-1, 'X')   # => "abcdX"
   #
   insert: (idx, other) ->
-    idx   = CoerceProto.to_int(idx)
-    other = CoerceProto.to_str(other)
+    idx   = RCoerce.to_int(idx)
+    other = RCoerce.to_str(other)
     # TODO: optimize typecast
     idx = idx.to_native()
     if idx < 0
@@ -6007,13 +5985,13 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").ljust(20, '1234')   #=> "hello123412341234123"
   #
   ljust: (width, padString = " ") ->
-    width = CoerceProto.to_int_native(width)
+    width = RCoerce.to_int_native(width)
 
     len = @__native__.length
     if len >= width
       @clone()
     else
-      padString = CoerceProto.to_str_native(padString)
+      padString = RCoerce.to_str_native(padString)
       throw R.ArgumentError.new() if padString.length == 0
       padLength = width - len
       idx = -1
@@ -6116,7 +6094,7 @@ class RubyJS.String extends RubyJS.Object
   #
   partition: (pattern) ->
     # TODO: regexps
-    pattern = CoerceProto.to_str(pattern).to_str()
+    pattern = RCoerce.to_str(pattern).to_str()
 
     if idx = @index(pattern)
       start = idx + pattern.length
@@ -6139,7 +6117,7 @@ class RubyJS.String extends RubyJS.Object
   #     a #=> “hello world”
   #
   prepend: (other) ->
-    other = CoerceProto.to_str_native(other)
+    other = RCoerce.to_str_native(other)
     @replace(other + @to_native())
 
 
@@ -6255,7 +6233,7 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rjust(20, '1234')   #=> "123412341234123hello"
   #
   rjust: (width, padString = " ") ->
-    width = CoerceProto.to_int(width)
+    width = RCoerce.to_int(width)
 
     if @length >= width
       @clone()
@@ -6286,7 +6264,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo does not yet affect R['$~']
   rpartition: (pattern) ->
     # TODO: regexps
-    pattern = CoerceProto.to_str(pattern).to_str()
+    pattern = RCoerce.to_str(pattern).to_str()
 
     if idx = @rindex(pattern)
       start = idx + pattern.length
@@ -6349,7 +6327,7 @@ class RubyJS.String extends RubyJS.Object
   #
   scan: (pattern, block = null) ->
     unless R.Regexp.isRegexp(pattern)
-      pattern = CoerceProto.to_str_native(pattern)
+      pattern = RCoerce.to_str_native(pattern)
       pattern = R.Regexp.quote(pattern)
 
     index = 0
@@ -6433,8 +6411,8 @@ class RubyJS.String extends RubyJS.Object
         # Regexp.last_match = match
         # return str
       else
-        length = CoerceProto.to_int_native(other)
-        start  = CoerceProto.to_int_native(index)
+        length = RCoerce.to_int_native(other)
+        start  = RCoerce.to_int_native(index)
         start += size if start < 0
 
         return null if length < 0
@@ -6455,8 +6433,8 @@ class RubyJS.String extends RubyJS.Object
       return if @include(index) then index.dup() else null
 
     else if index.is_range?
-      start   = CoerceProto.to_int_native index.begin()
-      length  = CoerceProto.to_int_native index.end()
+      start   = RCoerce.to_int_native index.begin()
+      length  = RCoerce.to_int_native index.end()
 
       start += size if start < 0
 
@@ -6473,7 +6451,7 @@ class RubyJS.String extends RubyJS.Object
       substr = @to_native().slice(start, start + length)
       return new R.String(substr)
     else
-      index = CoerceProto.to_int_native(index)
+      index = RCoerce.to_int_native(index)
       len   = @size().to_native()
       index += len if index < 0
       return null if index < 0 or index >= @size()
@@ -6525,7 +6503,7 @@ class RubyJS.String extends RubyJS.Object
   #
   split: (pattern = " ", limit) ->
     unless R.Regexp.isRegexp(pattern)
-      pattern = CoerceProto.to_str(pattern).to_native()
+      pattern = RCoerce.to_str(pattern).to_native()
 
     ret = @to_native().split(pattern)
     ret = R(new @constructor(str) for str in ret)
@@ -6664,7 +6642,7 @@ class RubyJS.String extends RubyJS.Object
     if pattern.global
       throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
 
-    replacement = CoerceProto.to_str_native(replacement)
+    replacement = RCoerce.to_str_native(replacement)
     subbed      = @to_native().replace(pattern, replacement)
 
     @replace(subbed)
@@ -6851,7 +6829,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo #to_i(0) does not auto-detect base
   to_i: (base) ->
     base = 10 if base is undefined
-    base = CoerceProto.to_int_native(base)
+    base = RCoerce.to_int_native(base)
 
     if base < 0 or base > 36 or base is 1
       throw R.ArgumentError.new()
@@ -6957,7 +6935,7 @@ class RubyJS.String extends RubyJS.Object
 
 
   @upcase: (str) ->
-    str = R.CoerceProto.to_str_native(str)
+    str = RCoerce.to_str_native(str)
     return null unless str.match(/[a-z]/)
     R(str.split('')).map((c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
@@ -7007,7 +6985,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo R('a').upto('c').to_a() should return ['a', 'b', 'c'] (include 'c')
   #
   upto: (stop, exclusive, block) ->
-    stop = CoerceProto.to_str(stop)
+    stop = RCoerce.to_str(stop)
     exclusive ||= false
     if block is undefined and exclusive?.call?
       block = exclusive
@@ -7086,7 +7064,7 @@ class CharTable
     @excl = null
 
     for w in @patterns
-      v = CoerceProto.to_str(w).to_native()
+      v = RCoerce.to_str(w).to_native()
       if v.length == 0
       else if v[0] == '^' and v.length > 1
         arr = @__char_table__(v[1..-1])
@@ -7166,7 +7144,7 @@ class RubyJS.Regexp extends RubyJS.Object
     else if arg.is_regexp?
       arg = arg.to_native()
     else
-      arg = @__compile__( CoerceProto.to_str_native(arg))
+      arg = @__compile__( RCoerce.to_str_native(arg))
 
     new R.Regexp(arg)
 
@@ -7322,7 +7300,7 @@ class RubyJS.Regexp extends RubyJS.Object
     if str is null
       R['$~'] = null
     else
-      str = CoerceProto.to_str_native(str)
+      str = RCoerce.to_str_native(str)
       opts = {string: str, regexp: this}
 
       if offset
@@ -7479,7 +7457,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
     sources = for arg in args
       arg = R(arg)
-      if arg.is_regexp? then arg.to_s() else CoerceProto.to_str(arg)
+      if arg.is_regexp? then arg.to_s() else RCoerce.to_str(arg)
 
     # TODO: use proper Regexp.compile/new method
     new R.Regexp(
@@ -7682,7 +7660,7 @@ class RubyJS.Numeric extends RubyJS.Object
   # @return [R.Float]
   #
   fdiv: (other) ->
-    other = CoerceProto.to_num_native(other)
+    other = RCoerce.to_num_native(other)
     @to_f()['/'](other)
 
 
@@ -7934,7 +7912,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   downto: (stop, block) ->
     try
-      stop = CoerceProto.to_num_native(stop)
+      stop = RCoerce.to_num_native(stop)
     catch err
       throw R.ArgumentError.new()
 
@@ -8088,7 +8066,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   round: (n) ->
     return this if n is undefined
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     if n > 0
       @to_f()
     else if n is 0
@@ -8146,7 +8124,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   upto: (stop, block) ->
     try
-      stop = CoerceProto.to_num_native(stop)
+      stop = RCoerce.to_num_native(stop)
     catch err
       throw R.ArgumentError.new()
 
@@ -8283,7 +8261,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #plus
   #
   '+': (other) ->
-    R.Numeric.typecast(@to_native() + CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() + RCoerce.to_num_native(other))
 
   # Performs subtraction: the class of the resulting object depends on the
   # class of numeric and on the magnitude of the result.
@@ -8295,7 +8273,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #minus
   #
   '-': (other) ->
-    R.Numeric.typecast(@to_native() - CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() - RCoerce.to_num_native(other))
 
   # Performs division: the class of the resulting object depends on the class
   # of numeric and on the magnitude of the result.
@@ -8326,7 +8304,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # @alias #multiply
   #
   '*': (other) ->
-    R.Numeric.typecast(@to_native() * CoerceProto.to_num_native(other))
+    R.Numeric.typecast(@to_native() * RCoerce.to_num_native(other))
 
   # Raises fix to the numeric power, which may be negative or fractional.
   #
@@ -8444,7 +8422,7 @@ class RubyJS.Float extends RubyJS.Numeric
 
   '<=>': (other) ->
     return null if !@box(other).is_numeric?
-    other = CoerceProto.to_num_native(other)
+    other = RCoerce.to_num_native(other)
 
     return  0 if @to_native() == other
     return -1 if @to_native() < other
@@ -8457,23 +8435,23 @@ class RubyJS.Float extends RubyJS.Numeric
 
 
   '+': (other) ->
-    new Float(@to_native() + CoerceProto.to_num_native(other))
+    new Float(@to_native() + RCoerce.to_num_native(other))
 
 
   '-': (other) ->
-    new Float(@to_native() - CoerceProto.to_num_native(other))
+    new Float(@to_native() - RCoerce.to_num_native(other))
 
 
   '*': (other) ->
-    new Float(@to_native() * CoerceProto.to_num_native(other))
+    new Float(@to_native() * RCoerce.to_num_native(other))
 
 
   '/': (other) ->
-    new Float(@to_native() / CoerceProto.to_num_native(other))
+    new Float(@to_native() / RCoerce.to_num_native(other))
 
 
   '**': (other) ->
-    new Float( Math.pow(@to_native(), CoerceProto.to_num_native(other)) + 0)
+    new Float( Math.pow(@to_native(), RCoerce.to_num_native(other)) + 0)
 
 
   '%': (other) ->
@@ -8653,7 +8631,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [R.Fixnum, R.Float]
   #
   round: (n = 0) ->
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
 
     throw new TypeError("FloatDomainError") if @infinite()
     throw new TypeError("RangeError")       if @nan()
@@ -8920,7 +8898,7 @@ class RubyJS.Time extends RubyJS.Object
       if microseconds is null or R(microseconds).is_string?
         throw R.TypeError.new()
       else
-        microseconds = CoerceProto.to_num_native(microseconds)
+        microseconds = RCoerce.to_num_native(microseconds)
     else
       microseconds = 0
 

@@ -63,7 +63,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   downto: (stop, block) ->
     try
-      stop = CoerceProto.to_num_native(stop)
+      stop = RCoerce.to_num_native(stop)
     catch err
       throw R.ArgumentError.new()
 
@@ -217,7 +217,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   round: (n) ->
     return this if n is undefined
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     if n > 0
       @to_f()
     else if n is 0
@@ -275,7 +275,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   upto: (stop, block) ->
     try
-      stop = CoerceProto.to_num_native(stop)
+      stop = RCoerce.to_num_native(stop)
     catch err
       throw R.ArgumentError.new()
 

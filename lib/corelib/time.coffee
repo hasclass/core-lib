@@ -185,7 +185,7 @@ class RubyJS.Time extends RubyJS.Object
       if microseconds is null or R(microseconds).is_string?
         throw R.TypeError.new()
       else
-        microseconds = CoerceProto.to_num_native(microseconds)
+        microseconds = RCoerce.to_num_native(microseconds)
     else
       microseconds = 0
 

@@ -17,7 +17,7 @@ class RubyJS.Regexp extends RubyJS.Object
     else if arg.is_regexp?
       arg = arg.to_native()
     else
-      arg = @__compile__( CoerceProto.to_str_native(arg))
+      arg = @__compile__( RCoerce.to_str_native(arg))
 
     new R.Regexp(arg)
 
@@ -173,7 +173,7 @@ class RubyJS.Regexp extends RubyJS.Object
     if str is null
       R['$~'] = null
     else
-      str = CoerceProto.to_str_native(str)
+      str = RCoerce.to_str_native(str)
       opts = {string: str, regexp: this}
 
       if offset
@@ -330,7 +330,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
     sources = for arg in args
       arg = R(arg)
-      if arg.is_regexp? then arg.to_s() else CoerceProto.to_str(arg)
+      if arg.is_regexp? then arg.to_s() else RCoerce.to_str(arg)
 
     # TODO: use proper Regexp.compile/new method
     new R.Regexp(

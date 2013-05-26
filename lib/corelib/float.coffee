@@ -45,7 +45,7 @@ class RubyJS.Float extends RubyJS.Numeric
 
   '<=>': (other) ->
     return null if !@box(other).is_numeric?
-    other = CoerceProto.to_num_native(other)
+    other = RCoerce.to_num_native(other)
 
     return  0 if @to_native() == other
     return -1 if @to_native() < other
@@ -58,23 +58,23 @@ class RubyJS.Float extends RubyJS.Numeric
 
 
   '+': (other) ->
-    new Float(@to_native() + CoerceProto.to_num_native(other))
+    new Float(@to_native() + RCoerce.to_num_native(other))
 
 
   '-': (other) ->
-    new Float(@to_native() - CoerceProto.to_num_native(other))
+    new Float(@to_native() - RCoerce.to_num_native(other))
 
 
   '*': (other) ->
-    new Float(@to_native() * CoerceProto.to_num_native(other))
+    new Float(@to_native() * RCoerce.to_num_native(other))
 
 
   '/': (other) ->
-    new Float(@to_native() / CoerceProto.to_num_native(other))
+    new Float(@to_native() / RCoerce.to_num_native(other))
 
 
   '**': (other) ->
-    new Float( Math.pow(@to_native(), CoerceProto.to_num_native(other)) + 0)
+    new Float( Math.pow(@to_native(), RCoerce.to_num_native(other)) + 0)
 
 
   '%': (other) ->
@@ -254,7 +254,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [R.Fixnum, R.Float]
   #
   round: (n = 0) ->
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
 
     throw new TypeError("FloatDomainError") if @infinite()
     throw new TypeError("RangeError")       if @nan()

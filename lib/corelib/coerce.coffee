@@ -4,12 +4,12 @@
 #
 # to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
 #
-# There is a shortcut for Coerce.prototype: CoerceProto.
+# There is a shortcut for Coerce.prototype: RCoerce.
 #
-#     CoerceProto.to_num_native(1)
+#     RCoerce.to_num_native(1)
 #
 # @private
-class Coerce
+RCoerce = R._coerce =
   # TODO: replace class with some more lightweight.
 
   # Mimicks rubys single block args behaviour
@@ -79,5 +79,4 @@ class Coerce
     @coerce(obj, 'to_ary')
 
 
-CoerceProto = Coerce.prototype
-R.CoerceProto = Coerce.prototype
+R.RCoerce = RCoerce

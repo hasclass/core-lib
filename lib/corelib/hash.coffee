@@ -529,7 +529,7 @@ class RubyJS.Hash extends RubyJS.Object
 
 
   flatten: (recursion = 1) ->
-    recursion = CoerceProto.to_int_native(recursion)
+    recursion = RCoerce.to_int_native(recursion)
     @to_a().flatten(recursion)
 
   sort: (block) ->

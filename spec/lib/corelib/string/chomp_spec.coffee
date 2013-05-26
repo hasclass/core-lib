@@ -1,40 +1,41 @@
 describe "String#chomp with separator", ->
 
   it "returns a new string with the given record separator removed", ->
-    expect(R("hello").chomp("llo").unbox()).toEqual "he"
-    expect(R("hellollo").chomp("llo").unbox()).toEqual "hello"
+    expect(R("hello").chomp("llo")).toEqual R("he")
+    expect(R("hellollo").chomp("llo")).toEqual R("hello")
 
   it "removes carriage return (except \\r) chars multiple times when separator is an empty string", ->
-    expect(R("").chomp("").unbox()).toEqual ""
-    expect(R("hello").chomp("").unbox()).toEqual "hello"
-    expect(R("hello\n").chomp("").unbox()).toEqual "hello"
-    expect(R("hello\nx").chomp("").unbox()).toEqual "hello\nx"
-    expect(R("hello\r\n").chomp("").unbox()).toEqual "hello"
-    expect(R("hello\r\n\r\n\n\n\r\n").chomp("").unbox()).toEqual "hello"
+    expect(R("").chomp("")).toEqual R("")
+    expect(R("hello").chomp("")).toEqual R("hello")
+    expect(R("hello\n").chomp("")).toEqual R("hello")
+    expect(R("hello\nx").chomp("")).toEqual R("hello\nx")
+    expect(R("hello\r\n").chomp("")).toEqual R("hello")
+    expect(R("hello\r\n\r\n\n\n\r\n").chomp("")).toEqual R("hello")
 
-    expect(R("hello\r").chomp("").unbox()).toEqual "hello\r"
-    expect(R("hello\n\r").chomp("").unbox()).toEqual "hello\n\r"
-    expect(R("hello\r\r\r\n").chomp("").unbox()).toEqual "hello\r\r"
+    expect(R("hello\r").chomp("")).toEqual R("hello\r")
+    expect(R("hello\n\r").chomp("")).toEqual R("hello\n\r")
+    expect(R("hello\r\r\r\n").chomp("")).toEqual R("hello\r\r")
 
   it "removes carriage return chars (\\n, \\r, \\r\\n) when separator is \\n", ->
-    expect(R("hello").chomp("\n").unbox()).toEqual "hello"
-    expect(R("hello\n").chomp("\n").unbox()).toEqual "hello"
-    expect(R("hello\r\n").chomp("\n").unbox()).toEqual "hello"
-    expect(R("hello\n\r").chomp("\n").unbox()).toEqual "hello\n"
-    expect(R("hello\r").chomp("\n").unbox()).toEqual "hello"
-    expect(R("hello \n there").chomp("\n").unbox()).toEqual "hello \n there"
-    expect(R("hello\r\n\r\n\n\n\r\n").chomp("\n").unbox()).toEqual "hello\r\n\r\n\n\n"
-    expect(R("hello\n\r").chomp("\r").unbox()).toEqual "hello\n"
-    expect(R("hello\n\r\n").chomp("\r\n").unbox()).toEqual "hello\n"
+    expect(R("hello").chomp("\n")).toEqual R("hello")
+    expect(R("hello\n").chomp("\n")).toEqual R("hello")
+    expect(R("hello\r\n").chomp("\n")).toEqual R("hello")
+    expect(R("hello\n\r").chomp("\n")).toEqual R("hello\n")
+    expect(R("hello\r").chomp("\n")).toEqual R("hello")
+    expect(R("hello \n there").chomp("\n")).toEqual R("hello \n there")
+    expect(R("hello\r\n\r\n\n\n\r\n").chomp("\n")).toEqual R("hello\r\n\r\n\n\n")
+    expect(R("hello\n\r").chomp("\r")).toEqual R("hello\n")
+    expect(R("hello\n\r\n").chomp("\r\n")).toEqual R("hello\n")
 
   it "returns self if the separator is nil", ->
-    expect(R("hello\n\n").chomp(null).unbox()).toEqual "hello\n\n"
+    str = R("hello\n\n")
+    expect(str.chomp(null) is str).toEqual true
 
   it "returns an empty string when called on an empty string", ->
-    expect(R("").chomp("\n").unbox()).toEqual ""
-    expect(R("").chomp("\r").unbox()).toEqual ""
-    expect(R("").chomp("").unbox()).toEqual ""
-    expect(R("").chomp(null).unbox()).toEqual ""
+    expect(R("").chomp("\n")).toEqual R("")
+    expect(R("").chomp("\r")).toEqual R("")
+    expect(R("").chomp("")).toEqual R("")
+    expect(R("").chomp(null)).toEqual R("")
 
   # TAINT
   # xit "taints result when self is tainted", ->

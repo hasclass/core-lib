@@ -1,5 +1,5 @@
 
-R.args = R.CoerceProto.single_block_args
+R.args = R.RCoerce.single_block_args
 
 describe "RubyJS.single_block_arg", ->
   describe "R.args", ->

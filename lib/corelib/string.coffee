@@ -14,7 +14,7 @@ _str = R._str =
     if sep == null
       if @empty(str) then "" else null
     else
-      sep = CoerceProto.to_str_native(sep)
+      sep = RCoerce.to_str_native(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
@@ -169,7 +169,7 @@ class RubyJS.String extends RubyJS.Object
   #      #=> "Hello from main"
   #
   '+': (other) ->
-    other = CoerceProto.to_str_native(other)
+    other = RCoerce.to_str_native(other)
     new R.String(@to_native() + other) # don't return subclasses
 
 
@@ -337,7 +337,7 @@ class RubyJS.String extends RubyJS.Object
   center: (length, padString = ' ') ->
     # TODO: dogfood
     length    = @box(length)
-    padString = CoerceProto.to_str(padString)
+    padString = RCoerce.to_str(padString)
 
     @__ensure_numeric(length)
     @__ensure_string(padString)
@@ -583,7 +583,7 @@ class RubyJS.String extends RubyJS.Object
       return
 
     separator = R(if args[0] is undefined then R['$/'] else args[0])
-    # TODO: Use CoerceProto?
+    # TODO: Use RCoerce?
     throw R.TypeError.new() unless separator.to_str?
     separator = separator.to_str()
     separator = "\n\n" if separator.length is 0 # '' goes into "paragraph" mode
@@ -653,7 +653,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo idx as Regexp
   set: (idx, other) ->
     idx   = R(idx)
-    other = CoerceProto.to_str(other)
+    other = RCoerce.to_str(other)
     index = null
 
     if idx.to_int?
@@ -728,7 +728,7 @@ class RubyJS.String extends RubyJS.Object
     unless pattern.global
       throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
 
-    replacement = CoerceProto.to_str(replacement).to_native()
+    replacement = RCoerce.to_str(replacement).to_native()
     gsubbed     = @to_native().replace(pattern, replacement)
 
     new @constructor(gsubbed) # makes String subclasseable
@@ -747,7 +747,7 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").include hh     #=> true
   #
   include: (other) ->
-    other = CoerceProto.to_str_native(other)
+    other = RCoerce.to_str_native(other)
     @to_native().indexOf(other) >= 0
 
   # Returns the index of the first occurrence of the given substring or pattern
@@ -768,7 +768,7 @@ class RubyJS.String extends RubyJS.Object
     needle = needle.to_str() if needle.to_str?
 
     if offset
-      offset = CoerceProto.to_int(offset)
+      offset = RCoerce.to_int(offset)
       offset = @size().minus(offset.abs()) if offset.lt 0
 
     unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
@@ -802,8 +802,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("abcd").insert(-1, 'X')   # => "abcdX"
   #
   insert: (idx, other) ->
-    idx   = CoerceProto.to_int(idx)
-    other = CoerceProto.to_str(other)
+    idx   = RCoerce.to_int(idx)
+    other = RCoerce.to_str(other)
     # TODO: optimize typecast
     idx = idx.to_native()
     if idx < 0
@@ -850,13 +850,13 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").ljust(20, '1234')   #=> "hello123412341234123"
   #
   ljust: (width, padString = " ") ->
-    width = CoerceProto.to_int_native(width)
+    width = RCoerce.to_int_native(width)
 
     len = @__native__.length
     if len >= width
       @clone()
     else
-      padString = CoerceProto.to_str_native(padString)
+      padString = RCoerce.to_str_native(padString)
       throw R.ArgumentError.new() if padString.length == 0
       padLength = width - len
       idx = -1
@@ -959,7 +959,7 @@ class RubyJS.String extends RubyJS.Object
   #
   partition: (pattern) ->
     # TODO: regexps
-    pattern = CoerceProto.to_str(pattern).to_str()
+    pattern = RCoerce.to_str(pattern).to_str()
 
     if idx = @index(pattern)
       start = idx + pattern.length
@@ -982,7 +982,7 @@ class RubyJS.String extends RubyJS.Object
   #     a #=> “hello world”
   #
   prepend: (other) ->
-    other = CoerceProto.to_str_native(other)
+    other = RCoerce.to_str_native(other)
     @replace(other + @to_native())
 
 
@@ -1098,7 +1098,7 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rjust(20, '1234')   #=> "123412341234123hello"
   #
   rjust: (width, padString = " ") ->
-    width = CoerceProto.to_int(width)
+    width = RCoerce.to_int(width)
 
     if @length >= width
       @clone()
@@ -1129,7 +1129,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo does not yet affect R['$~']
   rpartition: (pattern) ->
     # TODO: regexps
-    pattern = CoerceProto.to_str(pattern).to_str()
+    pattern = RCoerce.to_str(pattern).to_str()
 
     if idx = @rindex(pattern)
       start = idx + pattern.length
@@ -1192,7 +1192,7 @@ class RubyJS.String extends RubyJS.Object
   #
   scan: (pattern, block = null) ->
     unless R.Regexp.isRegexp(pattern)
-      pattern = CoerceProto.to_str_native(pattern)
+      pattern = RCoerce.to_str_native(pattern)
       pattern = R.Regexp.quote(pattern)
 
     index = 0
@@ -1276,8 +1276,8 @@ class RubyJS.String extends RubyJS.Object
         # Regexp.last_match = match
         # return str
       else
-        length = CoerceProto.to_int_native(other)
-        start  = CoerceProto.to_int_native(index)
+        length = RCoerce.to_int_native(other)
+        start  = RCoerce.to_int_native(index)
         start += size if start < 0
 
         return null if length < 0
@@ -1298,8 +1298,8 @@ class RubyJS.String extends RubyJS.Object
       return if @include(index) then index.dup() else null
 
     else if index.is_range?
-      start   = CoerceProto.to_int_native index.begin()
-      length  = CoerceProto.to_int_native index.end()
+      start   = RCoerce.to_int_native index.begin()
+      length  = RCoerce.to_int_native index.end()
 
       start += size if start < 0
 
@@ -1316,7 +1316,7 @@ class RubyJS.String extends RubyJS.Object
       substr = @to_native().slice(start, start + length)
       return new R.String(substr)
     else
-      index = CoerceProto.to_int_native(index)
+      index = RCoerce.to_int_native(index)
       len   = @size().to_native()
       index += len if index < 0
       return null if index < 0 or index >= @size()
@@ -1368,7 +1368,7 @@ class RubyJS.String extends RubyJS.Object
   #
   split: (pattern = " ", limit) ->
     unless R.Regexp.isRegexp(pattern)
-      pattern = CoerceProto.to_str(pattern).to_native()
+      pattern = RCoerce.to_str(pattern).to_native()
 
     ret = @to_native().split(pattern)
     ret = R(new @constructor(str) for str in ret)
@@ -1507,7 +1507,7 @@ class RubyJS.String extends RubyJS.Object
     if pattern.global
       throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
 
-    replacement = CoerceProto.to_str_native(replacement)
+    replacement = RCoerce.to_str_native(replacement)
     subbed      = @to_native().replace(pattern, replacement)
 
     @replace(subbed)
@@ -1694,7 +1694,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo #to_i(0) does not auto-detect base
   to_i: (base) ->
     base = 10 if base is undefined
-    base = CoerceProto.to_int_native(base)
+    base = RCoerce.to_int_native(base)
 
     if base < 0 or base > 36 or base is 1
       throw R.ArgumentError.new()
@@ -1800,7 +1800,7 @@ class RubyJS.String extends RubyJS.Object
 
 
   @upcase: (str) ->
-    str = R.CoerceProto.to_str_native(str)
+    str = RCoerce.to_str_native(str)
     return null unless str.match(/[a-z]/)
     R(str.split('')).map((c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
@@ -1850,7 +1850,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo R('a').upto('c').to_a() should return ['a', 'b', 'c'] (include 'c')
   #
   upto: (stop, exclusive, block) ->
-    stop = CoerceProto.to_str(stop)
+    stop = RCoerce.to_str(stop)
     exclusive ||= false
     if block is undefined and exclusive?.call?
       block = exclusive
@@ -1929,7 +1929,7 @@ class CharTable
     @excl = null
 
     for w in @patterns
-      v = CoerceProto.to_str(w).to_native()
+      v = RCoerce.to_str(w).to_native()
       if v.length == 0
       else if v[0] == '^' and v.length > 1
         arr = @__char_table__(v[1..-1])

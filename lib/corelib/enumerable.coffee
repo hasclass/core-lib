@@ -6,7 +6,6 @@
 #
 # @mixin
 class RubyJS.Enumerable
-  is_enumerable: -> true
 
   # Passes each element of the collection to the given block. The method
   # returns true if the block never returns false or nil. If the block is not
@@ -21,8 +20,6 @@ class RubyJS.Enumerable
   all: (block) ->
     _enum.all(this, block)
 
-
-  'all?': @prototype.all
 
 
   # Passes each element of the collection to the given block. The method
@@ -111,7 +108,7 @@ class RubyJS.Enumerable
   #
   drop: (n) ->
     @__ensure_args_length(arguments, 1)
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
     new RArray(_enum.drop(this, n))
@@ -147,7 +144,7 @@ class RubyJS.Enumerable
     block = @__extract_block(args)
     return @to_enum('each_cons', args...) unless block && block.call?
     @__ensure_args_length(args, 1)
-    n = CoerceProto.to_int_native(args[0])
+    n = RCoerce.to_int_native(args[0])
     throw R.ArgumentError.new() unless n > 0
 
     _enum.each_cons(this, n, block)
@@ -176,7 +173,7 @@ class RubyJS.Enumerable
   #
   each_slice: (n, block) ->
     throw R.ArgumentError.new() unless n
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
 
     throw R.ArgumentError.new() if n <= 0                  #each_slice(-1)
     throw R.ArgumentError.new() if block && !block.call?   #each_slice(1, block)
@@ -296,7 +293,7 @@ class RubyJS.Enumerable
     if n is null or n is undefined
       _enum.first(this, null)
     else
-      n = CoerceProto.to_int_native(n)
+      n = RCoerce.to_int_native(n)
       new RArray(_enum.first(this, n))
 
 
@@ -560,7 +557,7 @@ class RubyJS.Enumerable
 
   take: (n) ->
     @__ensure_args_length(arguments, 1)
-    n = CoerceProto.to_int_native(n)
+    n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
     new RArray(_enum.take(this, n))
@@ -600,6 +597,7 @@ class RubyJS.Enumerable
   #
   # @todo dont yield R.Arrays
   zip: (others...) ->
+    # TODO: fix specs
     block = @__extract_block(others)
 
     others = R(others).map (other) ->

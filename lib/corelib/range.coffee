@@ -234,7 +234,7 @@ class RubyJS.Range extends RubyJS.Object
       first     = first.to_f()
       last      = last.to_f()
     else
-      step_size = CoerceProto.to_int_native(step_size)
+      step_size = RCoerce.to_int_native(step_size)
 
     if step_size <= 0
       throw R.ArgumentError.new() if step_size < 0 # step can't be negative

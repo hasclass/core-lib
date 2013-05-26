@@ -69,7 +69,7 @@ _enum = R._enum =
         n     = null
 
     if !(n is null or n is undefined)
-      many  = CoerceProto.to_int_native(n)
+      many  = RCoerce.to_int_native(n)
       return null if many <= 0
     else
       many = null
@@ -559,27 +559,8 @@ _enum = R._enum =
     new R.Enumerator(this, iter, args)
 
 
-  zip: (others...) ->
-    block = @__extract_block(others)
-
-    others = R(others).map (other) ->
-      o = R(other)
-      if o.to_ary? then o.to_ary() else o.to_enum('each')
-
-    results = new R.Array([])
-    idx     = 0
-    @each (el) ->
-      inner = R([el])
-      others.each (other) ->
-        el = if other.is_array? then other.at(idx) else other.next()
-        el = null if el is undefined
-        inner.append(el)
-
-      block( inner ) if block
-      results.append( inner )
-      idx += 1
-
-    if block then null else results
+  zip: (coll, others) ->
+    # TODO
 
 
 

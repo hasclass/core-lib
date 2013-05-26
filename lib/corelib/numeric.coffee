@@ -156,7 +156,7 @@ class RubyJS.Numeric extends RubyJS.Object
   # @return [R.Float]
   #
   fdiv: (other) ->
-    other = CoerceProto.to_num_native(other)
+    other = RCoerce.to_num_native(other)
     @to_f()['/'](other)
 
 

@@ -55,7 +55,7 @@ class BlockArgs
   constructor: (@block, @thisArg) ->
 
   invoke: (args) ->
-    CoerceProto.single_block_args(args, @block)
+    RCoerce.single_block_args(args, @block)
 
 # @private
 class BlockMulti
