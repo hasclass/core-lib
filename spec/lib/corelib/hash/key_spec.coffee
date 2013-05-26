@@ -10,7 +10,7 @@ describe "Hash#key", ->
     expect( R.hashify(a: -1, b: 3.14, c: 2.718).key('1') ).toEqual null
 
   it "doesn't return default value if the value is not found", ->
-    # expect( R.hashify(5).key(5).should be_nil
+    expect( R.hashify({}, 5).key(5) ).toEqual null
 
   it "compares values using ==", ->
     expect( R.hashify(1: 0).key(0.0) ).toEqual '1'

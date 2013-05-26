@@ -1,7 +1,3 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/index', __FILE__)
-
 describe "Hash#index", ->
   it "returns the corresponding key for value", ->
     expect( R.hashify(2: 'a', 1: 'b').index('b') ).toEqual '1'

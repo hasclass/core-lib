@@ -29,21 +29,22 @@ describe "Hash#flatten", ->
     a = @h.flatten().to_native()
     expect( a[3] ).toEqual ['austrian', 'british']
 
-  # it "does not recursively flatten Hash values when called without arguments", ->
-  #   @h[:russell] = {:born => :wales, :influenced_by => :mill }
-  #   a = @h.flatten().to_native()
-  #   a[5].should_not == {:born => :wales, :influenced_by => :mill }.flatten
+  it "does not recursively flatten Hash values when called without arguments", ->
+    @h.set('russell', {born: 'wales', influenced_by: 'mill' })
+    a = @h.flatten().to_native()
+    expect( a[5] ).toNotEqual ['born', 'wales', 'influenced_by', 'mill' ]
+    expect( a[5] ).toEqual {born: 'wales', influenced_by: 'mill' }
 
-  # it "recursively flattens Array values when called with an argument >= 2", ->
-  #   a = @h.flatten(2)
-  #   expect( a[3] ).toEqual 'austrian'
-  #   expect( a[4] ).toEqual 'british'
+  it "recursively flattens Array values when called with an argument >= 2", ->
+    a = @h.flatten(2).to_native()
+    expect( a[3] ).toEqual 'austrian'
+    expect( a[4] ).toEqual 'british'
 
-  # it "recursively flattens Array values to the given depth", ->
-  #   @h[:russell] = [[:born, :wales], [:influenced_by, :mill]]
-  #   a = @h.flatten(2)
-  #   expect( a[6] ).toEqual [:born, :wales]
-  #   expect( a[7] ).toEqual [:influenced_by, :mill]
+  it "recursively flattens Array values to the given depth", ->
+    @h.set('russell', [['born', 'wales'], ['influenced_by', 'mill']])
+    a = @h.flatten(2).to_native()
+    expect( a[6] ).toEqual ['born', 'wales']
+    expect( a[7] ).toEqual ['influenced_by', 'mill']
 
   # it "raises an TypeError if given a non-Integer argument", ->
   #   lambda do

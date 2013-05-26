@@ -9,7 +9,7 @@ describe "Array#flatten", ->
   describe 'ruby_version_is "1.8.7"', ->
     it "takes an optional argument that determines the level of recursion", ->
       expect(
-        R([ 1, 2, [3, [4, 5] ] ]).flatten(1).inspect() ).toEqual R("[1, 2, 3, [4, 5]]")
+        R([ 1, 2, [3, [4, 5] ] ]).flatten(1) ).toEqual R([1, 2, 3, [4, 5]])
 
 #     ruby_version_is ""..."1.9", ->
 #       it "returns self when the level of recursion is 0", ->
@@ -19,13 +19,13 @@ describe "Array#flatten", ->
     describe 'ruby_version_is "1.9"', ->
       it "returns dup when the level of recursion is 0", ->
         a = R [ 1, 2, [3, [4, 5] ] ]
-        expect( a.flatten(0).inspect() ).toEqual R('[1, 2, [3, [4,5]]]')
+        expect( a.flatten(0) ).toEqual R([1, 2, [3, [4, 5]]])
         expect( a.flatten(0) == a).toEqual false
 
     it "ignores negative levels", ->
       arr = R([ 1, 2, [ 3, 4, [5, 6] ] ])
-      expect( arr.flatten(-1).inspect() ).toEqual R('[1, 2, 3, 4, 5, 6]')
-      expect( arr.flatten(-10).inspect() ).toEqual R('[1, 2, 3, 4, 5, 6]')
+      expect( arr.flatten(-1)  ).toEqual R([1, 2, 3, 4, 5, 6])
+      expect( arr.flatten(-10) ).toEqual R([1, 2, 3, 4, 5, 6])
 
 #     it "tries to convert passed Objects to Integers using #to_int", ->
 #       obj = mock("Converted to Integer")
@@ -84,7 +84,7 @@ describe "Array#flatten", ->
   it "is not destructive", ->
     ary = R [1, [2, 3]]
     ary.flatten()
-    expect( ary.inspect() ).toEqual R('[1, [2,3]]')
+    expect( ary ).toEqual R([1, [2, 3]])
 
 #   describe "with a non-Array object in the Array", ->
 #     before :each do
