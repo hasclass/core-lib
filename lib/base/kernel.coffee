@@ -197,3 +197,36 @@ class RubyJS.Kernel
     if limit then r.multiply(limit).to_i() else r
 
 
+
+  # RubyJS specific helper methods
+  # @private
+  __ensure_args_length: (args, length) ->
+    throw R.ArgumentError.new() unless args.length is length
+
+
+  # @private
+  __ensure_numeric: (obj) ->
+    throw R.TypeError.new() unless obj?.is_numeric?
+
+
+  # @private
+  __ensure_string: (obj) ->
+    throw R.TypeError.new() unless obj?.is_string?
+
+  # Finds, removes and returns the last block/function in arguments list.
+  # This is a destructive method.
+  #
+  # @example Use like this
+  #   foo = (args...) ->
+  #     console.log( args.length )     # => 2
+  #     block = @__extract_block(args)
+  #     console.log( args.length )     # => 1
+  #     other = args[0]
+  #
+  # @private
+  #
+  __extract_block: (args) ->
+    idx = args.length
+    while --idx >= 0
+      return args.pop() if args[idx]?.call?
+    null

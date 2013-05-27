@@ -41,6 +41,14 @@ RubyJS.extend = (obj, mixin) ->
   obj[name] = method for name, method of mixin
   obj
 
+RubyJS.include = (mixin, replace = false) ->
+  for name, method of mixin.prototype
+    if replace
+      @prototype[name] = method
+    else
+      @prototype[name] = method unless @prototype[name]
+  mixin
+
 if typeof(exports) != 'undefined'
   exports.R = R
   exports.RubyJS = RubyJS

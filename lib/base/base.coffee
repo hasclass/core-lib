@@ -1,7 +1,7 @@
 # Methods in Base are added to `R`.
 #
-class RubyJS.Base extends RubyJS.Object
-  @include R.Kernel
+class RubyJS.Base
+  RubyJS.include.call(this, R.Kernel)
 
   #
   '$~': null

@@ -41,6 +41,14 @@ RubyJS.extend = (obj, mixin) ->
   obj[name] = method for name, method of mixin
   obj
 
+RubyJS.include = (mixin, replace = false) ->
+  for name, method of mixin.prototype
+    if replace
+      @prototype[name] = method
+    else
+      @prototype[name] = method unless @prototype[name]
+  mixin
+
 if typeof(exports) != 'undefined'
   exports.R = R
   exports.RubyJS = RubyJS
@@ -144,6 +152,52 @@ class BlockSingle
 
 R.Block = Block
 R.blockify = _blockify = Block.create
+
+# Breaker is a R class for adding support to breaking out of functions
+# that act like loops. Because we mimick ruby block/procs/lambdas by passing
+# functions, so neither break nor return would work in JS.
+#
+# @see RubyJS.Kernel#catch_break
+#
+# @example Breaking loops
+#    sum = R('')
+#    R.catch_break( breaker ) -> # breaker is a new Breaker instance
+#      R('a').upto('f') (chr) ->
+#        breaker.break() if chr.equals('d')
+#        sum.append(chr)
+#    # => 'abc'
+#
+# @example Breaking out and return a value
+#    R.catch_break( breaker ) -> # breaker is a new Breaker instance
+#      R(1).upto(100) (i) ->
+#        breaker.break('foo') if i.equals(81)
+#    # => 'foo'
+#
+#
+#
+class RubyJS.Breaker
+  constructor: (@return_value = null, @broken = false) ->
+
+  # Breaks out of the loop by throwing itself. Accepts a return value.
+  #
+  # @example Breaking out and return a value
+  #      R.catch_break( breaker )
+  #        breaker.break('foo')
+  #      # => 'foo'
+  #
+  # @param value Return value
+  #
+  break: (return_value) ->
+    @broken = true
+    @return_value = return_value
+    throw this
+
+  handle_break: (e) ->
+    if this is e
+      return (e.return_value)
+    else
+      throw e
+
 
 
 class RubyJS.Kernel
@@ -345,156 +399,6 @@ class RubyJS.Kernel
 
 
 
-
-# Singleton class for type coercion inside RubyJS.
-#
-# to_int(obj) converts obj to R.Fixnum
-#
-# to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
-#
-# There is a shortcut for Coerce.prototype: RCoerce.
-#
-#     RCoerce.to_num_native(1)
-#
-# @private
-RCoerce = R._coerce =
-  # TODO: replace class with some more lightweight.
-
-  # Mimicks rubys single block args behaviour
-  single_block_args: (args, block) ->
-    if block
-      if block.length != 1
-        if args.length > 1 then _slice_.call(args) else args[0]
-      else
-        args[0]
-    else
-      if args.length != 1 then _slice_.call(args) else args[0]
-
-
-  # @example
-  #      __coerce_to__(1, 'to_int')
-  coerce: (obj, to_what, skip_native) ->
-    if skip_native isnt undefined and skip_native is typeof obj
-      obj
-    else
-      if obj is null or obj is undefined
-        throw new R.TypeError.new()
-
-      obj = R(obj)
-
-      unless obj[to_what]?
-        throw R.TypeError.new("TypeError: cant't convert ... into String")
-
-      if skip_native isnt undefined
-        obj[to_what]().to_native()
-      else
-        obj[to_what]()
-
-
-  # Coerces element to a Number primitive.
-  #
-  # Throws error if typecasted RubyJS object is not a numeric.
-  to_num_native: (obj) ->
-    # TODO allow custom error types
-    if typeof obj is 'number'
-      obj
-    else
-      obj = R(obj)
-      throw R.TypeError.new() if !obj.is_numeric?
-      obj.to_native()
-
-
-  to_int: (obj) ->
-    @coerce(obj, 'to_int')
-
-
-  to_int_native: (obj) ->
-    if typeof obj is 'number' && (obj % 1 is 0)
-      obj
-    else
-      @coerce(obj, 'to_int').to_native()
-
-
-  to_str: (obj) ->
-    @coerce(obj, 'to_str')
-
-
-  to_str_native: (obj) ->
-    @coerce(obj, 'to_str', 'string')
-
-
-  to_ary: (obj) ->
-    @coerce(obj, 'to_ary')
-
-  to_ary_native: (obj) ->
-    if RArray.isNativeArray(obj)
-      obj
-    else
-      @coerce(obj, 'to_ary').to_native()
-
-
-R.RCoerce = RCoerce
-
-
-
-class RubyJS.Object
-  @include: (mixin, replace = false) ->
-    for name, method of mixin.prototype
-      if replace
-        @prototype[name] = method
-      else
-        @prototype[name] = method unless @prototype[name]
-    mixin
-
-
-
-  # Adds default aliases to symbol method names.
-  #
-  # @example Aliases used throughout RubyJS
-  #
-  #     <<  append
-  #     ==  equals
-  #     === equal_case
-  #     <=> cmp
-  #     %   modulo
-  #     +   plus
-  #     -   minus
-  #     *   multiply
-  #     **  exp
-  #     /   divide
-  #
-  # @example Useage, at the end of your class:
-  #
-  #     class Foo extends RubyJS.Object
-  #        # ...
-  #        @__add_default_aliases__(@prototype)
-  #
-  @__add_default_aliases__: (proto) ->
-    proto.append     = proto['<<']  if proto['<<']?
-    proto.equals     = proto['==']  if proto['==']?
-    proto.equal_case = proto['==='] if proto['===']?
-    proto.cmp        = proto['<=>'] if proto['<=>']?
-    proto.modulo     = proto['%']   if proto['%']?
-    proto.plus       = proto['+']   if proto['+']?
-    proto.minus      = proto['-']   if proto['-']?
-    proto.multiply   = proto['*']   if proto['*']?
-    proto.exp        = proto['**']  if proto['**']?
-    proto.divide     = proto['/']   if proto['/']?
-
-    proto.equalCase  = proto.equal_case  if proto.equal_case?
-    proto.equalValue = proto.equal_value if proto.equal_value?
-    proto.toA        = proto.to_a        if proto.to_a?
-    proto.toF        = proto.to_f        if proto.to_f?
-    proto.toI        = proto.to_i        if proto.to_i?
-    proto.toInt      = proto.to_int      if proto.to_int?
-    proto.toS        = proto.to_s        if proto.to_s?
-    proto.toStr      = proto.to_str      if proto.to_str?
-    proto.toEnum     = proto.to_enum     if proto.to_enum?
-    proto.toNative   = proto.to_native   if proto.to_native?
-
-  @include RubyJS.Kernel
-
-
   # RubyJS specific helper methods
   # @private
   __ensure_args_length: (args, length) ->
@@ -528,76 +432,10 @@ class RubyJS.Object
       return args.pop() if args[idx]?.call?
     null
 
-
-  send: (method_name, args...) ->
-    @[method_name](args)
-
-
-  respond_to: (method_name) ->
-    this[method_name]?
-    #this[function_name] != undefined
-
-
-  to_enum: (iter = "each", args...) ->
-    new RubyJS.Enumerator(this, iter, args)
-
-
-  tap: (block) ->
-    block(this)
-    this
-
-
-
-# Breaker is a R class for adding support to breaking out of functions
-# that act like loops. Because we mimick ruby block/procs/lambdas by passing
-# functions, so neither break nor return would work in JS.
-#
-# @see RubyJS.Kernel#catch_break
-#
-# @example Breaking loops
-#    sum = R('')
-#    R.catch_break( breaker ) -> # breaker is a new Breaker instance
-#      R('a').upto('f') (chr) ->
-#        breaker.break() if chr.equals('d')
-#        sum.append(chr)
-#    # => 'abc'
-#
-# @example Breaking out and return a value
-#    R.catch_break( breaker ) -> # breaker is a new Breaker instance
-#      R(1).upto(100) (i) ->
-#        breaker.break('foo') if i.equals(81)
-#    # => 'foo'
-#
-#
-#
-class RubyJS.Breaker
-  constructor: (@return_value = null, @broken = false) ->
-
-  # Breaks out of the loop by throwing itself. Accepts a return value.
-  #
-  # @example Breaking out and return a value
-  #      R.catch_break( breaker )
-  #        breaker.break('foo')
-  #      # => 'foo'
-  #
-  # @param value Return value
-  #
-  break: (return_value) ->
-    @broken = true
-    @return_value = return_value
-    throw this
-
-  handle_break: (e) ->
-    if this is e
-      return (e.return_value)
-    else
-      throw e
-
-
 # Methods in Base are added to `R`.
 #
-class RubyJS.Base extends RubyJS.Object
-  @include R.Kernel
+class RubyJS.Base
+  RubyJS.include.call(this, R.Kernel)
 
   #
   '$~': null
@@ -707,6 +545,166 @@ class RubyJS.Base extends RubyJS.Object
 # adds all methods to the global R object
 for name, method of RubyJS.Base.prototype
   RubyJS[name] = method
+
+
+# Singleton class for type coercion inside RubyJS.
+#
+# to_int(obj) converts obj to R.Fixnum
+#
+# to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
+#
+# There is a shortcut for Coerce.prototype: RCoerce.
+#
+#     RCoerce.to_num_native(1)
+#
+# @private
+RCoerce = R._coerce =
+  # TODO: replace class with some more lightweight.
+
+  # Mimicks rubys single block args behaviour
+  single_block_args: (args, block) ->
+    if block
+      if block.length != 1
+        if args.length > 1 then _slice_.call(args) else args[0]
+      else
+        args[0]
+    else
+      if args.length != 1 then _slice_.call(args) else args[0]
+
+
+  # @example
+  #      __coerce_to__(1, 'to_int')
+  coerce: (obj, to_what, skip_native) ->
+    if skip_native isnt undefined and skip_native is typeof obj
+      obj
+    else
+      if obj is null or obj is undefined
+        throw new R.TypeError.new()
+
+      obj = R(obj)
+
+      unless obj[to_what]?
+        throw R.TypeError.new("TypeError: cant't convert ... into String")
+
+      if skip_native isnt undefined
+        obj[to_what]().to_native()
+      else
+        obj[to_what]()
+
+
+  # Coerces element to a Number primitive.
+  #
+  # Throws error if typecasted RubyJS object is not a numeric.
+  to_num_native: (obj) ->
+    # TODO allow custom error types
+    if typeof obj is 'number'
+      obj
+    else
+      obj = R(obj)
+      throw R.TypeError.new() if !obj.is_numeric?
+      obj.to_native()
+
+
+  to_int: (obj) ->
+    @coerce(obj, 'to_int')
+
+
+  to_int_native: (obj) ->
+    if typeof obj is 'number' && (obj % 1 is 0)
+      obj
+    else
+      @coerce(obj, 'to_int').to_native()
+
+
+  to_str: (obj) ->
+    @coerce(obj, 'to_str')
+
+
+  to_str_native: (obj) ->
+    @coerce(obj, 'to_str', 'string')
+
+
+  to_ary: (obj) ->
+    @coerce(obj, 'to_ary')
+
+  to_ary_native: (obj) ->
+    if RArray.isNativeArray(obj)
+      obj
+    else
+      @coerce(obj, 'to_ary').to_native()
+
+
+R.RCoerce = RCoerce
+
+
+
+class RubyJS.Object
+  @include: RubyJS.include
+
+  # Adds default aliases to symbol method names.
+  #
+  # @example Aliases used throughout RubyJS
+  #
+  #     <<  append
+  #     ==  equals
+  #     === equal_case
+  #     <=> cmp
+  #     %   modulo
+  #     +   plus
+  #     -   minus
+  #     *   multiply
+  #     **  exp
+  #     /   divide
+  #
+  # @example Useage, at the end of your class:
+  #
+  #     class Foo extends RubyJS.Object
+  #        # ...
+  #        @__add_default_aliases__(@prototype)
+  #
+  @__add_default_aliases__: (proto) ->
+    proto.append     = proto['<<']  if proto['<<']?
+    proto.equals     = proto['==']  if proto['==']?
+    proto.equal_case = proto['==='] if proto['===']?
+    proto.cmp        = proto['<=>'] if proto['<=>']?
+    proto.modulo     = proto['%']   if proto['%']?
+    proto.plus       = proto['+']   if proto['+']?
+    proto.minus      = proto['-']   if proto['-']?
+    proto.multiply   = proto['*']   if proto['*']?
+    proto.exp        = proto['**']  if proto['**']?
+    proto.divide     = proto['/']   if proto['/']?
+
+    proto.equalCase  = proto.equal_case  if proto.equal_case?
+    proto.equalValue = proto.equal_value if proto.equal_value?
+    proto.toA        = proto.to_a        if proto.to_a?
+    proto.toF        = proto.to_f        if proto.to_f?
+    proto.toI        = proto.to_i        if proto.to_i?
+    proto.toInt      = proto.to_int      if proto.to_int?
+    proto.toS        = proto.to_s        if proto.to_s?
+    proto.toStr      = proto.to_str      if proto.to_str?
+    proto.toEnum     = proto.to_enum     if proto.to_enum?
+    proto.toNative   = proto.to_native   if proto.to_native?
+
+  @include RubyJS.Kernel
+
+
+  send: (method_name, args...) ->
+    @[method_name](args)
+
+
+  respond_to: (method_name) ->
+    this[method_name]?
+    #this[function_name] != undefined
+
+
+  to_enum: (iter = "each", args...) ->
+    new RubyJS.Enumerator(this, iter, args)
+
+
+  tap: (block) ->
+    block(this)
+    this
+
 
 
 class NumericMethods
@@ -1796,6 +1794,71 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 _arr = R._arr = new ArrayMethods()
+
+class StringMethods
+  chars: (str, block) ->
+    idx = -1
+    len = str.length
+    while ++idx < len
+      block(str[idx])
+    str
+
+
+  chomp: (str, sep = null) ->
+    if sep == null
+      if @empty(str) then "" else null
+    else
+      sep = RCoerce.to_str_native(sep)
+      if sep.length == 0
+        regexp = /((\r\n)|\n)+$/
+      else if sep is "\n" or sep is "\r" or sep is "\r\n"
+        ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
+      else
+        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
+      str.replace(regexp, '')
+
+
+  chop: (str) ->
+    return str if str.length == 0
+
+    # DO:
+    # if @end_with("\r\n")
+    #   new R.String(@to_native().replace(/\r\n$/, ''))
+    # else
+    #   @slice 0, @size().minus(1)
+
+
+  downcase: (str) ->
+    return null unless str.match(/[A-Z]/)
+    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
+    R(str.split('')).map((c) ->
+      if c.match(/[A-Z]/) then c.toLowerCase() else c
+    ).join('').to_native()
+
+
+  empty: (str) ->
+    str.length == 0
+
+
+  end_with: (str, needles) ->
+    needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
+
+    str_len = str.length
+    for w in needles.iterator()
+      return true if str.lastIndexOf(w) + w.length is str_len
+    false
+
+
+  upcase: (str) ->
+    return null unless str.match(/[a-z]/)
+    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
+    _arr.map(str.split(''), (c) ->
+      if c.match(/[a-z]/) then c.toUpperCase() else c
+    ).join('')
+
+
+_str = R._str = new StringMethods()
 
 errors = [
   'ArgumentError'
@@ -5464,69 +5527,6 @@ class RubyJS.MatchData extends RubyJS.Object
 
 # make String accessible within R.String
 nativeString = root.String
-
-_str = R._str =
-  chars: (str, block) ->
-    idx = -1
-    len = str.length
-    while ++idx < len
-      block(str[idx])
-    str
-
-
-  chomp: (str, sep = null) ->
-    if sep == null
-      if @empty(str) then "" else null
-    else
-      sep = RCoerce.to_str_native(sep)
-      if sep.length == 0
-        regexp = /((\r\n)|\n)+$/
-      else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
-      else
-        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
-      str.replace(regexp, '')
-
-
-  chop: (str) ->
-    return str if str.length == 0
-
-    # DO:
-    # if @end_with("\r\n")
-    #   new R.String(@to_native().replace(/\r\n$/, ''))
-    # else
-    #   @slice 0, @size().minus(1)
-
-
-  downcase: (str) ->
-    return null unless str.match(/[A-Z]/)
-    # TODO: OPTIMIZE
-    R(str.split('')).map((c) ->
-      if c.match(/[A-Z]/) then c.toLowerCase() else c
-    ).join('').to_native()
-
-
-  empty: (str) ->
-    str.length == 0
-
-
-  end_with: (str, needles) ->
-    needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
-
-    str_len = str.length
-    for w in needles.iterator()
-      return true if str.lastIndexOf(w) + w.length is str_len
-    false
-
-
-  upcase: (str) ->
-    return null unless str.match(/[a-z]/)
-
-    _arr.map(str.split(''), (c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('')
-
 
 class RubyJS.String extends RubyJS.Object
   @include R.Comparable
@@ -9690,3 +9690,9 @@ RubyJS.i_am_feeling_evil = ->
               this
           else
             console.log("Array.#{name} exists. Skip.")
+
+
+# This file is included at the end of the compiled javascript and
+# setups the RubyJS environment
+
+RubyJS.pollute_global()

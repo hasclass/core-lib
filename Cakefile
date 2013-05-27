@@ -5,17 +5,19 @@ appFiles  = [
   # omit src/ and .coffee to make the below lines a little shorter
   'ruby'
 
-  'corelib/block'
-  'corelib/kernel'
+  'base/block'
+  'base/breaker'
+  'base/kernel'
+  'base/base'
+
   'corelib/coerce'
   'corelib/object'
 
-  'corelib/breaker'
-  'corelib/base'
 
   'lite/num'
   'lite/itr'
   'lite/arr'
+  'lite/str'
 
   'corelib/errors'
   'corelib/comparable'
@@ -40,6 +42,7 @@ appFiles  = [
   'corelib/time'
 
   'corext/feeling_evil'
+  'boot'
 ]
 
 task 'stats', '', ->
