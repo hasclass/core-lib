@@ -556,7 +556,10 @@ class RubyJS.String extends RubyJS.Object
   # Returns true if str ends with one of the suffixes given.
   #
   end_with: (needles...) ->
-    _str.end_with(@__native__, needles)
+    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
+    neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
+
+    _str.end_with(@__native__, needles...)
 
 
   # Two strings are equal if they have the same length and content.
@@ -1334,11 +1337,11 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").start_with("heaven", "paradise") #=> false
   #
   start_with: (needles...) ->
-    # TODO: refactor
-    needles = @$Array_r(needles).select (el) -> el?.to_str?
-    for w in needles.iterator()
-      return true if @to_native().indexOf(w.to_str().to_native()) is 0
-    false
+    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
+    neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
+
+    _str.start_with(@__native__, needles...)
+
 
   # Returns a copy of str with leading and trailing whitespace removed.
   #
@@ -1348,6 +1351,7 @@ class RubyJS.String extends RubyJS.Object
   #
   strip: () ->
     @dup().tap (s) -> s.strip_bang()
+
 
   # Removes leading and trailing whitespace from str. Returns nil if str was
   # not altered.

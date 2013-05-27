@@ -43,14 +43,12 @@ class StringMethods
     str.length == 0
 
 
-  end_with: (str, needles) ->
-    # TODO: FIX
-    needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
-
-    str_len = str.length
-    for w in needles.iterator()
-      return true if str.lastIndexOf(w) + w.length is str_len
+  end_with: (str, needles...) ->
+    for w in needles
+      if str.lastIndexOf(w) + w.length is str.length
+        return true
     false
+
 
   include: (str, other) ->
     str.indexOf(other) >= 0
@@ -121,5 +119,12 @@ class StringMethods
       index += size if index < 0
       return null if index < 0 or index >= size
       return str[index]
+
+
+  start_with: (str, needles...) ->
+    for needle in needles
+      return true if str.indexOf(needle) is 0
+    false
+
 
 _str = R._str = new StringMethods()

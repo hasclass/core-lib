@@ -57,22 +57,22 @@ RCoerce = R._coerce =
 
 
   to_int: (obj) ->
-    @coerce(obj, 'to_int')
+    RCoerce.coerce(obj, 'to_int')
 
 
   to_int_native: (obj) ->
     if typeof obj is 'number' && (obj % 1 is 0)
       obj
     else
-      @coerce(obj, 'to_int').to_native()
+      RCoerce.coerce(obj, 'to_int').to_native()
 
 
   to_str: (obj) ->
-    @coerce(obj, 'to_str')
+    RCoerce.coerce(obj, 'to_str')
 
 
   to_str_native: (obj) ->
-    @coerce(obj, 'to_str', 'string')
+    RCoerce.coerce(obj, 'to_str', 'string')
 
 
   to_ary: (obj) ->
@@ -82,7 +82,7 @@ RCoerce = R._coerce =
     if RArray.isNativeArray(obj)
       obj
     else
-      @coerce(obj, 'to_ary').to_native()
+      RCoerce.coerce(obj, 'to_ary').to_native()
 
 
 R.RCoerce = RCoerce

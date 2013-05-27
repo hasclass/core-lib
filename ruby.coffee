@@ -504,14 +504,16 @@ class RubyJS.Base
     for [proto, methods] in overwrites
       for name, func of methods
         if typeof func == 'function'
-          if proto[name] is undefined
-            do (name, func) ->
-              proto[name] = ->
-                # use this.valueOf() to get the literal back.
-                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
-                func.apply(methods, args)
-          else
-            console.log("#{name} exists. Skip.")
+          if proto[name]?
+            console.log("#{proto}.#{name} exists. Method prefixed with 'rb_'")
+            name = "rb_#{name}"
+
+          do (name, methods) ->
+            proto[name] = ->
+              # use this.valueOf() to get the literal back.
+              args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+              methods[name].apply(methods, args)
+
     "harr harr"
 
 
@@ -655,22 +657,22 @@ RCoerce = R._coerce =
 
 
   to_int: (obj) ->
-    @coerce(obj, 'to_int')
+    RCoerce.coerce(obj, 'to_int')
 
 
   to_int_native: (obj) ->
     if typeof obj is 'number' && (obj % 1 is 0)
       obj
     else
-      @coerce(obj, 'to_int').to_native()
+      RCoerce.coerce(obj, 'to_int').to_native()
 
 
   to_str: (obj) ->
-    @coerce(obj, 'to_str')
+    RCoerce.coerce(obj, 'to_str')
 
 
   to_str_native: (obj) ->
-    @coerce(obj, 'to_str', 'string')
+    RCoerce.coerce(obj, 'to_str', 'string')
 
 
   to_ary: (obj) ->
@@ -680,7 +682,7 @@ RCoerce = R._coerce =
     if RArray.isNativeArray(obj)
       obj
     else
-      @coerce(obj, 'to_ary').to_native()
+      RCoerce.coerce(obj, 'to_ary').to_native()
 
 
 R.RCoerce = RCoerce
@@ -1870,11 +1872,10 @@ class StringMethods
   chop: (str) ->
     return str if str.length == 0
 
-    # DO:
-    # if @end_with("\r\n")
-    #   new R.String(@to_native().replace(/\r\n$/, ''))
-    # else
-    #   @slice 0, @size().minus(1)
+    if str.lastIndexOf("\r\n") == str.length - 2
+      str.replace(/\r\n$/, '')
+    else
+      @slice str, 0, str.length - 1
 
 
   downcase: (str) ->
@@ -1889,13 +1890,15 @@ class StringMethods
     str.length == 0
 
 
-  end_with: (str, needles) ->
-    needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
-
-    str_len = str.length
-    for w in needles.iterator()
-      return true if str.lastIndexOf(w) + w.length is str_len
+  end_with: (str, needles...) ->
+    for w in needles
+      if str.lastIndexOf(w) + w.length is str.length
+        return true
     false
+
+
+  include: (str, other) ->
+    str.indexOf(other) >= 0
 
 
   upcase: (str) ->
@@ -1908,6 +1911,68 @@ class StringMethods
 
   reverse: (str) ->
     str.split("").reverse().join("")
+
+
+  slice: (str, index, other) ->
+    throw R.TypeError.new() if index is null
+    # TODO: This methods needs some serious refactoring
+
+    size = str.length
+    unless other is undefined
+      if index.is_regexp?
+        throw R.NotImplementedError.new()
+        # match, str = subpattern(index, other)
+        # Regexp.last_match = match
+        # return str
+      else
+        length = other
+        start  = index
+        start += size if start < 0
+
+        return null if length < 0 or start < 0 or start > size
+
+        return str.slice(start, start + length)
+
+    if index.is_regexp?
+      throw R.NotImplementedError.new()
+      # match_data = index.search_region(self, 0, @num_bytes, true)
+      # Regexp.last_match = match_data
+      # if match_data
+      #   result = match_data.to_s
+      #   result.taint if index.tainted?
+      #   return result
+
+    else if typeof index == 'string'
+      return if @include(str, index) then index else null
+
+    else if index.is_range?
+      start   = RCoerce.to_int_native index.begin()
+      length  = RCoerce.to_int_native index.end()
+
+      start += size if start < 0
+
+      length += size if length < 0
+      length += 1 unless index.exclude_end()
+
+      return "" if start is size
+      return null if start < 0 || start > size
+
+      length = size if length > size
+      length = length - start
+      length = 0 if length < 0
+
+      return str.slice(start, start + length)
+    else
+      index += size if index < 0
+      return null if index < 0 or index >= size
+      return str[index]
+
+
+  start_with: (str, needles...) ->
+    for needle in needles
+      return true if str.indexOf(needle) is 0
+    false
+
 
 _str = R._str = new StringMethods()
 
@@ -5840,11 +5905,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("x").chop().chop()     # => ""
   #
   chop: ->
-    return @dup() if @empty()
-    if @end_with("\r\n")
-      new R.String(@to_native().replace(/\r\n$/, ''))
-    else
-      @slice 0, @size().minus(1)
+    new RString(_str.chop(@__native__))
+
 
   # TODO: chop_bang
 
@@ -6049,7 +6111,10 @@ class RubyJS.String extends RubyJS.Object
   # Returns true if str ends with one of the suffixes given.
   #
   end_with: (needles...) ->
-    _str.end_with(@__native__, needles)
+    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
+    neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
+
+    _str.end_with(@__native__, needles...)
 
 
   # Two strings are equal if they have the same length and content.
@@ -6175,7 +6240,8 @@ class RubyJS.String extends RubyJS.Object
   #
   include: (other) ->
     other = RCoerce.to_str_native(other)
-    @to_native().indexOf(other) >= 0
+    _str.include(@__native__, other)
+
 
   # Returns the index of the first occurrence of the given substring or pattern
   # (regexp) in str. Returns nil if not found. If the second parameter is
@@ -6692,62 +6758,30 @@ class RubyJS.String extends RubyJS.Object
   # @todo regexp
   #
   slice: (index, other) ->
-    throw new R.TypeError.new() if index is null
-    # TODO: This methods needs some serious refactoring
-    index = R(index)
+    throw R.TypeError.new() if index is null
 
-    size = @size().to_native()
+    index = R(index)
     unless other is undefined
       if index.is_regexp?
-        # match, str = subpattern(index, other)
-        # Regexp.last_match = match
-        # return str
+        throw R.NotImplementedError.new()
       else
-        length = RCoerce.to_int_native(other)
-        start  = RCoerce.to_int_native(index)
-        start += size if start < 0
+        index = RCoerce.to_int_native(index)
+        other = RCoerce.to_int_native(other)
+        val   = _str.slice(@__native__, index, other)
+        return if val? then new RString(val) else null
 
-        return null if length < 0
-        return null if start < 0 or start > size
-
-        substr = @to_native().slice(start, start + length)
-        return new R.String(substr)
 
     if index.is_regexp?
-      # match_data = index.search_region(self, 0, @num_bytes, true)
-      # Regexp.last_match = match_data
-      # if match_data
-      #   result = match_data.to_s
-      #   result.taint if index.tainted?
-      #   return result
-
+      throw R.NotImplementedError.new()
     else if index.is_string?
-      return if @include(index) then index.dup() else null
-
+      index = RCoerce.to_str_native(index)
     else if index.is_range?
-      start   = RCoerce.to_int_native index.begin()
-      length  = RCoerce.to_int_native index.end()
-
-      start += size if start < 0
-
-      length += size if length < 0
-      length += 1 unless index.exclude_end()
-
-      return new R.String("") if start is size
-      return null if start < 0 || start > size
-
-      length = size if length > size
-      length = length - start
-      length = 0 if length < 0
-
-      substr = @to_native().slice(start, start + length)
-      return new R.String(substr)
+      # nothing
     else
       index = RCoerce.to_int_native(index)
-      len   = @size().to_native()
-      index += len if index < 0
-      return null if index < 0 or index >= @size()
-      return new R.String(@to_native()[index])
+
+    val   = _str.slice(@__native__, index)
+    if val? then new RString(val) else null
 
 
 
@@ -6858,11 +6892,11 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").start_with("heaven", "paradise") #=> false
   #
   start_with: (needles...) ->
-    # TODO: refactor
-    needles = @$Array_r(needles).select (el) -> el?.to_str?
-    for w in needles.iterator()
-      return true if @to_native().indexOf(w.to_str().to_native()) is 0
-    false
+    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
+    neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
+
+    _str.start_with(@__native__, needles...)
+
 
   # Returns a copy of str with leading and trailing whitespace removed.
   #
@@ -6872,6 +6906,7 @@ class RubyJS.String extends RubyJS.Object
   #
   strip: () ->
     @dup().tap (s) -> s.strip_bang()
+
 
   # Removes leading and trailing whitespace from str. Returns nil if str was
   # not altered.

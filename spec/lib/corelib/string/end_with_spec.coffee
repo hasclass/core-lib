@@ -8,7 +8,7 @@ describe "String#end_with?", ->
   it "returns true only if any ending match", ->
     expect( R("hello").end_with('x', 'y', 'llo', 'z') ).toEqual(true)
 
-  it "converts its argument using :to_str", ->
+  xit "converts its argument using :to_str", ->
     s = R "hello"
     find =
       to_str: ->

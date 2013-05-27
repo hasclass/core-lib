@@ -9,7 +9,7 @@ describe "ruby_version_is '1.8.7'", ->
     it "returns true only if any beginning match", ->
       expect( R("hello").start_with('x', 'y', 'he', 'z') ).toEqual true
 
-    it "converts its argument using :to_str", ->
+    xit "converts its argument using :to_str", ->
       s = R "hello"
       find =
         to_str: ->
