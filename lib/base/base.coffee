@@ -32,19 +32,52 @@ class RubyJS.Base
   # e.g. proc, puts, truthy, inspect, falsey
   #
   # TODO: TEST
-  pollute_global: ->
+  pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
     for method in args
-      if root[method]?
-        R.puts("RubyJS.pollute_global(): #{method} already exists.")
+      name = prefix + method.replace(/_/, '')
+      if root[name]?
+        R.puts("RubyJS.pollute_global(): #{name} already exists.")
       else
-        root[method] = @[method]
+        root[name] = @[method]
 
     null
+
+
+  pollute_more: ->
+    shortcuts =
+      _arr:  '_a'
+      _num:  '_n'
+      _str:  '_s'
+      _enum: '_e'
+      _hsh:  '_h'
+
+
+  # Adds RubyJS methods to JS native classes.
+  #
+  #     RubyJS.i_am_feeling_evil()
+  #     ['foo', 'bar'].map(proc('reverse')).sort()
+  #     # =>['oof', 'rab']
+  #
+  i_am_feeling_evil: ->
+    overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]]
+
+    for [proto, methods] in overwrites
+      for name, func of methods
+        if typeof func == 'function'
+          if proto[name] is undefined
+            do (name, func) ->
+              proto[name] = ->
+                # use this.valueOf() to get the literal back.
+                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+                func.apply(methods, args)
+          else
+            console.log("#{name} exists. Skip.")
+    "harr harr"
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
@@ -63,6 +96,11 @@ class RubyJS.Base
       (el) -> el[key]()
     else
       (el) -> el[key].apply(el, args)
+
+
+  fn: (func, args...) ->
+    (el) ->
+      func.apply(null, [el].concat(args))
 
 
   # Check wether an obj is falsey according to Ruby
@@ -88,9 +126,19 @@ class RubyJS.Base
   # Takes care of non rubyjs objects.
   is_equal: (a, b) ->
     if typeof a is 'object'
-      a.equals(b)
+      if a.equals?
+        a.equals(b)
+      else if a['==']?
+        a['=='](b)
+      else
+        a == b
     else if typeof b is 'object'
-      b.equals(a)
+      if b.equals?
+        b.equals(a)
+      else if b['==']?
+        b['=='](a)
+      else
+        a == b
     else
       a == b
 
@@ -109,5 +157,5 @@ class RubyJS.Base
 
 
 # adds all methods to the global R object
-for name, method of RubyJS.Base.prototype
+for own name, method of RubyJS.Base.prototype
   RubyJS[name] = method

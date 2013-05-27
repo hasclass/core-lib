@@ -2,7 +2,8 @@ describe "Array#find_index", ->
     # it_behaves_like :array_index, :find_index
   it "returns the index of the first element == to object", ->
     x =
-      '==': (obj) -> R(3).equals(obj)
+      '==':   (obj) -> R(3).equals(obj)
+      equals: (obj) -> R(3).equals(obj)
 
     expect( R([2, x, 3, 1, 3, 1]).find_index(3) ).toEqual R(1)
     expect( R([2, 3.0, 3, x, 1, 3, 1]).find_index(x) ).toEqual R(1)

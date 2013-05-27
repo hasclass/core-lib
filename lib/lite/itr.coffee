@@ -227,15 +227,10 @@ class EnumerableMethods
 
 
   find_index: (coll, value) ->
-    value = R(value)
-
     if value.call?
       block = value
     else
-      if value.rubyjs?
-        block = (el) -> value['=='](el)
-      else
-        block = (el) -> el is value
+      block = (el) -> R.is_equal(value, el)
 
     idx = 0
     callback = _blockify(block, coll)

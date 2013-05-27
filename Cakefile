@@ -23,7 +23,6 @@ appFiles  = [
   'corelib/comparable'
 
   'corelib/enumerable'
-  'corelib/enumerable_array'
   'corelib/enumerator'
 
   'corelib/array'
@@ -41,7 +40,6 @@ appFiles  = [
 
   'corelib/time'
 
-  'corext/feeling_evil'
   'boot'
 ]
 

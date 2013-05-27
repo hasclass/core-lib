@@ -213,6 +213,7 @@ class RubyJS.Kernel
   __ensure_string: (obj) ->
     throw R.TypeError.new() unless obj?.is_string?
 
+
   # Finds, removes and returns the last block/function in arguments list.
   # This is a destructive method.
   #

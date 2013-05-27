@@ -174,7 +174,8 @@ class NumericMethods
   #
   # @return [Boolean]
   #
-  odd:  -> !@even()
+  odd: (num) ->
+    num % 2 == 1
 
 
   # Returns the int itself.

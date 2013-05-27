@@ -951,12 +951,12 @@ class RubyJS.String extends RubyJS.Object
   #     R("stressed").reverse()   #=> "desserts"
   #
   reverse: ->
-    @dup().tap (me) -> me.reverse_bang()
+    new RString(_str.reverse(@__native__))
 
 
   # Reverses str in place.
   reverse_bang: ->
-    @replace(@to_native().split("").reverse().join(""))
+    @replace(_str.reverse(@__native__))
 
   # Returns the index of the last occurrence of the given substring or pattern
   # (regexp) in str. Returns nil if not found. If the second parameter is

@@ -414,6 +414,7 @@ class RubyJS.Kernel
   __ensure_string: (obj) ->
     throw R.TypeError.new() unless obj?.is_string?
 
+
   # Finds, removes and returns the last block/function in arguments list.
   # This is a destructive method.
   #
@@ -466,19 +467,52 @@ class RubyJS.Base
   # e.g. proc, puts, truthy, inspect, falsey
   #
   # TODO: TEST
-  pollute_global: ->
+  pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
     for method in args
-      if root[method]?
-        R.puts("RubyJS.pollute_global(): #{method} already exists.")
+      name = prefix + method.replace(/_/, '')
+      if root[name]?
+        R.puts("RubyJS.pollute_global(): #{name} already exists.")
       else
-        root[method] = @[method]
+        root[name] = @[method]
 
     null
+
+
+  pollute_more: ->
+    shortcuts =
+      _arr:  '_a'
+      _num:  '_n'
+      _str:  '_s'
+      _enum: '_e'
+      _hsh:  '_h'
+
+
+  # Adds RubyJS methods to JS native classes.
+  #
+  #     RubyJS.i_am_feeling_evil()
+  #     ['foo', 'bar'].map(proc('reverse')).sort()
+  #     # =>['oof', 'rab']
+  #
+  i_am_feeling_evil: ->
+    overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]]
+
+    for [proto, methods] in overwrites
+      for name, func of methods
+        if typeof func == 'function'
+          if proto[name] is undefined
+            do (name, func) ->
+              proto[name] = ->
+                # use this.valueOf() to get the literal back.
+                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+                func.apply(methods, args)
+          else
+            console.log("#{name} exists. Skip.")
+    "harr harr"
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
@@ -497,6 +531,11 @@ class RubyJS.Base
       (el) -> el[key]()
     else
       (el) -> el[key].apply(el, args)
+
+
+  fn: (func, args...) ->
+    (el) ->
+      func.apply(null, [el].concat(args))
 
 
   # Check wether an obj is falsey according to Ruby
@@ -522,9 +561,19 @@ class RubyJS.Base
   # Takes care of non rubyjs objects.
   is_equal: (a, b) ->
     if typeof a is 'object'
-      a.equals(b)
+      if a.equals?
+        a.equals(b)
+      else if a['==']?
+        a['=='](b)
+      else
+        a == b
     else if typeof b is 'object'
-      b.equals(a)
+      if b.equals?
+        b.equals(a)
+      else if b['==']?
+        b['=='](a)
+      else
+        a == b
     else
       a == b
 
@@ -543,7 +592,7 @@ class RubyJS.Base
 
 
 # adds all methods to the global R object
-for name, method of RubyJS.Base.prototype
+for own name, method of RubyJS.Base.prototype
   RubyJS[name] = method
 
 
@@ -705,6 +754,9 @@ class RubyJS.Object
     block(this)
     this
 
+
+  value: ->
+    @to_native.apply(this, arguments)
 
 
 class NumericMethods
@@ -883,7 +935,8 @@ class NumericMethods
   #
   # @return [Boolean]
   #
-  odd:  -> !@even()
+  odd: (num) ->
+    num % 2 == 1
 
 
   # Returns the int itself.
@@ -1191,15 +1244,10 @@ class EnumerableMethods
 
 
   find_index: (coll, value) ->
-    value = R(value)
-
     if value.call?
       block = value
     else
-      if value.rubyjs?
-        block = (el) -> value['=='](el)
-      else
-        block = (el) -> el is value
+      block = (el) -> R.is_equal(value, el)
 
     idx = 0
     callback = _blockify(block, coll)
@@ -1570,6 +1618,8 @@ class MYSortedElement
 _enum = R._enum = new EnumerableMethods()
 
 
+_arr_join_ = Array.prototype.join
+
 class ArrayMethods extends EnumerableMethods
   equals: (arr, other) ->
     return true  if arr is other
@@ -1769,9 +1819,7 @@ class ArrayMethods extends EnumerableMethods
     return '' if @empty(arr)
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    arr.join(separator)
-
-
+    _arr_join_.call(arr, separator)
 
 
   reverse_each: (coll, block) ->
@@ -1785,13 +1833,13 @@ class ArrayMethods extends EnumerableMethods
     coll
 
 
-
   __native_array_with__: (size, obj) ->
     ary = nativeArray(RCoerce.to_int_native(size))
     idx = -1
     while ++idx < size
       ary[idx] = obj
     ary
+
 
 _arr = R._arr = new ArrayMethods()
 
@@ -1857,6 +1905,9 @@ class StringMethods
       if c.match(/[a-z]/) then c.toUpperCase() else c
     ).join('')
 
+
+  reverse: (str) ->
+    str.split("").reverse().join("")
 
 _str = R._str = new StringMethods()
 
@@ -2619,102 +2670,6 @@ class RubyJS.Enumerable.SortedElement
 
 REnumerable = RubyJS.Enumerable
 
-# EnumerableArray provides optimized Enumerable methods for Array
-#
-# ## Optimized enumerable methods for Array
-#
-# Enumerables are slow through because of @each. using while loops
-# is an order of magnitude faster. So all enum methods get a counterpart
-# in array.
-#
-# @mixin
-# @private
-class RubyJS.EnumerableArray
-
-  map: (block) ->
-    return @to_enum('map') unless block?.call?
-
-    [idx,len,ary] = @__iter_vars__()
-    _isArr = R.Array.isNativeArray
-
-    if block.length != 1
-      while (++idx < @__native__.length)
-        el = @__native__[idx]
-        if typeof el is 'object' and _isArr(el)
-          ary[idx] = block.apply(this, el)
-        else
-          ary[idx] = block(el);
-    else
-      while (++idx < @__native__.length)
-        ary[idx] = block( @__native__[idx] )
-
-    # adjust the array if elements were removed from this inside the bloc
-    if len > @__native__.length
-      ary.length = idx
-
-    new R.Array(ary)
-
-
-  __iter_vars__: (no_array) ->
-    len = @__native__.length
-    if no_array
-      [-1, len]
-    else
-      [-1, len, nativeArray(len)]
-
-
-  find: (ifnone, block = null) ->
-    if block == null
-      block  = ifnone
-      ifnone = null
-
-    block = Block.supportMultipleArgs(block)
-
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      item = @__native__[idx]
-      unless R.falsey(block(item))
-        return item
-
-    ifnone?()
-
-
-  find_all: (block) ->
-    return @to_enum('find_all') unless block && block.call?
-
-    block = Block.supportMultipleArgs(block)
-
-    ary = []
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      item = @__native__[idx]
-      unless R.falsey(block(item))
-        ary.push(item)
-
-    new R.Array(ary)
-
-
-  find_index: (value) ->
-    return @to_enum('find_index') if arguments.length == 0
-    value = @box(value)
-
-    if value.call?
-      block = Block.supportMultipleArgs(value)
-    else
-      # OPTIMIZE: sorting
-      block = (el) -> R(el)['=='](value) or el is value
-
-
-    idx = -1
-    len = @__native__.length
-    while ++idx < len
-      item = @__native__[idx]
-      return R(idx) if block(item)
-    null
-
-
 class RubyJS.Enumerator extends RubyJS.Object
   @include RubyJS.Enumerable
 
@@ -2880,7 +2835,6 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
 #
 class RubyJS.Array extends RubyJS.Object
   @include R.Enumerable
-  @include R.EnumerableArray, true
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -3008,6 +2962,14 @@ class RubyJS.Array extends RubyJS.Object
   unbox: @prototype.to_native
 
   to_native_clone: -> @__native__.slice(0)
+
+
+  __iter_vars__: (no_array) ->
+    len = @__native__.length
+    if no_array
+      [-1, len]
+    else
+      [-1, len, nativeArray(len)]
 
   # ---- Instance methods -----------------------------------------------------
 
@@ -3452,6 +3414,7 @@ class RubyJS.Array extends RubyJS.Object
         @__native__[i] = obj
         i += 1
     this
+
 
   # Returns a new array that is a one-dimensional flattening of this array
   # (recursively). That is, for every element that is an array, extract its
@@ -6478,12 +6441,12 @@ class RubyJS.String extends RubyJS.Object
   #     R("stressed").reverse()   #=> "desserts"
   #
   reverse: ->
-    @dup().tap (me) -> me.reverse_bang()
+    new RString(_str.reverse(@__native__))
 
 
   # Reverses str in place.
   reverse_bang: ->
-    @replace(@to_native().split("").reverse().join(""))
+    @replace(_str.reverse(@__native__))
 
   # Returns the index of the last occurrence of the given substring or pattern
   # (regexp) in str. Returns nil if not found. If the second parameter is
@@ -9677,19 +9640,6 @@ class RubyJS.Time extends RubyJS.Object
   @__add_default_aliases__(@prototype)
 
   eql: @prototype['==']
-
-
-RubyJS.i_am_feeling_evil = ->
-  for [proto, methods] in [[Array.prototype, _arr], [Number, _num]]
-    for own name, func of methods
-      do (name) ->
-        if typeof func == 'function'
-          if proto[name] is undefined
-            proto[name] = ->
-              methods[name].apply(methods, [this].concat(_slice_.call(arguments, 0)))
-              this
-          else
-            console.log("Array.#{name} exists. Skip.")
 
 
 # This file is included at the end of the compiled javascript and

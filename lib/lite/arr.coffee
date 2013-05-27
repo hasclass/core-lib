@@ -1,3 +1,5 @@
+_arr_join_ = Array.prototype.join
+
 class ArrayMethods extends EnumerableMethods
   equals: (arr, other) ->
     return true  if arr is other
@@ -197,9 +199,7 @@ class ArrayMethods extends EnumerableMethods
     return '' if @empty(arr)
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    arr.join(separator)
-
-
+    _arr_join_.call(arr, separator)
 
 
   reverse_each: (coll, block) ->
@@ -213,12 +213,12 @@ class ArrayMethods extends EnumerableMethods
     coll
 
 
-
   __native_array_with__: (size, obj) ->
     ary = nativeArray(RCoerce.to_int_native(size))
     idx = -1
     while ++idx < size
       ary[idx] = obj
     ary
+
 
 _arr = R._arr = new ArrayMethods()

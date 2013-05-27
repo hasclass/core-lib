@@ -58,7 +58,6 @@
 #
 class RubyJS.Array extends RubyJS.Object
   @include R.Enumerable
-  @include R.EnumerableArray, true
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -186,6 +185,14 @@ class RubyJS.Array extends RubyJS.Object
   unbox: @prototype.to_native
 
   to_native_clone: -> @__native__.slice(0)
+
+
+  __iter_vars__: (no_array) ->
+    len = @__native__.length
+    if no_array
+      [-1, len]
+    else
+      [-1, len, nativeArray(len)]
 
   # ---- Instance methods -----------------------------------------------------
 
@@ -630,6 +637,7 @@ class RubyJS.Array extends RubyJS.Object
         @__native__[i] = obj
         i += 1
     this
+
 
   # Returns a new array that is a one-dimensional flattening of this array
   # (recursively). That is, for every element that is an array, extract its

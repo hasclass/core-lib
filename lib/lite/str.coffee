@@ -61,4 +61,7 @@ class StringMethods
     ).join('')
 
 
+  reverse: (str) ->
+    str.split("").reverse().join("")
+
 _str = R._str = new StringMethods()

@@ -67,3 +67,6 @@ class RubyJS.Object
     block(this)
     this
 
+
+  value: ->
+    @to_native.apply(this, arguments)
