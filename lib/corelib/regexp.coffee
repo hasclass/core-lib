@@ -37,7 +37,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
 
   @isRegexp: (obj) ->
-    _toString_.call(obj) is '[object RegExp]' or obj.is_regexp?
+    obj?.is_regexp? or _toString_.call(obj) is '[object RegExp]'
 
 
   # ---- RubyJSism ------------------------------------------------------------

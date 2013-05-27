@@ -1,4 +1,25 @@
 class StringMethods
+  capitalize: (str) ->
+    return "" if str.length == 0
+    b = @downcase(str)
+    a = @upcase(str[0])
+    a + b.slice(1)
+
+
+  center: (str, length, padString = ' ') ->
+    throw R.ArgumentError.new() if padString.length == 0
+
+    size = str.length
+    return str if size >= length
+
+    lft       = Math.floor((length - size) / 2)
+    rgt       = length - size - lft
+    max       = if lft > rgt then lft else rgt
+    padString = @multiply(padString, max)
+
+    padString[0...lft] + str + padString[0...rgt]
+
+
   chars: (str, block) ->
     idx = -1
     len = str.length
@@ -32,11 +53,11 @@ class StringMethods
 
 
   downcase: (str) ->
-    return null unless str.match(/[A-Z]/)
+    return str unless str.match(/[A-Z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
-    R(str.split('')).map((c) ->
+    _arr.map(str.split(''), (c) ->
       if c.match(/[A-Z]/) then c.toLowerCase() else c
-    ).join('').to_native()
+    ).join('')
 
 
   empty: (str) ->
@@ -54,16 +75,105 @@ class StringMethods
     str.indexOf(other) >= 0
 
 
-  upcase: (str) ->
-    return null unless str.match(/[a-z]/)
-    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
-    _arr.map(str.split(''), (c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('')
+  index: (str, needle, offset) ->
+    if offset?
+      offset = str.length + offset if offset < 0
+
+    # unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
+    #   throw R.TypeError.new()
+
+    if offset? && (offset > str.length or offset < 0)
+      return null
+
+    idx = str.indexOf(needle, offset)
+    if idx < 0
+      null
+    else
+      idx
+
+
+  ljust: (str, width, padString = " ") ->
+    len = str.length
+    if len >= width
+      str
+    else
+      throw R.ArgumentError.new() if padString.length == 0
+      pad_length = width - len
+      idx = -1
+      out = ""
+      # TODO refactor
+      out += padString while ++idx <= pad_length
+      str + out[0...pad_length]
+
+
+  lstrip: (str) ->
+    str.replace(/^[\s\n\t]+/g, '')
+
+
+  match: (str, pattern, offset = null, block) ->
+    unless block?
+      if offset?.call?
+        block = offset
+        offset = null
+
+    # unless RString.isString(pattern) or R.Regexp.isRegexp(pattern)
+    #   throw R.TypeError.new()
+
+    opts = {}
+
+    if offset?
+      opts = {string: str, offset: offset}
+      str = str.slice(offset)
+      matches = str.match(pattern, offset)
+    else
+      # Firefox breaks if you'd pass str.match(..., undefined)
+      matches = str.match(pattern)
+
+    result = if matches
+      new R.MatchData(matches, opts)
+    else
+      null
+
+    R['$~'] = result
+
+    if block
+      if result then block(result) else []
+    else
+      result
+
+
+  multiply: (str, num) ->
+    throw R.ArgumentError.new() if num < 0
+    out = ""
+    out += str for n in [0...num]
+    out
+
+
+  partition: (str, pattern) ->
+    # TODO: regexps
+    idx = @index(str, pattern)
+    unless idx is null
+      start = idx + pattern.length
+      a = @slice(str, 0, idx) || ''
+      b = pattern
+      c = str.slice(start)
+      [a,b,c]
+    else
+      [str, '', '']
 
 
   reverse: (str) ->
     str.split("").reverse().join("")
+
+
+  rjust: (str, width, pad_str = " ") ->
+    len = str.length
+    if len >= width
+      str
+    else
+      throw R.ArgumentError.new() if pad_str.length == 0
+      pad_len = width - len
+      _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
   slice: (str, index, other) ->
@@ -125,6 +235,15 @@ class StringMethods
     for needle in needles
       return true if str.indexOf(needle) is 0
     false
+
+
+
+  upcase: (str) ->
+    return str unless str.match(/[a-z]/)
+    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
+    _arr.map(str.split(''), (c) ->
+      if c.match(/[a-z]/) then c.toUpperCase() else c
+    ).join('')
 
 
 _str = R._str = new StringMethods()

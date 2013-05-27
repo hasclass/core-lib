@@ -23,7 +23,9 @@ describe "String#=~", ->
 
   it "sets $~ to MatchData when there is a match and nil when there's none", ->
     R('hello')['=~'](/./)
+    # _str.match('hello', /./)
     expect( R['$~'][0] ).toEqual 'h'
+
 
     R('hello')['=~'](/not/)
     expect( R['$~'] ).toEqual null
@@ -50,7 +52,7 @@ describe "String#match", ->
         R("b").match /a/, (m) -> scratch.push m
         expect( scratch ).toEqual []
 
-  it "tries to convert pattern to a string via to_str", ->
+  xit "tries to convert pattern to a string via to_str", ->
     obj =
       to_str: () -> R(".")
     expect( R("hello").match(obj)[0] ).toEqual "h"
@@ -60,7 +62,8 @@ describe "String#match", ->
     # def obj.respond_to?(type, *) true     def obj.method_missing(*args) "."
     # "hello".match(obj)[0].should == "h"
 
-  it "raises a TypeError if pattern is not a regexp or a string", ->
+  xit "raises a TypeError if pattern is not a regexp or a string", ->
+    # UNSUPPORTED
     expect( -> R("hello").match 10    ).toThrow('TypeError')
     expect( -> R("hello").match R(10) ).toThrow('TypeError')
     expect( -> R("hello").match {}    ).toThrow('TypeError')

@@ -20,8 +20,10 @@ class RubyJS.String extends RubyJS.Object
 
 
   @isString: (obj) ->
+    return false unless obj?
     return true  if typeof obj == 'string'
     return false if typeof obj != 'object'
+    return true  if obj.is_string?
     _toString_.call(obj) is '[object String]'
 
 
@@ -90,13 +92,9 @@ class RubyJS.String extends RubyJS.Object
   #     R("Ho! ").multiply(3)   #=> "Ho! Ho! Ho! "
   #
   '*': (num) ->
-    num = @box(num).to_int()
-    @__ensure_numeric(num)
-    throw(R.ArgumentError.new()) if num.lt(0)
+    num = RCoerce.to_int_native(num)
+    new RString(_str.multiply(@__native__, num))
 
-    str = ""
-    str += this for n in [0...num.to_native()]
-    new R.String(str) # don't return subclasses
 
   # Concatenation—Returns a new String containing other_str concatenated to
   # str.
@@ -191,11 +189,8 @@ class RubyJS.String extends RubyJS.Object
   #
   # TODO: find alias
   #
-  '=~': (args...) ->
-    block   = @__extract_block(args)
-    pattern = R(args[0])
-    throw R.TypeError.new() if pattern.is_string?
-    offset  = R(args[1])
+  '=~': (pattern, offset, block) ->
+    throw R.TypeError.new() if R(pattern).is_string?
     @match(pattern, offset, block)
 
 
@@ -221,7 +216,7 @@ class RubyJS.String extends RubyJS.Object
   #   characters ä, ö, etc
   #
   capitalize:  ->
-    @dup().tap (me) -> me.capitalize_bang()
+    new RString(_str.capitalize(@__native__))
 
 
   # Modifies str by converting the first character to uppercase and the
@@ -239,12 +234,8 @@ class RubyJS.String extends RubyJS.Object
   #    str                           # => "Already capitals"
   #
   capitalize_bang: ->
-    return if @empty()
-    # FIXME
-    # TODO remove dogfood
-    str = @downcase()
-    str = str.chr().upcase().concat(str.to_native().slice(1) || '')
-    if @equals(str) then null else @replace(str.to_native())
+    str = _str.capitalize(@__native__)
+    if @__native__ is str then null else @replace(str)
 
 
   # Case-insensitive version of String#<=>.
@@ -273,22 +264,10 @@ class RubyJS.String extends RubyJS.Object
   #
   center: (length, padString = ' ') ->
     # TODO: dogfood
-    length    = @box(length)
-    padString = RCoerce.to_str(padString)
+    length    = RCoerce.to_int_native(length)
+    padString = RCoerce.to_str_native(padString)
 
-    @__ensure_numeric(length)
-    @__ensure_string(padString)
-    throw R.ArgumentError.new() if padString.empty()
-
-    return this if @size().gteq(length)
-
-    lft       = (length.minus @size()).divide(2)
-    rgt       = length.minus( @size()).minus lft
-    max       = if lft.gt(rgt) then lft else rgt
-    size      = padString.size()
-    padString = padString.multiply(max)
-
-    @$String(padString.to_native()[0...lft]  + @to_native() +  padString.to_native()[0...rgt] )
+    new RString(_str.center(@__native__, length, padString))
 
   # Passes each character in str to the given block, or returns an enumerator if
   # no block is given.
@@ -364,6 +343,7 @@ class RubyJS.String extends RubyJS.Object
   chr: ->
     c = if @empty() then "" else @to_native()[0]
     @box c
+
 
   # Makes string empty.
   #
@@ -441,16 +421,15 @@ class RubyJS.String extends RubyJS.Object
   #     R("hEllO").downcase()   #=> "hello"
   #
   downcase: () ->
-    new RString(_str.downcase(@__native__) || @__native__)
+    new RString(_str.downcase(@__native__))
 
   # Downcases the contents of str, returning nil if no changes were made.
   #
   # @note case replacement is effective only in ASCII region.
   #
   downcase_bang: () ->
-    str = _str.downcase(@__native__)
-    return null if str is null
-    @replace(str)
+    return null unless @__native__.match(/[A-Z]/)
+    @replace(_str.downcase(@__native__))
 
   # Produces a version of str with all nonprinting characters replaced by \nnn
   # notation and all special characters escaped.
@@ -702,24 +681,10 @@ class RubyJS.String extends RubyJS.Object
   # @todo #index(regexp)
   #
   index: (needle, offset) ->
-    needle = R(needle)
-    needle = needle.to_str() if needle.to_str?
-
-    if offset
-      offset = RCoerce.to_int(offset)
-      offset = @size().minus(offset.abs()) if offset.lt 0
-
-    unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
-      throw R.TypeError.new()
-
-    if offset
-      return null if offset.gt(@to_native().length) or offset.lt(0)
-
-    idx = @to_native().indexOf(needle.valueOf(), +offset)
-    if idx < 0
-      null
-    else
-      new R.Fixnum(idx)
+    needle = RCoerce.to_str_native(needle)
+    offset = RCoerce.to_int_native(offset) if offset?
+    val = _str.index(@__native__, needle, offset)
+    if val is null then null else new R.Fixnum(val)
 
 
   #initialize_copy
@@ -788,19 +753,9 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").ljust(20, '1234')   #=> "hello123412341234123"
   #
   ljust: (width, padString = " ") ->
-    width = RCoerce.to_int_native(width)
-
-    len = @__native__.length
-    if len >= width
-      @clone()
-    else
-      padString = RCoerce.to_str_native(padString)
-      throw R.ArgumentError.new() if padString.length == 0
-      padLength = width - len
-      idx = -1
-      out = ""
-      out += padString while ++idx <= padLength
-      new R.String(@__native__ + out[0...padLength])
+    width     = RCoerce.to_int_native(width)
+    padString = RCoerce.to_str_native(padString)
+    new RString(_str.ljust(@__native__, width, padString))
 
 
   # Returns a copy of str with leading whitespace removed. See also
@@ -811,7 +766,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").lstrip()       #=> "hello"
   #
   lstrip: () ->
-    @dup().tap (s) -> s.lstrip_bang()
+    new RString(_str.lstrip(@__native__))
+
 
   # Removes leading whitespace from str, returning nil if no change was made.
   # See also String#rstrip! and String#strip!.
@@ -822,7 +778,7 @@ class RubyJS.String extends RubyJS.Object
   #
   lstrip_bang: ->
     return null unless @to_native().match(/^[\s\n\t]+/)
-    @replace(@to_native().replace(/^[\s\n\t]+/g, ''))
+    @replace(_str.lstrip(@__native__))
 
 
   # Converts pattern to a Regexp (if it isn’t already one), then invokes its
@@ -847,36 +803,8 @@ class RubyJS.String extends RubyJS.Object
   #
   # The return value is a value from block execution in this case.
   #
-  match: (args...) ->
-    block   = @__extract_block(args)
-    pattern = R(args[0])
-    pattern = pattern.to_str() if pattern.to_str?
-    throw R.TypeError.new() unless pattern.is_string? or pattern.is_regexp?
-
-    haystack = @to_native()
-    opts = {}
-
-    if offset = R(args[1])
-      offset   = offset.to_int().to_native()
-      opts.string = haystack
-      opts.offset = offset
-      haystack = haystack.slice(offset)
-      matches = haystack.match(pattern.to_native(), offset)
-    else
-      # Firefox breaks if you'd pass haystack.match(..., undefined)
-      matches = haystack.match(pattern.to_native())
-
-    result = if matches
-      new R.MatchData(matches, opts)
-    else
-      null
-
-    R['$~'] = result
-
-    if block
-      if result then block(result) else []
-    else
-      result
+  match: (pattern, offset, block) ->
+    _str.match(@__native__, pattern, offset, block)
 
 
   # Searches sep or pattern (regexp) in the string and returns the part before
@@ -897,20 +825,9 @@ class RubyJS.String extends RubyJS.Object
   #
   partition: (pattern) ->
     # TODO: regexps
-    pattern = RCoerce.to_str(pattern).to_str()
+    pattern = RCoerce.to_str_native(pattern)
+    new RArray(_str.partition(@__native__, pattern))
 
-    if idx = @index(pattern)
-      start = idx + pattern.length
-      len = @size() -  start
-      a = @slice(0,idx)
-      b = pattern.dup()
-      c = R(@to_native().slice(start))
-
-    a ||= this
-    b ||= R("")
-    c ||= R("")
-
-    return R([a,b,c])
 
   # Prepend the given string to str.
   #
@@ -1036,16 +953,9 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rjust(20, '1234')   #=> "123412341234123hello"
   #
   rjust: (width, padString = " ") ->
-    width = RCoerce.to_int(width)
-
-    if @length >= width
-      @clone()
-    else
-      padString = @box(padString).to_str?()
-      throw R.TypeError.new()     unless padString?.is_string?
-      throw R.ArgumentError.new() if padString.empty()
-      padLength = width.minus(@length)
-      @$String(padString.multiply(padLength).to_native()[0...padLength] + this)
+    width     = RCoerce.to_int_native(width)
+    padString = RCoerce.to_str_native(padString)
+    new RString(_str.rjust(@__native__, width, padString))
 
 
   # Searches sep or pattern (regexp) in the string from the end of the string,
@@ -1723,16 +1633,14 @@ class RubyJS.String extends RubyJS.Object
   #     R("hEllO").upcase()   #=> "HELLO"
   #
   upcase: () ->
-    str = _str.upcase(@__native__) || @__native__
-    new RString(str)
+    new RString(_str.upcase(@__native__))
 
   # Upcases the contents of str, returning nil if no changes were made. Note:
   # case replacement is effective only in ASCII region.
   #
   upcase_bang: () ->
-    val = _str.upcase(@__native__)
-    return null if val is null
-    @replace(val)
+    return null unless @__native__.match(/[a-z]/)
+    @replace(_str.upcase(@__native__))
 
 
   # Iterates through successive values, starting at str and ending at
@@ -1836,8 +1744,9 @@ class CharTable
     @excl = null
 
     for w in @patterns
-      v = RCoerce.to_str(w).to_native()
+      v = RCoerce.to_str_native(w)
       if v.length == 0
+
       else if v[0] == '^' and v.length > 1
         arr = @__char_table__(v[1..-1])
         @excl = if @excl then @excl['&'] arr else R(arr)

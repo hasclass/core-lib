@@ -43,6 +43,9 @@ RCoerce = R._coerce =
         obj[to_what]()
 
 
+  to_native: (obj) ->
+    obj.to_native?()
+
   # Coerces element to a Number primitive.
   #
   # Throws error if typecasted RubyJS object is not a numeric.
