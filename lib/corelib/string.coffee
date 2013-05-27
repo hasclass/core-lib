@@ -532,8 +532,8 @@ class RubyJS.String extends RubyJS.Object
 
   # Returns true if str ends with one of the suffixes given.
   #
-  end_with: (needles...) ->
-    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
+  end_with: ->
+    needles = _arr.select(arguments, (s) -> R(s)?.to_str? )
     neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
 
     _str.end_with(@__native__, needles...)
@@ -631,21 +631,10 @@ class RubyJS.String extends RubyJS.Object
   #
   gsub: (pattern, replacement) ->
     throw R.TypeError.new() if pattern is null
+    replacement = RCoerce.to_str_native(replacement)
 
-    pattern_lit = String.string_native(pattern)
-    if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
-
-    unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
-
-    unless pattern.global
-      throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
-
-    replacement = RCoerce.to_str(replacement).to_native()
-    gsubbed     = @to_native().replace(pattern, replacement)
-
-    new @constructor(gsubbed) # makes String subclasseable
+    gsubbed = _str.gsub(@__native__, pattern, replacement)
+    new RString(gsubbed)
 
 
   #hash

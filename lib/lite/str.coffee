@@ -59,56 +59,45 @@ class StringMethods
     _str.__matched__(str, args).length
 
 
-  __matched__: (str, args) ->
-    for el in args
-      rgx = _str.__to_regexp__(el)
-      str = (str_match.call(str, rgx) || []).join('')
-    str
-
-
-  # creates a regexp from the "a-z", "^ab" arguments used in #count
-  __to_regexp__: (str) ->
-    r = ""
-
-    if str.length == 0
-      r = "(?!)"
-    else if str == '^'
-      r = "\\^"
-    else
-      if str.lastIndexOf("^") >= 1
-        str = str[0] + str[1..-1].replace("^", "\\^")
-      r = "[#{str}]"
-
-    try
-      return new RegExp(r, 'g')
-    catch e
-      throw R.ArgumentError.new()
-
-
   'delete': (str, args...) ->
     throw R.ArgumentError.new() if args.length == 0
     trash = _str.__matched__(str, args)
     str.replace(new RegExp("[#{trash}]", 'g'), '')
 
 
-  squeeze: (str, pattern...) ->
-    trash = _str.__matched__(str, pattern)
-    chars = str.split("")
-    len   = str.length
-    i     = 1
-    j     = 0
-    last  = chars[0]
-    all   = pattern.length == 0
-    while i < len
-      c = chars[i]
-      unless c == last and (all || trash.indexOf(c) >= 0)
-        chars[j+=1] = last = c
-      i += 1
+  each_line: (str, separator, block) ->
+    unless block?
+      if separator?
+        if separator.call?
+          block = separator
+          separator = null
+      else
+        block(str)
+        return
 
-    if (j + 1) < len
-      chars = chars[0..j]
 
-    chars.join('')
+    # unless separator?
+    separator ||= R['$/']
+
+    # TODO: Use RCoerce?
+    # throw R.TypeError.new() unless separator.to_str?
+    if separator.length is 0
+      separator = "\n\n"
+
+    lft = 0
+    rgt = null
+    dup = str # allows the string to be changed with bang methods
+    while (rgt = _str.index(dup, separator, lft)) != null
+      rgt = rgt + 1
+      str = _str.slice(dup, lft, rgt - lft)
+      lft = rgt
+      block(str)
+
+    remainder = str_slice.call(dup, lft)
+    if remainder?
+      block(remainder) unless remainder.length == 0
+
+    this
 
 
   downcase: (str) ->
@@ -130,7 +119,23 @@ class StringMethods
     false
 
 
+  gsub: (str, pattern, replacement) ->
+    throw R.TypeError.new() if pattern is null
+
+    pattern_lit = R.String.string_native(pattern)
+    if pattern_lit isnt null
+      pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
+
+    unless R.Regexp.isRegexp(pattern)
+      throw R.TypeError.new()
+
+    unless pattern.global
+      throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
+
+    str.replace(pattern, replacement)
+
   include: (str, other) ->
+
     str.indexOf(other) >= 0
 
 
@@ -237,6 +242,26 @@ class StringMethods
 
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
+
+
+  squeeze: (str, pattern...) ->
+    trash = _str.__matched__(str, pattern)
+    chars = str.split("")
+    len   = str.length
+    i     = 1
+    j     = 0
+    last  = chars[0]
+    all   = pattern.length == 0
+    while i < len
+      c = chars[i]
+      unless c == last and (all || trash.indexOf(c) >= 0)
+        chars[j+=1] = last = c
+      i += 1
+
+    if (j + 1) < len
+      chars = chars[0..j]
+
+    chars.join('')
 
 
   strip: (str) ->
@@ -374,6 +399,32 @@ class StringMethods
     _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
     ).join('')
+
+
+  __matched__: (str, args) ->
+    for el in args
+      rgx = _str.__to_regexp__(el)
+      str = (str_match.call(str, rgx) || []).join('')
+    str
+
+
+  # creates a regexp from the "a-z", "^ab" arguments used in #count
+  __to_regexp__: (str) ->
+    r = ""
+
+    if str.length == 0
+      r = "(?!)"
+    else if str == '^'
+      r = "\\^"
+    else
+      if str.lastIndexOf("^") >= 1
+        str = str[0] + str[1..-1].replace("^", "\\^")
+      r = "[#{str}]"
+
+    try
+      return new RegExp(r, 'g')
+    catch e
+      throw R.ArgumentError.new()
 
 
 _str = R._str = new StringMethods()
