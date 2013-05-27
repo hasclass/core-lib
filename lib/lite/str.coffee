@@ -25,11 +25,10 @@ class StringMethods
   chop: (str) ->
     return str if str.length == 0
 
-    # DO:
-    # if @end_with("\r\n")
-    #   new R.String(@to_native().replace(/\r\n$/, ''))
-    # else
-    #   @slice 0, @size().minus(1)
+    if str.lastIndexOf("\r\n") == str.length - 2
+      str.replace(/\r\n$/, '')
+    else
+      @slice str, 0, str.length - 1
 
 
   downcase: (str) ->
@@ -45,12 +44,16 @@ class StringMethods
 
 
   end_with: (str, needles) ->
+    # TODO: FIX
     needles = R.$Array_r(needles).select((el) -> el?.to_str?).map (w) -> w.to_str().to_native()
 
     str_len = str.length
     for w in needles.iterator()
       return true if str.lastIndexOf(w) + w.length is str_len
     false
+
+  include: (str, other) ->
+    str.indexOf(other) >= 0
 
 
   upcase: (str) ->
@@ -63,5 +66,60 @@ class StringMethods
 
   reverse: (str) ->
     str.split("").reverse().join("")
+
+
+  slice: (str, index, other) ->
+    throw R.TypeError.new() if index is null
+    # TODO: This methods needs some serious refactoring
+
+    size = str.length
+    unless other is undefined
+      if index.is_regexp?
+        throw R.NotImplementedError.new()
+        # match, str = subpattern(index, other)
+        # Regexp.last_match = match
+        # return str
+      else
+        length = other
+        start  = index
+        start += size if start < 0
+
+        return null if length < 0 or start < 0 or start > size
+
+        return str.slice(start, start + length)
+
+    if index.is_regexp?
+      throw R.NotImplementedError.new()
+      # match_data = index.search_region(self, 0, @num_bytes, true)
+      # Regexp.last_match = match_data
+      # if match_data
+      #   result = match_data.to_s
+      #   result.taint if index.tainted?
+      #   return result
+
+    else if typeof index == 'string'
+      return if @include(str, index) then index else null
+
+    else if index.is_range?
+      start   = RCoerce.to_int_native index.begin()
+      length  = RCoerce.to_int_native index.end()
+
+      start += size if start < 0
+
+      length += size if length < 0
+      length += 1 unless index.exclude_end()
+
+      return "" if start is size
+      return null if start < 0 || start > size
+
+      length = size if length > size
+      length = length - start
+      length = 0 if length < 0
+
+      return str.slice(start, start + length)
+    else
+      index += size if index < 0
+      return null if index < 0 or index >= size
+      return str[index]
 
 _str = R._str = new StringMethods()

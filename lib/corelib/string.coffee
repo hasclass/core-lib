@@ -350,11 +350,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("x").chop().chop()     # => ""
   #
   chop: ->
-    return @dup() if @empty()
-    if @end_with("\r\n")
-      new R.String(@to_native().replace(/\r\n$/, ''))
-    else
-      @slice 0, @size().minus(1)
+    new RString(_str.chop(@__native__))
+
 
   # TODO: chop_bang
 
@@ -685,7 +682,8 @@ class RubyJS.String extends RubyJS.Object
   #
   include: (other) ->
     other = RCoerce.to_str_native(other)
-    @to_native().indexOf(other) >= 0
+    _str.include(@__native__, other)
+
 
   # Returns the index of the first occurrence of the given substring or pattern
   # (regexp) in str. Returns nil if not found. If the second parameter is
@@ -1202,62 +1200,30 @@ class RubyJS.String extends RubyJS.Object
   # @todo regexp
   #
   slice: (index, other) ->
-    throw new R.TypeError.new() if index is null
-    # TODO: This methods needs some serious refactoring
-    index = R(index)
+    throw R.TypeError.new() if index is null
 
-    size = @size().to_native()
+    index = R(index)
     unless other is undefined
       if index.is_regexp?
-        # match, str = subpattern(index, other)
-        # Regexp.last_match = match
-        # return str
+        throw R.NotImplementedError.new()
       else
-        length = RCoerce.to_int_native(other)
-        start  = RCoerce.to_int_native(index)
-        start += size if start < 0
+        index = RCoerce.to_int_native(index)
+        other = RCoerce.to_int_native(other)
+        val   = _str.slice(@__native__, index, other)
+        return if val? then new RString(val) else null
 
-        return null if length < 0
-        return null if start < 0 or start > size
-
-        substr = @to_native().slice(start, start + length)
-        return new R.String(substr)
 
     if index.is_regexp?
-      # match_data = index.search_region(self, 0, @num_bytes, true)
-      # Regexp.last_match = match_data
-      # if match_data
-      #   result = match_data.to_s
-      #   result.taint if index.tainted?
-      #   return result
-
+      throw R.NotImplementedError.new()
     else if index.is_string?
-      return if @include(index) then index.dup() else null
-
+      index = RCoerce.to_str_native(index)
     else if index.is_range?
-      start   = RCoerce.to_int_native index.begin()
-      length  = RCoerce.to_int_native index.end()
-
-      start += size if start < 0
-
-      length += size if length < 0
-      length += 1 unless index.exclude_end()
-
-      return new R.String("") if start is size
-      return null if start < 0 || start > size
-
-      length = size if length > size
-      length = length - start
-      length = 0 if length < 0
-
-      substr = @to_native().slice(start, start + length)
-      return new R.String(substr)
+      # nothing
     else
       index = RCoerce.to_int_native(index)
-      len   = @size().to_native()
-      index += len if index < 0
-      return null if index < 0 or index >= @size()
-      return new R.String(@to_native()[index])
+
+    val   = _str.slice(@__native__, index)
+    if val? then new RString(val) else null
 
 
 
