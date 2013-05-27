@@ -26,17 +26,6 @@ root.R  = RubyJS
 
 
 
-# Native classes, to avoid naming conflicts inside RubyJS classes.
-nativeArray  = Array
-nativeNumber = Number
-nativeObject = Object
-nativeRegExp = RegExp
-nativeString = String
-_toString_   = Object.prototype.toString
-_slice_      = Array.prototype.slice
-
-
-
 RubyJS.extend = (obj, mixin) ->
   obj[name] = method for name, method of mixin
   obj
@@ -54,6 +43,26 @@ if typeof(exports) != 'undefined'
   exports.RubyJS = RubyJS
 
 
+
+# Native classes, to avoid naming conflicts inside RubyJS classes.
+nativeArray  = Array
+nativeNumber = Number
+nativeObject = Object
+nativeRegExp = RegExp
+nativeString = String
+
+ObjProto = Object.prototype
+StrProto = String.prototype
+ArrProto = Array.prototype
+
+_toString_ = ObjProto.toString
+_slice_    = ArrProto.slice
+
+str_slice  = StrProto.slice
+str_match  = StrProto.match
+arr_join   = ArrProto.join
+arr_sort   = ArrProto.sort
+arr_slice  = ArrProto.slice
 
 # TODO: create BlockNone class that coerces multiple yield arguments into array.
 
@@ -495,26 +504,31 @@ class RubyJS.Base
   # Adds RubyJS methods to JS native classes.
   #
   #     RubyJS.i_am_feeling_evil()
-  #     ['foo', 'bar'].map(proc('reverse')).sort()
+  #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
   #     # =>['oof', 'rab']
   #
-  i_am_feeling_evil: ->
+  i_am_feeling_evil: (prefix = 'rb_', overwrite = false) ->
     overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]]
 
     for [proto, methods] in overwrites
       for name, func of methods
-        if typeof func == 'function'
-          if proto[name]?
-            console.log("#{proto}.#{name} exists. Method prefixed with 'rb_'")
-            name = "rb_#{name}"
+        new_name = prefix + name
 
-          do (name, methods) ->
-            proto[name] = ->
-              # use this.valueOf() to get the literal back.
-              args = [this.valueOf()].concat(_slice_.call(arguments, 0))
-              methods[name].apply(methods, args)
+        if typeof func == 'function'
+          if overwrite or proto[new_name] is undefined
+            do (new_name, name, methods) ->
+              proto[new_name] = ->
+                # use this.valueOf() to get the literal back.
+                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+                methods[name].apply(methods, args)
+          else
+            console.log("#{proto}.#{new_name} exists. skipped.")
 
     "harr harr"
+
+
+  god_mode: ->
+    @i_am_feeling_evil('', true)
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
@@ -1489,6 +1503,7 @@ class EnumerableMethods
 
     ary
 
+
   reverse_each: (coll, block) ->
     # There is no other way then to convert to an array first.
     # Because Enumerable depends only on #each (through #to_a)
@@ -1524,7 +1539,7 @@ class EnumerableMethods
     # TODO: throw Error when comparing different values.
     block ||= R.Comparable.cmpstrict
     coll = coll.to_native() if coll.to_native?
-    coll.sort(block)
+    arr_sort.call(coll, block)
 
 
   sort_by: (coll, block) ->
@@ -1622,8 +1637,6 @@ class MYSortedElement
 
 _enum = R._enum = new EnumerableMethods()
 
-
-_arr_join_ = Array.prototype.join
 
 class ArrayMethods extends EnumerableMethods
   equals: (arr, other) ->
@@ -1824,7 +1837,7 @@ class ArrayMethods extends EnumerableMethods
     return '' if @empty(arr)
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    _arr_join_.call(arr, separator)
+    arr_join.call(arr, separator)
 
 
   reverse_each: (coll, block) ->
@@ -1838,6 +1851,13 @@ class ArrayMethods extends EnumerableMethods
     coll
 
 
+  uniq: (arr) ->
+    ary = []
+    @each arr, (el) ->
+      ary.push(el) if ary.indexOf(el) < 0
+    ary
+
+
   __native_array_with__: (size, obj) ->
     ary = nativeArray(RCoerce.to_int_native(size))
     idx = -1
@@ -1848,12 +1868,13 @@ class ArrayMethods extends EnumerableMethods
 
 _arr = R._arr = new ArrayMethods()
 
+
 class StringMethods
   capitalize: (str) ->
     return "" if str.length == 0
-    b = @downcase(str)
-    a = @upcase(str[0])
-    a + b.slice(1)
+    b = _str.downcase(str)
+    a = _str.upcase(str[0])
+    a + str_slice.call(b, 1)
 
 
   center: (str, length, padString = ' ') ->
@@ -1865,7 +1886,7 @@ class StringMethods
     lft       = Math.floor((length - size) / 2)
     rgt       = length - size - lft
     max       = if lft > rgt then lft else rgt
-    padString = @multiply(padString, max)
+    padString = _str.multiply(padString, max)
 
     padString[0...lft] + str + padString[0...rgt]
 
@@ -1880,13 +1901,13 @@ class StringMethods
 
   chomp: (str, sep = null) ->
     if sep == null
-      if @empty(str) then "" else null
+      if _str.empty(str) then "" else null
     else
       sep = RCoerce.to_str_native(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+        ending = str_match.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
         regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
       else
         regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
@@ -1899,11 +1920,11 @@ class StringMethods
     if str.lastIndexOf("\r\n") == str.length - 2
       str.replace(/\r\n$/, '')
     else
-      @slice str, 0, str.length - 1
+      _str.slice str, 0, str.length - 1
 
 
   count: (str, args...) ->
-    throw R.ArgumentError.new() if args.length == 0
+    throw R.ArgumentError.new("String.count needs arguments") if args.length == 0
 
     _str.__matched__(str, args).length
 
@@ -1911,7 +1932,7 @@ class StringMethods
   __matched__: (str, args) ->
     for el in args
       rgx = _str.__to_regexp__(el)
-      str = (str.match(rgx) || []).join('')
+      str = (str_match.call(str, rgx) || []).join('')
     str
 
 
@@ -1961,10 +1982,10 @@ class StringMethods
 
 
   downcase: (str) ->
-    return str unless str.match(/[A-Z]/)
+    return str unless str_match.call(str, /[A-Z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
     _arr.map(str.split(''), (c) ->
-      if c.match(/[A-Z]/) then c.toLowerCase() else c
+      if str_match.call(c, /[A-Z]/) then c.toLowerCase() else c
     ).join('')
 
 
@@ -2031,11 +2052,11 @@ class StringMethods
 
     if offset?
       opts = {string: str, offset: offset}
-      str = str.slice(offset)
-      matches = str.match(pattern, offset)
+      str = str_slice.call(str, offset)
+      matches = str_match.call(str, pattern, offset)
     else
       # Firefox breaks if you'd pass str.match(..., undefined)
-      matches = str.match(pattern)
+      matches = str_match.call(str, pattern)
 
     result = if matches
       new R.MatchData(matches, opts)
@@ -2059,12 +2080,12 @@ class StringMethods
 
   partition: (str, pattern) ->
     # TODO: regexps
-    idx = @index(str, pattern)
+    idx = _str.index(str, pattern)
     unless idx is null
       start = idx + pattern.length
-      a = @slice(str, 0, idx) || ''
+      a = _str.slice(str, 0, idx) || ''
       b = pattern
-      c = str.slice(start)
+      c = str_slice.call(str, start)
       [a,b,c]
     else
       [str, '', '']
@@ -2082,6 +2103,78 @@ class StringMethods
       throw R.ArgumentError.new() if pad_str.length == 0
       pad_len = width - len
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
+
+
+  rstrip: (str) ->
+    str.replace(/[\s\n\t]+$/g, '')
+
+
+  strip: (str) ->
+    _str.rstrip(_str.lstrip(str))
+
+
+  sub: (str, pattern, replacement) ->
+    throw R.TypeError.new() if pattern is null
+
+    pattern_lit = R.String.string_native(pattern)
+    if pattern_lit isnt null
+      pattern = new RegExp(R.Regexp.escape(pattern_lit))
+
+    unless R.Regexp.isRegexp(pattern)
+      throw R.TypeError.new()
+
+    if pattern.global
+      throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
+
+    str.replace(pattern, replacement)
+
+
+
+  succ: (str) ->
+    return '' if str.length == 0
+
+    codes      = (c.charCodeAt(0) for c in str.split(""))
+    carry      = null               # for "z".succ => "aa", carry is 'a'
+    last_alnum = 0                  # last alpha numeric
+    start      = codes.length - 1
+    while start >= 0
+      s = codes[start]
+      if nativeString.fromCharCode(s).match(/[a-zA-Z0-9]/) != null
+        carry = 0
+
+        if (48 <= s && s < 57) || (97 <= s && s < 122) || (65 <= s && s < 90)
+          codes[start] = codes[start]+1
+        else if s == 57              # 9
+          codes[start] = 48          # 0
+          carry = 49                 # 1
+        else if s == 122             # z
+          codes[start] = carry = 97  # a
+        else if s == 90              # Z
+          codes[start] = carry = 65  # A
+
+        break if carry == 0
+        last_alnum = start
+      start -= 1
+
+    if carry == null
+      start = codes.length - 1
+      carry = 1
+
+      while start >= 0
+        s = codes[start]
+        if s >= 255
+          codes[start] = 0
+        else
+
+          codes[start] = codes[start]+1
+          break
+        start -= 1
+
+    chars = (String.fromCharCode(c) for c in codes)
+    if start < 0
+      chars[last_alnum] = nativeString.fromCharCode(carry, codes[last_alnum])
+
+    chars.join("")
 
 
   slice: (str, index, other) ->
@@ -2102,11 +2195,11 @@ class StringMethods
 
         return null if length < 0 or start < 0 or start > size
 
-        return str.slice(start, start + length)
+        return str_slice.call(str, start, start + length)
 
     if index.is_regexp?
       throw R.NotImplementedError.new()
-      # match_data = index.search_region(self, 0, @num_bytes, true)
+      # match_data = index.search_region(self, 0, _str.num_bytes, true)
       # Regexp.last_match = match_data
       # if match_data
       #   result = match_data.to_s
@@ -2114,7 +2207,7 @@ class StringMethods
       #   return result
 
     else if typeof index == 'string'
-      return if @include(str, index) then index else null
+      return if _str.include(str, index) then index else null
 
     else if index.is_range?
       start   = RCoerce.to_int_native index.begin()
@@ -2132,7 +2225,7 @@ class StringMethods
       length = length - start
       length = 0 if length < 0
 
-      return str.slice(start, start + length)
+      return str_slice.call(str, start, start + length)
     else
       index += size if index < 0
       return null if index < 0 or index >= size
@@ -4448,6 +4541,7 @@ class RubyJS.Array extends RubyJS.Object
       arr.push(el) unless arr.include(el)
     arr
 
+
   # Removes duplicate elements from self. Returns null if no changes are made
   # (that is, no duplicates are found).
   #
@@ -6725,6 +6819,7 @@ class RubyJS.String extends RubyJS.Object
 
     return R([a,b,c])
 
+
   # Returns a copy of str with trailing whitespace removed. See also
   # String#lstrip and String#strip.
   #
@@ -6735,6 +6830,7 @@ class RubyJS.String extends RubyJS.Object
   rstrip: () ->
     @dup().tap (s) -> s.rstrip_bang()
 
+
   # Removes trailing whitespace from str, returning nil if no change was made.
   # See also String#lstrip! and String#strip!.
   #
@@ -6743,8 +6839,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rstrip_bang()      #=> nil
   #
   rstrip_bang: ->
-    return null unless @to_native().match(/[\s\n\t]+$/)
-    @replace(@to_native().replace(/[\s\n\t]+$/g, ''))
+    return null unless @__native__.match(/[\s\n\t]+$/)
+    @replace(_str.rstrip(@__native__))
 
 
   # Both forms iterate through str, matching the pattern (which may be a
@@ -6990,9 +7086,12 @@ class RubyJS.String extends RubyJS.Object
   # @return str or null
   #
   strip_bang: () ->
-    l = @lstrip_bang()
-    r = @rstrip_bang()
-    if l is null and r is null then null else this
+    str = _str.strip(@__native__)
+    if str == @__native__
+      null
+    else
+      @replace str
+
 
   # Returns a copy of str with the first occurrence of pattern substituted for
   # the second argument. The pattern is typically a Regexp; if given as a
@@ -7029,26 +7128,17 @@ class RubyJS.String extends RubyJS.Object
   sub: (pattern, replacement) ->
     @dup().tap (dup) -> dup.sub_bang(pattern, replacement)
 
+
   # Performs the substitutions of String#sub in place, returning str, or nil
   # if no substitutions were performed.
   #
   sub_bang: (pattern, replacement) ->
     throw R.TypeError.new() if pattern is null
-
-    pattern_lit = String.string_native(pattern)
-    if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit))
-
-    unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
-
-    if pattern.global
-      throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
-
     replacement = RCoerce.to_str_native(replacement)
-    subbed      = @to_native().replace(pattern, replacement)
 
+    subbed = _str.sub(@__native__, pattern, replacement)
     @replace(subbed)
+
 
   # Returns the successor to str. The successor is calculated by incrementing
   # characters starting from the rightmost alphanumeric (or the rightmost
@@ -7072,58 +7162,16 @@ class RubyJS.String extends RubyJS.Object
   # @alias #next
   #
   succ: ->
-    @dup().succ_bang()
+    new RString(_str.succ(@__native__))
+
 
   # Equivalent to String#succ, but modifies the receiver in place.
   #
   # @alias #next_bang
   #
   succ_bang: ->
-    if this.length == 0
-      @replace ""
-    else
-      codes      = (c.charCodeAt(0) for c in @to_native().split(""))
-      carry      = null               # for "z".succ => "aa", carry is 'a'
-      last_alnum = 0                  # last alpha numeric
-      start      = codes.length - 1
-      while start >= 0
-        s = codes[start]
-        if String.fromCharCode(s).match(/[a-zA-Z0-9]/) != null
-          carry = 0
-
-          if (48 <= s && s < 57) || (97 <= s && s < 122) || (65 <= s && s < 90)
-            codes[start] = codes[start]+1
-          else if s == 57              # 9
-            codes[start] = 48          # 0
-            carry = 49                 # 1
-          else if s == 122             # z
-            codes[start] = carry = 97  # a
-          else if s == 90              # Z
-            codes[start] = carry = 65  # A
-
-          break if carry == 0
-          last_alnum = start
-        start -= 1
-
-      if carry == null
-        start = codes.length - 1
-        carry = 1
-
-        while start >= 0
-          s = codes[start]
-          if s >= 255
-            codes[start] = 0
-          else
-
-            codes[start] = codes[start]+1
-            break
-          start -= 1
-
-      chars = (String.fromCharCode(c) for c in codes)
-      if start < 0
-        chars[last_alnum] = nativeString.fromCharCode(carry, codes[last_alnum])
-
-      @replace(chars.join(""))
+    str = _str.succ(@__native__)
+    @replace(str)
 
 
   # @alias #succ

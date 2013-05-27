@@ -60,26 +60,31 @@ class RubyJS.Base
   # Adds RubyJS methods to JS native classes.
   #
   #     RubyJS.i_am_feeling_evil()
-  #     ['foo', 'bar'].map(proc('reverse')).sort()
+  #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
   #     # =>['oof', 'rab']
   #
-  i_am_feeling_evil: ->
+  i_am_feeling_evil: (prefix = 'rb_', overwrite = false) ->
     overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]]
 
     for [proto, methods] in overwrites
       for name, func of methods
-        if typeof func == 'function'
-          if proto[name]?
-            console.log("#{proto}.#{name} exists. Method prefixed with 'rb_'")
-            name = "rb_#{name}"
+        new_name = prefix + name
 
-          do (name, methods) ->
-            proto[name] = ->
-              # use this.valueOf() to get the literal back.
-              args = [this.valueOf()].concat(_slice_.call(arguments, 0))
-              methods[name].apply(methods, args)
+        if typeof func == 'function'
+          if overwrite or proto[new_name] is undefined
+            do (new_name, name, methods) ->
+              proto[new_name] = ->
+                # use this.valueOf() to get the literal back.
+                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+                methods[name].apply(methods, args)
+          else
+            console.log("#{proto}.#{new_name} exists. skipped.")
 
     "harr harr"
+
+
+  god_mode: ->
+    @i_am_feeling_evil('', true)
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.

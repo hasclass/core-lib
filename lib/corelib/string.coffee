@@ -990,6 +990,7 @@ class RubyJS.String extends RubyJS.Object
 
     return R([a,b,c])
 
+
   # Returns a copy of str with trailing whitespace removed. See also
   # String#lstrip and String#strip.
   #
@@ -1000,6 +1001,7 @@ class RubyJS.String extends RubyJS.Object
   rstrip: () ->
     @dup().tap (s) -> s.rstrip_bang()
 
+
   # Removes trailing whitespace from str, returning nil if no change was made.
   # See also String#lstrip! and String#strip!.
   #
@@ -1008,8 +1010,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rstrip_bang()      #=> nil
   #
   rstrip_bang: ->
-    return null unless @to_native().match(/[\s\n\t]+$/)
-    @replace(@to_native().replace(/[\s\n\t]+$/g, ''))
+    return null unless @__native__.match(/[\s\n\t]+$/)
+    @replace(_str.rstrip(@__native__))
 
 
   # Both forms iterate through str, matching the pattern (which may be a
@@ -1255,9 +1257,12 @@ class RubyJS.String extends RubyJS.Object
   # @return str or null
   #
   strip_bang: () ->
-    l = @lstrip_bang()
-    r = @rstrip_bang()
-    if l is null and r is null then null else this
+    str = _str.strip(@__native__)
+    if str == @__native__
+      null
+    else
+      @replace str
+
 
   # Returns a copy of str with the first occurrence of pattern substituted for
   # the second argument. The pattern is typically a Regexp; if given as a
@@ -1294,26 +1299,17 @@ class RubyJS.String extends RubyJS.Object
   sub: (pattern, replacement) ->
     @dup().tap (dup) -> dup.sub_bang(pattern, replacement)
 
+
   # Performs the substitutions of String#sub in place, returning str, or nil
   # if no substitutions were performed.
   #
   sub_bang: (pattern, replacement) ->
     throw R.TypeError.new() if pattern is null
-
-    pattern_lit = String.string_native(pattern)
-    if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit))
-
-    unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
-
-    if pattern.global
-      throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
-
     replacement = RCoerce.to_str_native(replacement)
-    subbed      = @to_native().replace(pattern, replacement)
 
+    subbed = _str.sub(@__native__, pattern, replacement)
     @replace(subbed)
+
 
   # Returns the successor to str. The successor is calculated by incrementing
   # characters starting from the rightmost alphanumeric (or the rightmost
@@ -1337,58 +1333,16 @@ class RubyJS.String extends RubyJS.Object
   # @alias #next
   #
   succ: ->
-    @dup().succ_bang()
+    new RString(_str.succ(@__native__))
+
 
   # Equivalent to String#succ, but modifies the receiver in place.
   #
   # @alias #next_bang
   #
   succ_bang: ->
-    if this.length == 0
-      @replace ""
-    else
-      codes      = (c.charCodeAt(0) for c in @to_native().split(""))
-      carry      = null               # for "z".succ => "aa", carry is 'a'
-      last_alnum = 0                  # last alpha numeric
-      start      = codes.length - 1
-      while start >= 0
-        s = codes[start]
-        if String.fromCharCode(s).match(/[a-zA-Z0-9]/) != null
-          carry = 0
-
-          if (48 <= s && s < 57) || (97 <= s && s < 122) || (65 <= s && s < 90)
-            codes[start] = codes[start]+1
-          else if s == 57              # 9
-            codes[start] = 48          # 0
-            carry = 49                 # 1
-          else if s == 122             # z
-            codes[start] = carry = 97  # a
-          else if s == 90              # Z
-            codes[start] = carry = 65  # A
-
-          break if carry == 0
-          last_alnum = start
-        start -= 1
-
-      if carry == null
-        start = codes.length - 1
-        carry = 1
-
-        while start >= 0
-          s = codes[start]
-          if s >= 255
-            codes[start] = 0
-          else
-
-            codes[start] = codes[start]+1
-            break
-          start -= 1
-
-      chars = (String.fromCharCode(c) for c in codes)
-      if start < 0
-        chars[last_alnum] = nativeString.fromCharCode(carry, codes[last_alnum])
-
-      @replace(chars.join(""))
+    str = _str.succ(@__native__)
+    @replace(str)
 
 
   # @alias #succ

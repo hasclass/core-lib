@@ -1426,6 +1426,7 @@ class RubyJS.Array extends RubyJS.Object
       arr.push(el) unless arr.include(el)
     arr
 
+
   # Removes duplicate elements from self. Returns null if no changes are made
   # (that is, no duplicates are found).
   #

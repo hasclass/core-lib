@@ -1,5 +1,3 @@
-_arr_join_ = Array.prototype.join
-
 class ArrayMethods extends EnumerableMethods
   equals: (arr, other) ->
     return true  if arr is other
@@ -199,7 +197,7 @@ class ArrayMethods extends EnumerableMethods
     return '' if @empty(arr)
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    _arr_join_.call(arr, separator)
+    arr_join.call(arr, separator)
 
 
   reverse_each: (coll, block) ->
@@ -211,6 +209,13 @@ class ArrayMethods extends EnumerableMethods
       block(coll[idx])
 
     coll
+
+
+  uniq: (arr) ->
+    ary = []
+    @each arr, (el) ->
+      ary.push(el) if ary.indexOf(el) < 0
+    ary
 
 
   __native_array_with__: (size, obj) ->

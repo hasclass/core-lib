@@ -1,9 +1,10 @@
+
 class StringMethods
   capitalize: (str) ->
     return "" if str.length == 0
-    b = @downcase(str)
-    a = @upcase(str[0])
-    a + b.slice(1)
+    b = _str.downcase(str)
+    a = _str.upcase(str[0])
+    a + str_slice.call(b, 1)
 
 
   center: (str, length, padString = ' ') ->
@@ -15,7 +16,7 @@ class StringMethods
     lft       = Math.floor((length - size) / 2)
     rgt       = length - size - lft
     max       = if lft > rgt then lft else rgt
-    padString = @multiply(padString, max)
+    padString = _str.multiply(padString, max)
 
     padString[0...lft] + str + padString[0...rgt]
 
@@ -30,13 +31,13 @@ class StringMethods
 
   chomp: (str, sep = null) ->
     if sep == null
-      if @empty(str) then "" else null
+      if _str.empty(str) then "" else null
     else
       sep = RCoerce.to_str_native(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+        ending = str_match.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
         regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
       else
         regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
@@ -49,11 +50,11 @@ class StringMethods
     if str.lastIndexOf("\r\n") == str.length - 2
       str.replace(/\r\n$/, '')
     else
-      @slice str, 0, str.length - 1
+      _str.slice str, 0, str.length - 1
 
 
   count: (str, args...) ->
-    throw R.ArgumentError.new() if args.length == 0
+    throw R.ArgumentError.new("String.count needs arguments") if args.length == 0
 
     _str.__matched__(str, args).length
 
@@ -61,7 +62,7 @@ class StringMethods
   __matched__: (str, args) ->
     for el in args
       rgx = _str.__to_regexp__(el)
-      str = (str.match(rgx) || []).join('')
+      str = (str_match.call(str, rgx) || []).join('')
     str
 
 
@@ -111,10 +112,10 @@ class StringMethods
 
 
   downcase: (str) ->
-    return str unless str.match(/[A-Z]/)
+    return str unless str_match.call(str, /[A-Z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
     _arr.map(str.split(''), (c) ->
-      if c.match(/[A-Z]/) then c.toLowerCase() else c
+      if str_match.call(c, /[A-Z]/) then c.toLowerCase() else c
     ).join('')
 
 
@@ -181,11 +182,11 @@ class StringMethods
 
     if offset?
       opts = {string: str, offset: offset}
-      str = str.slice(offset)
-      matches = str.match(pattern, offset)
+      str = str_slice.call(str, offset)
+      matches = str_match.call(str, pattern, offset)
     else
       # Firefox breaks if you'd pass str.match(..., undefined)
-      matches = str.match(pattern)
+      matches = str_match.call(str, pattern)
 
     result = if matches
       new R.MatchData(matches, opts)
@@ -209,12 +210,12 @@ class StringMethods
 
   partition: (str, pattern) ->
     # TODO: regexps
-    idx = @index(str, pattern)
+    idx = _str.index(str, pattern)
     unless idx is null
       start = idx + pattern.length
-      a = @slice(str, 0, idx) || ''
+      a = _str.slice(str, 0, idx) || ''
       b = pattern
-      c = str.slice(start)
+      c = str_slice.call(str, start)
       [a,b,c]
     else
       [str, '', '']
@@ -232,6 +233,78 @@ class StringMethods
       throw R.ArgumentError.new() if pad_str.length == 0
       pad_len = width - len
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
+
+
+  rstrip: (str) ->
+    str.replace(/[\s\n\t]+$/g, '')
+
+
+  strip: (str) ->
+    _str.rstrip(_str.lstrip(str))
+
+
+  sub: (str, pattern, replacement) ->
+    throw R.TypeError.new() if pattern is null
+
+    pattern_lit = R.String.string_native(pattern)
+    if pattern_lit isnt null
+      pattern = new RegExp(R.Regexp.escape(pattern_lit))
+
+    unless R.Regexp.isRegexp(pattern)
+      throw R.TypeError.new()
+
+    if pattern.global
+      throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
+
+    str.replace(pattern, replacement)
+
+
+
+  succ: (str) ->
+    return '' if str.length == 0
+
+    codes      = (c.charCodeAt(0) for c in str.split(""))
+    carry      = null               # for "z".succ => "aa", carry is 'a'
+    last_alnum = 0                  # last alpha numeric
+    start      = codes.length - 1
+    while start >= 0
+      s = codes[start]
+      if nativeString.fromCharCode(s).match(/[a-zA-Z0-9]/) != null
+        carry = 0
+
+        if (48 <= s && s < 57) || (97 <= s && s < 122) || (65 <= s && s < 90)
+          codes[start] = codes[start]+1
+        else if s == 57              # 9
+          codes[start] = 48          # 0
+          carry = 49                 # 1
+        else if s == 122             # z
+          codes[start] = carry = 97  # a
+        else if s == 90              # Z
+          codes[start] = carry = 65  # A
+
+        break if carry == 0
+        last_alnum = start
+      start -= 1
+
+    if carry == null
+      start = codes.length - 1
+      carry = 1
+
+      while start >= 0
+        s = codes[start]
+        if s >= 255
+          codes[start] = 0
+        else
+
+          codes[start] = codes[start]+1
+          break
+        start -= 1
+
+    chars = (String.fromCharCode(c) for c in codes)
+    if start < 0
+      chars[last_alnum] = nativeString.fromCharCode(carry, codes[last_alnum])
+
+    chars.join("")
 
 
   slice: (str, index, other) ->
@@ -252,11 +325,11 @@ class StringMethods
 
         return null if length < 0 or start < 0 or start > size
 
-        return str.slice(start, start + length)
+        return str_slice.call(str, start, start + length)
 
     if index.is_regexp?
       throw R.NotImplementedError.new()
-      # match_data = index.search_region(self, 0, @num_bytes, true)
+      # match_data = index.search_region(self, 0, _str.num_bytes, true)
       # Regexp.last_match = match_data
       # if match_data
       #   result = match_data.to_s
@@ -264,7 +337,7 @@ class StringMethods
       #   return result
 
     else if typeof index == 'string'
-      return if @include(str, index) then index else null
+      return if _str.include(str, index) then index else null
 
     else if index.is_range?
       start   = RCoerce.to_int_native index.begin()
@@ -282,7 +355,7 @@ class StringMethods
       length = length - start
       length = 0 if length < 0
 
-      return str.slice(start, start + length)
+      return str_slice.call(str, start, start + length)
     else
       index += size if index < 0
       return null if index < 0 or index >= size

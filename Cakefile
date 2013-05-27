@@ -5,6 +5,7 @@ appFiles  = [
   # omit src/ and .coffee to make the below lines a little shorter
   'ruby'
 
+  'base/aliases'
   'base/block'
   'base/breaker'
   'base/kernel'

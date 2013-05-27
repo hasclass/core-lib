@@ -26,17 +26,6 @@ root.R  = RubyJS
 
 
 
-# Native classes, to avoid naming conflicts inside RubyJS classes.
-nativeArray  = Array
-nativeNumber = Number
-nativeObject = Object
-nativeRegExp = RegExp
-nativeString = String
-_toString_   = Object.prototype.toString
-_slice_      = Array.prototype.slice
-
-
-
 RubyJS.extend = (obj, mixin) ->
   obj[name] = method for name, method of mixin
   obj

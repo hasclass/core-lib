@@ -9,7 +9,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, MYSortedElement, NumericMethods, RArray, RCoerce, REnumerable, RString, StringMethods, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _arr_join_, _blockify, _enum, _fn, _i, _len, _num, _ref, _slice_, _str, _toString_,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RString, StrProto, StringMethods, arr_join, arr_slice, arr_sort, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, str_match, str_slice, _arr, _blockify, _enum, _fn, _i, _len, _num, _ref, _slice_, _str, _toString_,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -32,20 +32,6 @@ http://www.rubyjs.org/LICENSE.txt
   };
 
   root.R = RubyJS;
-
-  nativeArray = Array;
-
-  nativeNumber = Number;
-
-  nativeObject = Object;
-
-  nativeRegExp = RegExp;
-
-  nativeString = String;
-
-  _toString_ = Object.prototype.toString;
-
-  _slice_ = Array.prototype.slice;
 
   RubyJS.extend = function(obj, mixin) {
     var method, name;
@@ -79,6 +65,36 @@ http://www.rubyjs.org/LICENSE.txt
     exports.R = R;
     exports.RubyJS = RubyJS;
   }
+
+  nativeArray = Array;
+
+  nativeNumber = Number;
+
+  nativeObject = Object;
+
+  nativeRegExp = RegExp;
+
+  nativeString = String;
+
+  ObjProto = Object.prototype;
+
+  StrProto = String.prototype;
+
+  ArrProto = Array.prototype;
+
+  _toString_ = ObjProto.toString;
+
+  _slice_ = ArrProto.slice;
+
+  str_slice = StrProto.slice;
+
+  str_match = StrProto.match;
+
+  arr_join = ArrProto.join;
+
+  arr_sort = ArrProto.sort;
+
+  arr_slice = ArrProto.slice;
 
   Block = (function() {
 
@@ -517,29 +533,40 @@ http://www.rubyjs.org/LICENSE.txt
       };
     };
 
-    Base.prototype.i_am_feeling_evil = function() {
-      var func, methods, name, overwrites, proto, _i, _len, _ref;
+    Base.prototype.i_am_feeling_evil = function(prefix, overwrite) {
+      var func, methods, name, new_name, overwrites, proto, _i, _len, _ref;
+      if (prefix == null) {
+        prefix = 'rb_';
+      }
+      if (overwrite == null) {
+        overwrite = false;
+      }
       overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]];
       for (_i = 0, _len = overwrites.length; _i < _len; _i++) {
         _ref = overwrites[_i], proto = _ref[0], methods = _ref[1];
         for (name in methods) {
           func = methods[name];
+          new_name = prefix + name;
           if (typeof func === 'function') {
-            if (proto[name] != null) {
-              console.log("" + proto + "." + name + " exists. Method prefixed with 'rb_'");
-              name = "rb_" + name;
+            if (overwrite || proto[new_name] === void 0) {
+              (function(new_name, name, methods) {
+                return proto[new_name] = function() {
+                  var args;
+                  args = [this.valueOf()].concat(_slice_.call(arguments, 0));
+                  return methods[name].apply(methods, args);
+                };
+              })(new_name, name, methods);
+            } else {
+              console.log("" + proto + "." + new_name + " exists. skipped.");
             }
-            (function(name, methods) {
-              return proto[name] = function() {
-                var args;
-                args = [this.valueOf()].concat(_slice_.call(arguments, 0));
-                return methods[name].apply(methods, args);
-              };
-            })(name, methods);
           }
         }
       }
       return "harr harr";
+    };
+
+    Base.prototype.god_mode = function() {
+      return this.i_am_feeling_evil('', true);
     };
 
     Base.prototype.proc = function() {
@@ -1632,7 +1659,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (coll.to_native != null) {
         coll = coll.to_native();
       }
-      return coll.sort(block);
+      return arr_sort.call(coll, block);
     };
 
     EnumerableMethods.prototype.sort_by = function(coll, block) {
@@ -1771,8 +1798,6 @@ http://www.rubyjs.org/LICENSE.txt
   })();
 
   _enum = R._enum = new EnumerableMethods();
-
-  _arr_join_ = Array.prototype.join;
 
   ArrayMethods = (function(_super) {
 
@@ -2038,7 +2063,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (separator === null) {
         separator = '';
       }
-      return _arr_join_.call(arr, separator);
+      return arr_join.call(arr, separator);
     };
 
     ArrayMethods.prototype.reverse_each = function(coll, block) {
@@ -2051,6 +2076,17 @@ http://www.rubyjs.org/LICENSE.txt
         block(coll[idx]);
       }
       return coll;
+    };
+
+    ArrayMethods.prototype.uniq = function(arr) {
+      var ary;
+      ary = [];
+      this.each(arr, function(el) {
+        if (ary.indexOf(el) < 0) {
+          return ary.push(el);
+        }
+      });
+      return ary;
     };
 
     ArrayMethods.prototype.__native_array_with__ = function(size, obj) {
@@ -2078,9 +2114,9 @@ http://www.rubyjs.org/LICENSE.txt
       if (str.length === 0) {
         return "";
       }
-      b = this.downcase(str);
-      a = this.upcase(str[0]);
-      return a + b.slice(1);
+      b = _str.downcase(str);
+      a = _str.upcase(str[0]);
+      return a + str_slice.call(b, 1);
     };
 
     StringMethods.prototype.center = function(str, length, padString) {
@@ -2098,7 +2134,7 @@ http://www.rubyjs.org/LICENSE.txt
       lft = Math.floor((length - size) / 2);
       rgt = length - size - lft;
       max = lft > rgt ? lft : rgt;
-      padString = this.multiply(padString, max);
+      padString = _str.multiply(padString, max);
       return padString.slice(0, lft) + str + padString.slice(0, rgt);
     };
 
@@ -2118,7 +2154,7 @@ http://www.rubyjs.org/LICENSE.txt
         sep = null;
       }
       if (sep === null) {
-        if (this.empty(str)) {
+        if (_str.empty(str)) {
           return "";
         } else {
           return null;
@@ -2128,7 +2164,7 @@ http://www.rubyjs.org/LICENSE.txt
         if (sep.length === 0) {
           regexp = /((\r\n)|\n)+$/;
         } else if (sep === "\n" || sep === "\r" || sep === "\r\n") {
-          ending = ((_ref1 = str.match(/((\r\n)|\n|\r)$/)) != null ? _ref1[0] : void 0) || "\n";
+          ending = ((_ref1 = str_match.call(str, /((\r\n)|\n|\r)$/)) != null ? _ref1[0] : void 0) || "\n";
           regexp = new RegExp("(" + (R.Regexp.escape(ending)) + ")$");
         } else {
           regexp = new RegExp("(" + (R.Regexp.escape(sep)) + ")$");
@@ -2144,7 +2180,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (str.lastIndexOf("\r\n") === str.length - 2) {
         return str.replace(/\r\n$/, '');
       } else {
-        return this.slice(str, 0, str.length - 1);
+        return _str.slice(str, 0, str.length - 1);
       }
     };
 
@@ -2152,7 +2188,7 @@ http://www.rubyjs.org/LICENSE.txt
       var args, str;
       str = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       if (args.length === 0) {
-        throw R.ArgumentError["new"]();
+        throw R.ArgumentError["new"]("String.count needs arguments");
       }
       return _str.__matched__(str, args).length;
     };
@@ -2162,7 +2198,7 @@ http://www.rubyjs.org/LICENSE.txt
       for (_i = 0, _len = args.length; _i < _len; _i++) {
         el = args[_i];
         rgx = _str.__to_regexp__(el);
-        str = (str.match(rgx) || []).join('');
+        str = (str_match.call(str, rgx) || []).join('');
       }
       return str;
     };
@@ -2221,11 +2257,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     StringMethods.prototype.downcase = function(str) {
-      if (!str.match(/[A-Z]/)) {
+      if (!str_match.call(str, /[A-Z]/)) {
         return str;
       }
       return _arr.map(str.split(''), function(c) {
-        if (c.match(/[A-Z]/)) {
+        if (str_match.call(c, /[A-Z]/)) {
           return c.toLowerCase();
         } else {
           return c;
@@ -2314,10 +2350,10 @@ http://www.rubyjs.org/LICENSE.txt
           string: str,
           offset: offset
         };
-        str = str.slice(offset);
-        matches = str.match(pattern, offset);
+        str = str_slice.call(str, offset);
+        matches = str_match.call(str, pattern, offset);
       } else {
-        matches = str.match(pattern);
+        matches = str_match.call(str, pattern);
       }
       result = matches ? new R.MatchData(matches, opts) : null;
       R['$~'] = result;
@@ -2346,12 +2382,12 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.partition = function(str, pattern) {
       var a, b, c, idx, start;
-      idx = this.index(str, pattern);
+      idx = _str.index(str, pattern);
       if (idx !== null) {
         start = idx + pattern.length;
-        a = this.slice(str, 0, idx) || '';
+        a = _str.slice(str, 0, idx) || '';
         b = pattern;
-        c = str.slice(start);
+        c = str_slice.call(str, start);
         return [a, b, c];
       } else {
         return [str, '', ''];
@@ -2379,6 +2415,100 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
+    StringMethods.prototype.rstrip = function(str) {
+      return str.replace(/[\s\n\t]+$/g, '');
+    };
+
+    StringMethods.prototype.strip = function(str) {
+      return _str.rstrip(_str.lstrip(str));
+    };
+
+    StringMethods.prototype.sub = function(str, pattern, replacement) {
+      var pattern_lit;
+      if (pattern === null) {
+        throw R.TypeError["new"]();
+      }
+      pattern_lit = R.String.string_native(pattern);
+      if (pattern_lit !== null) {
+        pattern = new RegExp(R.Regexp.escape(pattern_lit));
+      }
+      if (!R.Regexp.isRegexp(pattern)) {
+        throw R.TypeError["new"]();
+      }
+      if (pattern.global) {
+        throw "String#sub: " + pattern + " has set the global flag 'g'. " + pattern + "g";
+      }
+      return str.replace(pattern, replacement);
+    };
+
+    StringMethods.prototype.succ = function(str) {
+      var c, carry, chars, codes, last_alnum, s, start;
+      if (str.length === 0) {
+        return '';
+      }
+      codes = (function() {
+        var _i, _len, _ref1, _results;
+        _ref1 = str.split("");
+        _results = [];
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          c = _ref1[_i];
+          _results.push(c.charCodeAt(0));
+        }
+        return _results;
+      })();
+      carry = null;
+      last_alnum = 0;
+      start = codes.length - 1;
+      while (start >= 0) {
+        s = codes[start];
+        if (nativeString.fromCharCode(s).match(/[a-zA-Z0-9]/) !== null) {
+          carry = 0;
+          if ((48 <= s && s < 57) || (97 <= s && s < 122) || (65 <= s && s < 90)) {
+            codes[start] = codes[start] + 1;
+          } else if (s === 57) {
+            codes[start] = 48;
+            carry = 49;
+          } else if (s === 122) {
+            codes[start] = carry = 97;
+          } else if (s === 90) {
+            codes[start] = carry = 65;
+          }
+          if (carry === 0) {
+            break;
+          }
+          last_alnum = start;
+        }
+        start -= 1;
+      }
+      if (carry === null) {
+        start = codes.length - 1;
+        carry = 1;
+        while (start >= 0) {
+          s = codes[start];
+          if (s >= 255) {
+            codes[start] = 0;
+          } else {
+            codes[start] = codes[start] + 1;
+            break;
+          }
+          start -= 1;
+        }
+      }
+      chars = (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = codes.length; _i < _len; _i++) {
+          c = codes[_i];
+          _results.push(String.fromCharCode(c));
+        }
+        return _results;
+      })();
+      if (start < 0) {
+        chars[last_alnum] = nativeString.fromCharCode(carry, codes[last_alnum]);
+      }
+      return chars.join("");
+    };
+
     StringMethods.prototype.slice = function(str, index, other) {
       var length, size, start;
       if (index === null) {
@@ -2397,13 +2527,13 @@ http://www.rubyjs.org/LICENSE.txt
           if (length < 0 || start < 0 || start > size) {
             return null;
           }
-          return str.slice(start, start + length);
+          return str_slice.call(str, start, start + length);
         }
       }
       if (index.is_regexp != null) {
         throw R.NotImplementedError["new"]();
       } else if (typeof index === 'string') {
-        if (this.include(str, index)) {
+        if (_str.include(str, index)) {
           return index;
         } else {
           return null;
@@ -2433,7 +2563,7 @@ http://www.rubyjs.org/LICENSE.txt
         if (length < 0) {
           length = 0;
         }
-        return str.slice(start, start + length);
+        return str_slice.call(str, start, start + length);
       } else {
         if (index < 0) {
           index += size;
@@ -5740,10 +5870,10 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.rstrip_bang = function() {
-      if (!this.to_native().match(/[\s\n\t]+$/)) {
+      if (!this.__native__.match(/[\s\n\t]+$/)) {
         return null;
       }
-      return this.replace(this.to_native().replace(/[\s\n\t]+$/g, ''));
+      return this.replace(_str.rstrip(this.__native__));
     };
 
     String.prototype.scan = function(pattern, block) {
@@ -5906,13 +6036,12 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.strip_bang = function() {
-      var l, r;
-      l = this.lstrip_bang();
-      r = this.rstrip_bang();
-      if (l === null && r === null) {
+      var str;
+      str = _str.strip(this.__native__);
+      if (str === this.__native__) {
         return null;
       } else {
-        return this;
+        return this.replace(str);
       }
     };
 
@@ -5923,96 +6052,23 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.sub_bang = function(pattern, replacement) {
-      var pattern_lit, subbed;
+      var subbed;
       if (pattern === null) {
         throw R.TypeError["new"]();
       }
-      pattern_lit = String.string_native(pattern);
-      if (pattern_lit !== null) {
-        pattern = new RegExp(R.Regexp.escape(pattern_lit));
-      }
-      if (!R.Regexp.isRegexp(pattern)) {
-        throw R.TypeError["new"]();
-      }
-      if (pattern.global) {
-        throw "String#sub: " + pattern + " has set the global flag 'g'. " + pattern + "g";
-      }
       replacement = RCoerce.to_str_native(replacement);
-      subbed = this.to_native().replace(pattern, replacement);
+      subbed = _str.sub(this.__native__, pattern, replacement);
       return this.replace(subbed);
     };
 
     String.prototype.succ = function() {
-      return this.dup().succ_bang();
+      return new RString(_str.succ(this.__native__));
     };
 
     String.prototype.succ_bang = function() {
-      var c, carry, chars, codes, last_alnum, s, start;
-      if (this.length === 0) {
-        return this.replace("");
-      } else {
-        codes = (function() {
-          var _j, _len1, _ref1, _results;
-          _ref1 = this.to_native().split("");
-          _results = [];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            c = _ref1[_j];
-            _results.push(c.charCodeAt(0));
-          }
-          return _results;
-        }).call(this);
-        carry = null;
-        last_alnum = 0;
-        start = codes.length - 1;
-        while (start >= 0) {
-          s = codes[start];
-          if (String.fromCharCode(s).match(/[a-zA-Z0-9]/) !== null) {
-            carry = 0;
-            if ((48 <= s && s < 57) || (97 <= s && s < 122) || (65 <= s && s < 90)) {
-              codes[start] = codes[start] + 1;
-            } else if (s === 57) {
-              codes[start] = 48;
-              carry = 49;
-            } else if (s === 122) {
-              codes[start] = carry = 97;
-            } else if (s === 90) {
-              codes[start] = carry = 65;
-            }
-            if (carry === 0) {
-              break;
-            }
-            last_alnum = start;
-          }
-          start -= 1;
-        }
-        if (carry === null) {
-          start = codes.length - 1;
-          carry = 1;
-          while (start >= 0) {
-            s = codes[start];
-            if (s >= 255) {
-              codes[start] = 0;
-            } else {
-              codes[start] = codes[start] + 1;
-              break;
-            }
-            start -= 1;
-          }
-        }
-        chars = (function() {
-          var _j, _len1, _results;
-          _results = [];
-          for (_j = 0, _len1 = codes.length; _j < _len1; _j++) {
-            c = codes[_j];
-            _results.push(String.fromCharCode(c));
-          }
-          return _results;
-        })();
-        if (start < 0) {
-          chars[last_alnum] = nativeString.fromCharCode(carry, codes[last_alnum]);
-        }
-        return this.replace(chars.join(""));
-      }
+      var str;
+      str = _str.succ(this.__native__);
+      return this.replace(str);
     };
 
     String.prototype.next = String.prototype.succ;

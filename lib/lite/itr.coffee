@@ -467,6 +467,7 @@ class EnumerableMethods
 
     ary
 
+
   reverse_each: (coll, block) ->
     # There is no other way then to convert to an array first.
     # Because Enumerable depends only on #each (through #to_a)
@@ -502,7 +503,7 @@ class EnumerableMethods
     # TODO: throw Error when comparing different values.
     block ||= R.Comparable.cmpstrict
     coll = coll.to_native() if coll.to_native?
-    coll.sort(block)
+    arr_sort.call(coll, block)
 
 
   sort_by: (coll, block) ->
