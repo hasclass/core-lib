@@ -667,7 +667,7 @@ http://www.rubyjs.org/LICENSE.txt
     Base.prototype.pollute_global = function() {
       var args, method, _i, _len;
       if (arguments.length === 0) {
-        args = ['_str', '_arr', '_enum', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
+        args = ['_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
       } else {
         args = arguments;
       }
