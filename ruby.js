@@ -9,7 +9,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, CharTable, EnumerableMethods, MYSortedElement, NumericMethods, RArray, RCoerce, REnumerable, RString, StringMethods, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _arr_join_, _blockify, _enum, _fn, _i, _len, _num, _ref, _slice_, _str, _toString_,
+  var ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, MYSortedElement, NumericMethods, RArray, RCoerce, REnumerable, RString, StringMethods, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, _arr, _arr_join_, _blockify, _enum, _fn, _i, _len, _num, _ref, _slice_, _str, _toString_,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -525,17 +525,17 @@ http://www.rubyjs.org/LICENSE.txt
         for (name in methods) {
           func = methods[name];
           if (typeof func === 'function') {
-            if (proto[name] === void 0) {
-              (function(name, func) {
-                return proto[name] = function() {
-                  var args;
-                  args = [this.valueOf()].concat(_slice_.call(arguments, 0));
-                  return func.apply(methods, args);
-                };
-              })(name, func);
-            } else {
-              console.log("" + name + " exists. Skip.");
+            if (proto[name] != null) {
+              console.log("" + proto + "." + name + " exists. Method prefixed with 'rb_'");
+              name = "rb_" + name;
             }
+            (function(name, methods) {
+              return proto[name] = function() {
+                var args;
+                args = [this.valueOf()].concat(_slice_.call(arguments, 0));
+                return methods[name].apply(methods, args);
+              };
+            })(name, methods);
           }
         }
       }
@@ -673,6 +673,9 @@ http://www.rubyjs.org/LICENSE.txt
         }
       }
     },
+    to_native: function(obj) {
+      return typeof obj.to_native === "function" ? obj.to_native() : void 0;
+    },
     to_num_native: function(obj) {
       if (typeof obj === 'number') {
         return obj;
@@ -685,20 +688,20 @@ http://www.rubyjs.org/LICENSE.txt
       }
     },
     to_int: function(obj) {
-      return this.coerce(obj, 'to_int');
+      return RCoerce.coerce(obj, 'to_int');
     },
     to_int_native: function(obj) {
       if (typeof obj === 'number' && (obj % 1 === 0)) {
         return obj;
       } else {
-        return this.coerce(obj, 'to_int').to_native();
+        return RCoerce.coerce(obj, 'to_int').to_native();
       }
     },
     to_str: function(obj) {
-      return this.coerce(obj, 'to_str');
+      return RCoerce.coerce(obj, 'to_str');
     },
     to_str_native: function(obj) {
-      return this.coerce(obj, 'to_str', 'string');
+      return RCoerce.coerce(obj, 'to_str', 'string');
     },
     to_ary: function(obj) {
       return this.coerce(obj, 'to_ary');
@@ -707,7 +710,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (RArray.isNativeArray(obj)) {
         return obj;
       } else {
-        return this.coerce(obj, 'to_ary').to_native();
+        return RCoerce.coerce(obj, 'to_ary').to_native();
       }
     }
   };
@@ -2070,6 +2073,35 @@ http://www.rubyjs.org/LICENSE.txt
 
     function StringMethods() {}
 
+    StringMethods.prototype.capitalize = function(str) {
+      var a, b;
+      if (str.length === 0) {
+        return "";
+      }
+      b = this.downcase(str);
+      a = this.upcase(str[0]);
+      return a + b.slice(1);
+    };
+
+    StringMethods.prototype.center = function(str, length, padString) {
+      var lft, max, rgt, size;
+      if (padString == null) {
+        padString = ' ';
+      }
+      if (padString.length === 0) {
+        throw R.ArgumentError["new"]();
+      }
+      size = str.length;
+      if (size >= length) {
+        return str;
+      }
+      lft = Math.floor((length - size) / 2);
+      rgt = length - size - lft;
+      max = lft > rgt ? lft : rgt;
+      padString = this.multiply(padString, max);
+      return padString.slice(0, lft) + str + padString.slice(0, rgt);
+    };
+
     StringMethods.prototype.chars = function(str, block) {
       var idx, len;
       idx = -1;
@@ -2109,37 +2141,316 @@ http://www.rubyjs.org/LICENSE.txt
       if (str.length === 0) {
         return str;
       }
+      if (str.lastIndexOf("\r\n") === str.length - 2) {
+        return str.replace(/\r\n$/, '');
+      } else {
+        return this.slice(str, 0, str.length - 1);
+      }
+    };
+
+    StringMethods.prototype.count = function() {
+      var args, str;
+      str = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      if (args.length === 0) {
+        throw R.ArgumentError["new"]();
+      }
+      return _str.__matched__(str, args).length;
+    };
+
+    StringMethods.prototype.__matched__ = function(str, args) {
+      var el, rgx, _i, _len;
+      for (_i = 0, _len = args.length; _i < _len; _i++) {
+        el = args[_i];
+        rgx = _str.__to_regexp__(el);
+        str = (str.match(rgx) || []).join('');
+      }
+      return str;
+    };
+
+    StringMethods.prototype.__to_regexp__ = function(str) {
+      var r;
+      r = "";
+      if (str.length === 0) {
+        r = "(?!)";
+      } else if (str === '^') {
+        r = "\\^";
+      } else {
+        if (str.lastIndexOf("^") >= 1) {
+          str = str[0] + str.slice(1).replace("^", "\\^");
+        }
+        r = "[" + str + "]";
+      }
+      try {
+        return new RegExp(r, 'g');
+      } catch (e) {
+        throw R.ArgumentError["new"]();
+      }
+    };
+
+    StringMethods.prototype['delete'] = function() {
+      var args, str, trash;
+      str = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      if (args.length === 0) {
+        throw R.ArgumentError["new"]();
+      }
+      trash = _str.__matched__(str, args);
+      return str.replace(new RegExp("[" + trash + "]", 'g'), '');
+    };
+
+    StringMethods.prototype.squeeze = function() {
+      var all, c, chars, i, j, last, len, pattern, str, trash;
+      str = arguments[0], pattern = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      trash = _str.__matched__(str, pattern);
+      chars = str.split("");
+      len = str.length;
+      i = 1;
+      j = 0;
+      last = chars[0];
+      all = pattern.length === 0;
+      while (i < len) {
+        c = chars[i];
+        if (!(c === last && (all || trash.indexOf(c) >= 0))) {
+          chars[j += 1] = last = c;
+        }
+        i += 1;
+      }
+      if ((j + 1) < len) {
+        chars = chars.slice(0, j + 1 || 9e9);
+      }
+      return chars.join('');
     };
 
     StringMethods.prototype.downcase = function(str) {
       if (!str.match(/[A-Z]/)) {
-        return null;
+        return str;
       }
-      return R(str.split('')).map(function(c) {
+      return _arr.map(str.split(''), function(c) {
         if (c.match(/[A-Z]/)) {
           return c.toLowerCase();
         } else {
           return c;
         }
-      }).join('').to_native();
+      }).join('');
     };
 
     StringMethods.prototype.empty = function(str) {
       return str.length === 0;
     };
 
-    StringMethods.prototype.end_with = function(str, needles) {
-      var str_len, w, _i, _len, _ref1;
-      needles = R.$Array_r(needles).select(function(el) {
-        return (el != null ? el.to_str : void 0) != null;
-      }).map(function(w) {
-        return w.to_str().to_native();
-      });
-      str_len = str.length;
-      _ref1 = needles.iterator();
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        w = _ref1[_i];
-        if (str.lastIndexOf(w) + w.length === str_len) {
+    StringMethods.prototype.end_with = function() {
+      var needles, str, w, _i, _len;
+      str = arguments[0], needles = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      for (_i = 0, _len = needles.length; _i < _len; _i++) {
+        w = needles[_i];
+        if (str.lastIndexOf(w) + w.length === str.length) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    StringMethods.prototype.include = function(str, other) {
+      return str.indexOf(other) >= 0;
+    };
+
+    StringMethods.prototype.index = function(str, needle, offset) {
+      var idx;
+      if (offset != null) {
+        if (offset < 0) {
+          offset = str.length + offset;
+        }
+      }
+      if ((offset != null) && (offset > str.length || offset < 0)) {
+        return null;
+      }
+      idx = str.indexOf(needle, offset);
+      if (idx < 0) {
+        return null;
+      } else {
+        return idx;
+      }
+    };
+
+    StringMethods.prototype.ljust = function(str, width, padString) {
+      var idx, len, out, pad_length;
+      if (padString == null) {
+        padString = " ";
+      }
+      len = str.length;
+      if (len >= width) {
+        return str;
+      } else {
+        if (padString.length === 0) {
+          throw R.ArgumentError["new"]();
+        }
+        pad_length = width - len;
+        idx = -1;
+        out = "";
+        while (++idx <= pad_length) {
+          out += padString;
+        }
+        return str + out.slice(0, pad_length);
+      }
+    };
+
+    StringMethods.prototype.lstrip = function(str) {
+      return str.replace(/^[\s\n\t]+/g, '');
+    };
+
+    StringMethods.prototype.match = function(str, pattern, offset, block) {
+      var matches, opts, result;
+      if (offset == null) {
+        offset = null;
+      }
+      if (block == null) {
+        if ((offset != null ? offset.call : void 0) != null) {
+          block = offset;
+          offset = null;
+        }
+      }
+      opts = {};
+      if (offset != null) {
+        opts = {
+          string: str,
+          offset: offset
+        };
+        str = str.slice(offset);
+        matches = str.match(pattern, offset);
+      } else {
+        matches = str.match(pattern);
+      }
+      result = matches ? new R.MatchData(matches, opts) : null;
+      R['$~'] = result;
+      if (block) {
+        if (result) {
+          return block(result);
+        } else {
+          return [];
+        }
+      } else {
+        return result;
+      }
+    };
+
+    StringMethods.prototype.multiply = function(str, num) {
+      var n, out, _i;
+      if (num < 0) {
+        throw R.ArgumentError["new"]();
+      }
+      out = "";
+      for (n = _i = 0; 0 <= num ? _i < num : _i > num; n = 0 <= num ? ++_i : --_i) {
+        out += str;
+      }
+      return out;
+    };
+
+    StringMethods.prototype.partition = function(str, pattern) {
+      var a, b, c, idx, start;
+      idx = this.index(str, pattern);
+      if (idx !== null) {
+        start = idx + pattern.length;
+        a = this.slice(str, 0, idx) || '';
+        b = pattern;
+        c = str.slice(start);
+        return [a, b, c];
+      } else {
+        return [str, '', ''];
+      }
+    };
+
+    StringMethods.prototype.reverse = function(str) {
+      return str.split("").reverse().join("");
+    };
+
+    StringMethods.prototype.rjust = function(str, width, pad_str) {
+      var len, pad_len;
+      if (pad_str == null) {
+        pad_str = " ";
+      }
+      len = str.length;
+      if (len >= width) {
+        return str;
+      } else {
+        if (pad_str.length === 0) {
+          throw R.ArgumentError["new"]();
+        }
+        pad_len = width - len;
+        return _str.multiply(pad_str, pad_len).slice(0, pad_len) + str;
+      }
+    };
+
+    StringMethods.prototype.slice = function(str, index, other) {
+      var length, size, start;
+      if (index === null) {
+        throw R.TypeError["new"]();
+      }
+      size = str.length;
+      if (other !== void 0) {
+        if (index.is_regexp != null) {
+          throw R.NotImplementedError["new"]();
+        } else {
+          length = other;
+          start = index;
+          if (start < 0) {
+            start += size;
+          }
+          if (length < 0 || start < 0 || start > size) {
+            return null;
+          }
+          return str.slice(start, start + length);
+        }
+      }
+      if (index.is_regexp != null) {
+        throw R.NotImplementedError["new"]();
+      } else if (typeof index === 'string') {
+        if (this.include(str, index)) {
+          return index;
+        } else {
+          return null;
+        }
+      } else if (index.is_range != null) {
+        start = RCoerce.to_int_native(index.begin());
+        length = RCoerce.to_int_native(index.end());
+        if (start < 0) {
+          start += size;
+        }
+        if (length < 0) {
+          length += size;
+        }
+        if (!index.exclude_end()) {
+          length += 1;
+        }
+        if (start === size) {
+          return "";
+        }
+        if (start < 0 || start > size) {
+          return null;
+        }
+        if (length > size) {
+          length = size;
+        }
+        length = length - start;
+        if (length < 0) {
+          length = 0;
+        }
+        return str.slice(start, start + length);
+      } else {
+        if (index < 0) {
+          index += size;
+        }
+        if (index < 0 || index >= size) {
+          return null;
+        }
+        return str[index];
+      }
+    };
+
+    StringMethods.prototype.start_with = function() {
+      var needle, needles, str, _i, _len;
+      str = arguments[0], needles = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      for (_i = 0, _len = needles.length; _i < _len; _i++) {
+        needle = needles[_i];
+        if (str.indexOf(needle) === 0) {
           return true;
         }
       }
@@ -2148,7 +2459,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.upcase = function(str) {
       if (!str.match(/[a-z]/)) {
-        return null;
+        return str;
       }
       return _arr.map(str.split(''), function(c) {
         if (c.match(/[a-z]/)) {
@@ -2157,10 +2468,6 @@ http://www.rubyjs.org/LICENSE.txt
           return c;
         }
       }).join('');
-    };
-
-    StringMethods.prototype.reverse = function(str) {
-      return str.split("").reverse().join("");
     };
 
     return StringMethods;
@@ -4862,11 +5169,17 @@ http://www.rubyjs.org/LICENSE.txt
     }
 
     String.isString = function(obj) {
+      if (obj == null) {
+        return false;
+      }
       if (typeof obj === 'string') {
         return true;
       }
       if (typeof obj !== 'object') {
         return false;
+      }
+      if (obj.is_string != null) {
+        return true;
       }
       return _toString_.call(obj) === '[object String]';
     };
@@ -4932,17 +5245,8 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype['*'] = function(num) {
-      var n, str, _j, _ref1;
-      num = this.box(num).to_int();
-      this.__ensure_numeric(num);
-      if (num.lt(0)) {
-        throw R.ArgumentError["new"]();
-      }
-      str = "";
-      for (n = _j = 0, _ref1 = num.to_native(); 0 <= _ref1 ? _j < _ref1 : _j > _ref1; n = 0 <= _ref1 ? ++_j : --_j) {
-        str += this;
-      }
-      return new R.String(str);
+      num = RCoerce.to_int_native(num);
+      return new RString(_str.multiply(this.__native__, num));
     };
 
     String.prototype['+'] = function(other) {
@@ -4998,35 +5302,24 @@ http://www.rubyjs.org/LICENSE.txt
       return this.replace(this.to_native() + other.to_str().to_native());
     };
 
-    String.prototype['=~'] = function() {
-      var args, block, offset, pattern;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      block = this.__extract_block(args);
-      pattern = R(args[0]);
-      if (pattern.is_string != null) {
+    String.prototype['=~'] = function(pattern, offset, block) {
+      if (R(pattern).is_string != null) {
         throw R.TypeError["new"]();
       }
-      offset = R(args[1]);
       return this.match(pattern, offset, block);
     };
 
     String.prototype.capitalize = function() {
-      return this.dup().tap(function(me) {
-        return me.capitalize_bang();
-      });
+      return new RString(_str.capitalize(this.__native__));
     };
 
     String.prototype.capitalize_bang = function() {
       var str;
-      if (this.empty()) {
-        return;
-      }
-      str = this.downcase();
-      str = str.chr().upcase().concat(str.to_native().slice(1) || '');
-      if (this.equals(str)) {
+      str = _str.capitalize(this.__native__);
+      if (this.__native__ === str) {
         return null;
       } else {
-        return this.replace(str.to_native());
+        return this.replace(str);
       }
     };
 
@@ -5040,26 +5333,12 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.center = function(length, padString) {
-      var lft, max, rgt, size;
       if (padString == null) {
         padString = ' ';
       }
-      length = this.box(length);
-      padString = RCoerce.to_str(padString);
-      this.__ensure_numeric(length);
-      this.__ensure_string(padString);
-      if (padString.empty()) {
-        throw R.ArgumentError["new"]();
-      }
-      if (this.size().gteq(length)) {
-        return this;
-      }
-      lft = (length.minus(this.size())).divide(2);
-      rgt = length.minus(this.size()).minus(lft);
-      max = lft.gt(rgt) ? lft : rgt;
-      size = padString.size();
-      padString = padString.multiply(max);
-      return this.$String(padString.to_native().slice(0, lft) + this.to_native() + padString.to_native().slice(0, rgt));
+      length = RCoerce.to_int_native(length);
+      padString = RCoerce.to_str_native(padString);
+      return new RString(_str.center(this.__native__, length, padString));
     };
 
     String.prototype.chars = function(block) {
@@ -5094,14 +5373,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.chop = function() {
-      if (this.empty()) {
-        return this.dup();
-      }
-      if (this.end_with("\r\n")) {
-        return new R.String(this.to_native().replace(/\r\n$/, ''));
-      } else {
-        return this.slice(0, this.size().minus(1));
-      }
+      return new RString(_str.chop(this.__native__));
     };
 
     String.prototype.chr = function() {
@@ -5115,39 +5387,31 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.count = function() {
-      var args, tbl;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (R(args.length).equals(0)) {
-        throw R.ArgumentError["new"]();
+      var args, el, i, _j, _len1;
+      args = [this.__native__];
+      for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
+        el = arguments[i];
+        args.push(RCoerce.to_str_native(el));
       }
-      tbl = new CharTable(args);
-      return this.chars().count(function(chr) {
-        return tbl.include(chr);
-      });
+      return new R.Fixnum(_str.count.apply(_str, args));
     };
 
     String.prototype["delete"] = function() {
       var args;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      args = arguments;
       return this.dup().tap(function(s) {
         return s.delete_bang.apply(s, args);
       });
     };
 
     String.prototype.delete_bang = function() {
-      var args, str, tbl;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (R(args.length).equals(0)) {
-        throw R.ArgumentError["new"]();
+      var args, el, i, str, _j, _len1;
+      args = [this.__native__];
+      for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
+        el = arguments[i];
+        args.push(RCoerce.to_str_native(el));
       }
-      tbl = new CharTable(args);
-      str = [];
-      R(this.to_native().split("")).each(function(chr) {
-        if (!tbl.include(chr)) {
-          return str.push(chr);
-        }
-      });
-      str = str.join('');
+      str = _str["delete"].apply(null, args);
       if (this.equals(str)) {
         return null;
       }
@@ -5155,16 +5419,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.downcase = function() {
-      return new RString(_str.downcase(this.__native__) || this.__native__);
+      return new RString(_str.downcase(this.__native__));
     };
 
     String.prototype.downcase_bang = function() {
-      var str;
-      str = _str.downcase(this.__native__);
-      if (str === null) {
+      if (!this.__native__.match(/[A-Z]/)) {
         return null;
       }
-      return this.replace(str);
+      return this.replace(_str.downcase(this.__native__));
     };
 
     String.prototype.dump = function() {
@@ -5223,9 +5485,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.end_with = function() {
-      var needles;
+      var needles, neeldes;
       needles = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return _str.end_with(this.__native__, needles);
+      needles = _arr.select(needles, function(s) {
+        var _ref1;
+        return ((_ref1 = R(s)) != null ? _ref1.to_str : void 0) != null;
+      });
+      neeldes = _arr.map(needles, _fn(RCoerce.to_str_native));
+      return _str.end_with.apply(_str, [this.__native__].concat(__slice.call(needles)));
     };
 
     String.prototype.eql = function(other) {
@@ -5283,34 +5550,20 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.include = function(other) {
       other = RCoerce.to_str_native(other);
-      return this.to_native().indexOf(other) >= 0;
+      return _str.include(this.__native__, other);
     };
 
     String.prototype.index = function(needle, offset) {
-      var idx;
-      needle = R(needle);
-      if (needle.to_str != null) {
-        needle = needle.to_str();
+      var val;
+      needle = RCoerce.to_str_native(needle);
+      if (offset != null) {
+        offset = RCoerce.to_int_native(offset);
       }
-      if (offset) {
-        offset = RCoerce.to_int(offset);
-        if (offset.lt(0)) {
-          offset = this.size().minus(offset.abs());
-        }
-      }
-      if (!((needle.is_string != null) || (needle.is_regexp != null) || (needle.is_fixnum != null))) {
-        throw R.TypeError["new"]();
-      }
-      if (offset) {
-        if (offset.gt(this.to_native().length) || offset.lt(0)) {
-          return null;
-        }
-      }
-      idx = this.to_native().indexOf(needle.valueOf(), +offset);
-      if (idx < 0) {
+      val = _str.index(this.__native__, needle, offset);
+      if (val === null) {
         return null;
       } else {
-        return new R.Fixnum(idx);
+        return new R.Fixnum(val);
       }
     };
 
@@ -5339,91 +5592,32 @@ http://www.rubyjs.org/LICENSE.txt
     String.prototype.lines = String.prototype.each_line;
 
     String.prototype.ljust = function(width, padString) {
-      var idx, len, out, padLength;
       if (padString == null) {
         padString = " ";
       }
       width = RCoerce.to_int_native(width);
-      len = this.__native__.length;
-      if (len >= width) {
-        return this.clone();
-      } else {
-        padString = RCoerce.to_str_native(padString);
-        if (padString.length === 0) {
-          throw R.ArgumentError["new"]();
-        }
-        padLength = width - len;
-        idx = -1;
-        out = "";
-        while (++idx <= padLength) {
-          out += padString;
-        }
-        return new R.String(this.__native__ + out.slice(0, padLength));
-      }
+      padString = RCoerce.to_str_native(padString);
+      return new RString(_str.ljust(this.__native__, width, padString));
     };
 
     String.prototype.lstrip = function() {
-      return this.dup().tap(function(s) {
-        return s.lstrip_bang();
-      });
+      return new RString(_str.lstrip(this.__native__));
     };
 
     String.prototype.lstrip_bang = function() {
       if (!this.to_native().match(/^[\s\n\t]+/)) {
         return null;
       }
-      return this.replace(this.to_native().replace(/^[\s\n\t]+/g, ''));
+      return this.replace(_str.lstrip(this.__native__));
     };
 
-    String.prototype.match = function() {
-      var args, block, haystack, matches, offset, opts, pattern, result;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      block = this.__extract_block(args);
-      pattern = R(args[0]);
-      if (pattern.to_str != null) {
-        pattern = pattern.to_str();
-      }
-      if (!((pattern.is_string != null) || (pattern.is_regexp != null))) {
-        throw R.TypeError["new"]();
-      }
-      haystack = this.to_native();
-      opts = {};
-      if (offset = R(args[1])) {
-        offset = offset.to_int().to_native();
-        opts.string = haystack;
-        opts.offset = offset;
-        haystack = haystack.slice(offset);
-        matches = haystack.match(pattern.to_native(), offset);
-      } else {
-        matches = haystack.match(pattern.to_native());
-      }
-      result = matches ? new R.MatchData(matches, opts) : null;
-      R['$~'] = result;
-      if (block) {
-        if (result) {
-          return block(result);
-        } else {
-          return [];
-        }
-      } else {
-        return result;
-      }
+    String.prototype.match = function(pattern, offset, block) {
+      return _str.match(this.__native__, pattern, offset, block);
     };
 
     String.prototype.partition = function(pattern) {
-      var a, b, c, idx, len, start;
-      pattern = RCoerce.to_str(pattern).to_str();
-      if (idx = this.index(pattern)) {
-        start = idx + pattern.length;
-        len = this.size() - start;
-        a = this.slice(0, idx);
-        b = pattern.dup();
-        c = R(this.to_native().slice(start));
-      }
-      a || (a = this);
-      b || (b = R(""));
-      c || (c = R(""));
-      return R([a, b, c]);
+      pattern = RCoerce.to_str_native(pattern);
+      return new RArray(_str.partition(this.__native__, pattern));
     };
 
     String.prototype.prepend = function(other) {
@@ -5515,24 +5709,12 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.rjust = function(width, padString) {
-      var padLength, _base;
       if (padString == null) {
         padString = " ";
       }
-      width = RCoerce.to_int(width);
-      if (this.length >= width) {
-        return this.clone();
-      } else {
-        padString = typeof (_base = this.box(padString)).to_str === "function" ? _base.to_str() : void 0;
-        if ((padString != null ? padString.is_string : void 0) == null) {
-          throw R.TypeError["new"]();
-        }
-        if (padString.empty()) {
-          throw R.ArgumentError["new"]();
-        }
-        padLength = width.minus(this.length);
-        return this.$String(padString.multiply(padLength).to_native().slice(0, padLength) + this);
-      }
+      width = RCoerce.to_int_native(width);
+      padString = RCoerce.to_str_native(padString);
+      return new RString(_str.rjust(this.__native__, width, padString));
     };
 
     String.prototype.rpartition = function(pattern) {
@@ -5624,76 +5806,39 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.slice = function(index, other) {
-      var len, length, size, start, substr;
+      var val;
       if (index === null) {
-        throw new R.TypeError["new"]();
+        throw R.TypeError["new"]();
       }
       index = R(index);
-      size = this.size().to_native();
       if (other !== void 0) {
         if (index.is_regexp != null) {
-
+          throw R.NotImplementedError["new"]();
         } else {
-          length = RCoerce.to_int_native(other);
-          start = RCoerce.to_int_native(index);
-          if (start < 0) {
-            start += size;
-          }
-          if (length < 0) {
+          index = RCoerce.to_int_native(index);
+          other = RCoerce.to_int_native(other);
+          val = _str.slice(this.__native__, index, other);
+          if (val != null) {
+            return new RString(val);
+          } else {
             return null;
           }
-          if (start < 0 || start > size) {
-            return null;
-          }
-          substr = this.to_native().slice(start, start + length);
-          return new R.String(substr);
         }
       }
       if (index.is_regexp != null) {
-
+        throw R.NotImplementedError["new"]();
       } else if (index.is_string != null) {
-        if (this.include(index)) {
-          return index.dup();
-        } else {
-          return null;
-        }
+        index = RCoerce.to_str_native(index);
       } else if (index.is_range != null) {
-        start = RCoerce.to_int_native(index.begin());
-        length = RCoerce.to_int_native(index.end());
-        if (start < 0) {
-          start += size;
-        }
-        if (length < 0) {
-          length += size;
-        }
-        if (!index.exclude_end()) {
-          length += 1;
-        }
-        if (start === size) {
-          return new R.String("");
-        }
-        if (start < 0 || start > size) {
-          return null;
-        }
-        if (length > size) {
-          length = size;
-        }
-        length = length - start;
-        if (length < 0) {
-          length = 0;
-        }
-        substr = this.to_native().slice(start, start + length);
-        return new R.String(substr);
+
       } else {
         index = RCoerce.to_int_native(index);
-        len = this.size().to_native();
-        if (index < 0) {
-          index += len;
-        }
-        if (index < 0 || index >= this.size()) {
-          return null;
-        }
-        return new R.String(this.to_native()[index]);
+      }
+      val = _str.slice(this.__native__, index);
+      if (val != null) {
+        return new RString(val);
+      } else {
+        return null;
       }
     };
 
@@ -5734,42 +5879,24 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.squeeze = function() {
-      var all, c, chars, i, j, last, len, pattern, tbl;
-      pattern = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      tbl = new CharTable(pattern);
-      chars = this.to_native().split("");
-      len = this.to_native().length;
-      i = 1;
-      j = 0;
-      last = chars[0];
-      all = pattern.length === 0;
-      while (i < len) {
-        c = chars[i];
-        if (!(c === last && (all || tbl.include(c)))) {
-          chars[j += 1] = last = c;
-        }
-        i += 1;
+      var args, el, i, _j, _len1;
+      args = [this.__native__];
+      for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
+        el = arguments[i];
+        args.push(RCoerce.to_str_native(el));
       }
-      if ((j + 1) < len) {
-        chars = chars.slice(0, j + 1 || 9e9);
-      }
-      return new this.constructor(chars.join(''));
+      return new RString(_str.squeeze.apply(_str, args));
     };
 
     String.prototype.start_with = function() {
-      var needles, w, _j, _len1, _ref1;
+      var needles, neeldes;
       needles = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      needles = this.$Array_r(needles).select(function(el) {
-        return (el != null ? el.to_str : void 0) != null;
+      needles = _arr.select(needles, function(s) {
+        var _ref1;
+        return ((_ref1 = R(s)) != null ? _ref1.to_str : void 0) != null;
       });
-      _ref1 = needles.iterator();
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        w = _ref1[_j];
-        if (this.to_native().indexOf(w.to_str().to_native()) === 0) {
-          return true;
-        }
-      }
-      return false;
+      neeldes = _arr.map(needles, _fn(RCoerce.to_str_native));
+      return _str.start_with.apply(_str, [this.__native__].concat(__slice.call(needles)));
     };
 
     String.prototype.strip = function() {
@@ -5958,40 +6085,13 @@ http://www.rubyjs.org/LICENSE.txt
     String.prototype.to_str = String.prototype.to_s;
 
     String.prototype.tr = function(from_str, to_str) {
-      return this.dup().tap(function(dup) {
-        return dup.tr_bang(from_str, to_str);
+      return this.dup().tap(function(s) {
+        return s.tr_bang(from_str, to_str);
       });
     };
 
     String.prototype.tr_bang = function(from_str, to_str) {
-      var char, chars, from, from_chars, i, idx, len, out, str, to, to_chars, to_length;
-      chars = this.__char_natives__();
-      from = new CharTable([from_str]);
-      from_chars = from.include_chars().to_native();
-      to = new CharTable([to_str]);
-      to_chars = to.include_chars().to_native();
-      to_length = to_chars.length;
-      out = [];
-      i = 0;
-      len = chars.length;
-      while (i < len) {
-        char = chars[i];
-        i = i + 1;
-        if (from.include(char)) {
-          idx = from_chars.indexOf(char);
-          if (idx === -1 || idx >= to_length) {
-            idx = to_length - 1;
-          }
-          char = to_chars[idx];
-        }
-        out.push(char);
-      }
-      str = out.join('');
-      if (this.equals(str)) {
-        return null;
-      } else {
-        return this.replace(str);
-      }
+      throw R.NotImplementedError["new"]();
     };
 
     String.prototype.tr_s = function() {
@@ -6013,18 +6113,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.upcase = function() {
-      var str;
-      str = _str.upcase(this.__native__) || this.__native__;
-      return new RString(str);
+      return new RString(_str.upcase(this.__native__));
     };
 
     String.prototype.upcase_bang = function() {
-      var val;
-      val = _str.upcase(this.__native__);
-      if (val === null) {
+      if (!this.__native__.match(/[a-z]/)) {
         return null;
       }
-      return this.replace(val);
+      return this.replace(_str.upcase(this.__native__));
     };
 
     String.prototype.upto = function(stop, exclusive, block) {
@@ -6077,89 +6173,6 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(RubyJS.Object);
 
-  CharTable = (function() {
-
-    function CharTable(patterns) {
-      var arr, v, w, _j, _len1, _ref1;
-      this.patterns = patterns;
-      this.incl = null;
-      this.excl = null;
-      _ref1 = this.patterns;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        w = _ref1[_j];
-        v = RCoerce.to_str(w).to_native();
-        if (v.length === 0) {
-
-        } else if (v[0] === '^' && v.length > 1) {
-          arr = this.__char_table__(v.slice(1));
-          this.excl = this.excl ? this.excl['&'](arr) : R(arr);
-        } else {
-          arr = this.__char_table__(v);
-          this.incl = this.incl ? this.incl['&'](arr) : R(arr);
-        }
-      }
-    }
-
-    CharTable.prototype.include_chars = function() {
-      return this.incl || new R.Array([]);
-    };
-
-    CharTable.prototype.exclude_chars = function() {
-      return this.excl || new R.Array([]);
-    };
-
-    CharTable.prototype.exclude = function(chr) {
-      return !this.include(chr);
-    };
-
-    CharTable.prototype.include = function(chr) {
-      if (this.incl && this.excl) {
-        return this.incl.include(chr) && !this.excl.include(chr);
-      } else if (this.incl) {
-        return this.incl.include(chr);
-      } else if (this.excl) {
-        return !this.excl.include(chr);
-      } else {
-        return false;
-      }
-    };
-
-    CharTable.prototype.__char_table__ = function(str) {
-      var arr, m, s, _j, _len1;
-      arr = [];
-      if (m = str.match(/[^\\]\-./g)) {
-        for (_j = 0, _len1 = m.length; _j < _len1; _j++) {
-          s = m[_j];
-          arr = arr.concat(this.__char_range__(s[0], s[2]));
-        }
-      }
-      arr = arr.concat(str.replace(/[^\\]\-./g, '').split(""));
-      return arr;
-    };
-
-    CharTable.prototype.__char_range__ = function(a, b) {
-      var arr, counter;
-      arr = [];
-      a = R(a);
-      if (!a['<='](b)) {
-        throw R.ArgumentError["new"]();
-      }
-      counter = 0;
-      while (a['<='](b)) {
-        counter++;
-        arr.push(a.to_native());
-        a = a.succ();
-        if (counter === 10000) {
-          throw R.ArgumentError["new"]("ERROR: " + a + " " + b);
-        }
-      }
-      return arr;
-    };
-
-    return CharTable;
-
-  })();
-
   RString = RubyJS.String;
 
   RubyJS.Regexp = (function(_super) {
@@ -6204,7 +6217,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Regexp.isRegexp = function(obj) {
-      return _toString_.call(obj) === '[object RegExp]' || (obj.is_regexp != null);
+      return ((obj != null ? obj.is_regexp : void 0) != null) || _toString_.call(obj) === '[object RegExp]';
     };
 
     Regexp.prototype.is_regexp = function() {

@@ -1,5 +1,5 @@
 describe "String#count", ->
-  it "counts occurrences of chars from the intersection of the specified sets", ->
+  xit "counts occurrences of chars from the intersection of the specified sets", ->
     s = R "hello\nworld\x00\x00"
 
     expect( s.count(s)).toEqual s.size()
@@ -17,10 +17,10 @@ describe "String#count", ->
     expect( s.count("helo", "hel", "h")).toEqual s.count("h")
     expect( s.count("helo", "", "x")).toEqual R(0)
 
-  it "raises an ArgumentError when given no arguments", ->
+  xit "raises an ArgumentError when given no arguments", ->
     expect( -> R("hell yeah").count() ).toThrow('ArgumentError')
 
-  it "negates sets starting with ^", ->
+  xit "negates sets starting with ^", ->
     s = R "^hello\nworld\x00\x00"
 
     expect( s.count("^leh")).toEqual R(9)
@@ -33,7 +33,7 @@ describe "String#count", ->
     expect( R("oa^_^o").count("a^")).toEqual R(3)
 
 
-  it "counts all chars in a sequence", ->
+  xit "counts all chars in a sequence", ->
     s = R "hel-[()]-lo012^"
 
     expect( s.count("^")).toEqual R(1) # no negation, counts ^
@@ -69,7 +69,7 @@ describe "String#count", ->
     expect( R("abcde").count("^ac-e")).toEqual R(1)
 
   # ruby_version_is ""..."1.9", ->
-  #   it "regards invalid sequences as empty", ->
+  #   xit "regards invalid sequences as empty", ->
   #     s = R "hel-[()]-lo012^"
 
   #     # empty sequences (end before start)
@@ -77,13 +77,13 @@ describe "String#count", ->
   #     s.count("^h-e").should == s.size
 
   describe 'ruby_version_is "1.9"', ->
-    it "raises if the given sequences are invalid", ->
+    xit "raises if the given sequences are invalid", ->
       s = R("hel-[()]-lo012^")
 
       expect( -> s.count("h-e") ).toThrow('ArgumentError')
       expect( -> s.count("^h-e") ).toThrow('ArgumentError')
 
-  it "calls #to_str to convert each set arg to a String", ->
+  xit "calls #to_str to convert each set arg to a String", ->
     other_string =
       to_str: ->
     spy1 = spyOn(other_string, 'to_str').andReturn(R('lo'))
@@ -98,7 +98,7 @@ describe "String#count", ->
     expect( spy2 ).wasCalled()
 
 
-  it "raises a TypeError when a set arg can't be converted to a string", ->
+  xit "raises a TypeError when a set arg can't be converted to a string", ->
     expect( -> R("hello world").count(100)       ).toThrow('TypeError')
     expect( -> R("hello world").count([])        ).toThrow('TypeError')
     # expect( -> R("hello world").count(mock('x')) ).toThrow('TypeError')

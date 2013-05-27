@@ -392,24 +392,23 @@ class RubyJS.String extends RubyJS.Object
   #
   # @todo expect( R("ABCabc[]").delete("A-a") ).toEqual R("bc")
   #
-  delete: (args...) ->
-    @dup().tap (s) -> s.delete_bang(args...)
+  delete: ->
+    args = arguments
+    @dup().tap (s) -> s.delete_bang.apply(s, args)
+
 
   # Performs a delete operation in place, returning str, or nil if str was not
   # modified.
   #
-  delete_bang: (args...) ->
-    throw R.ArgumentError.new() if R(args.length).equals(0)
-    tbl = new CharTable(args)
+  delete_bang: ->
+    args = [@__native__]
+    for el, i in arguments
+      args.push(RCoerce.to_str_native(el))
 
-    # OPTIMIZE:
-    str = []
-    R(@to_native().split("")).each (chr) ->
-      str.push(chr) if !tbl.include(chr)
-
-    str = str.join('')
+    str = _str.delete.apply(null, args)
     return null if @equals(str)
     @replace str
+
 
   # Returns a copy of str with all uppercase letters replaced with their
   # lowercase counterparts. The operation is locale insensitive—only characters
@@ -1204,6 +1203,7 @@ class RubyJS.String extends RubyJS.Object
   squeeze_bang: ->
     throw new R.NotImplementedError()
 
+
   # Builds a set of characters from the other_str parameter(s) using the
   # procedure described for String#count. Returns a new string where runs of
   # the same character that occur in this set are replaced by a single
@@ -1217,24 +1217,11 @@ class RubyJS.String extends RubyJS.Object
   #
   # @todo Fix A-a bug
   #
-  squeeze: (pattern...) ->
-    tbl   = new CharTable(pattern)
-    chars = @to_native().split("")
-    len   = @to_native().length
-    i     = 1
-    j     = 0
-    last  = chars[0]
-    all   = pattern.length == 0
-    while i < len
-      c = chars[i]
-      unless c == last and (all || tbl.include(c))
-        chars[j+=1] = last = c
-      i += 1
-
-    if (j + 1) < len
-      chars = chars[0..j]
-
-    new @constructor(chars.join(''))
+  squeeze: ->
+    args = [@__native__]
+    for el, i in arguments
+      args.push(RCoerce.to_str_native(el))
+    new RString(_str.squeeze.apply(_str, args))
 
 
   # Returns true if str starts with one of the prefixes given.
@@ -1564,38 +1551,14 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").tr('^aeiou', '*')   #=> "*e**o"
   #
   tr: (from_str, to_str) ->
-    @dup().tap (dup) -> dup.tr_bang(from_str, to_str)
+    @dup().tap (s) -> s.tr_bang(from_str, to_str)
 
 
   # Translates str in place, using the same rules as `String#tr`. Returns `str`,
   # or `nil` if no changes were made.
   #
   tr_bang: (from_str, to_str) ->
-    chars = @__char_natives__()
-
-    from       = new CharTable([from_str])
-    from_chars = from.include_chars().to_native()
-
-    to         = new CharTable([to_str])
-    to_chars   = to.include_chars().to_native()
-    to_length  = to_chars.length
-
-    # TODO: optimize, replace in place, avoid for in.
-    out = []
-
-    i   = 0
-    len = chars.length
-    while i < len
-      char = chars[i]
-      i = i + 1
-      if from.include(char)
-        idx  = from_chars.indexOf(char)
-        idx  = to_length - 1 if idx is -1 or idx >= to_length
-        char = to_chars[idx]
-      out.push(char)
-
-    str = out.join('')
-    if @equals(str) then null else @replace(str)
+    throw R.NotImplementedError.new()
 
 
   # Processes a copy of str as described under String#tr, then removes

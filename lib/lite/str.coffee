@@ -55,12 +55,15 @@ class StringMethods
   count: (str, args...) ->
     throw R.ArgumentError.new() if args.length == 0
 
-    for el in args
-      r = @__to_regexp__(el)
-      matches = str.match(r) || []
-      str = matches.join('')
+    _str.__matched__(str, args).length
 
-    str.length
+
+  __matched__: (str, args) ->
+    for el in args
+      rgx = _str.__to_regexp__(el)
+      str = (str.match(rgx) || []).join('')
+    str
+
 
   # creates a regexp from the "a-z", "^ab" arguments used in #count
   __to_regexp__: (str) ->
@@ -79,6 +82,32 @@ class StringMethods
       return new RegExp(r, 'g')
     catch e
       throw R.ArgumentError.new()
+
+
+  'delete': (str, args...) ->
+    throw R.ArgumentError.new() if args.length == 0
+    trash = _str.__matched__(str, args)
+    str.replace(new RegExp("[#{trash}]", 'g'), '')
+
+
+  squeeze: (str, pattern...) ->
+    trash = _str.__matched__(str, pattern)
+    chars = str.split("")
+    len   = str.length
+    i     = 1
+    j     = 0
+    last  = chars[0]
+    all   = pattern.length == 0
+    while i < len
+      c = chars[i]
+      unless c == last and (all || trash.indexOf(c) >= 0)
+        chars[j+=1] = last = c
+      i += 1
+
+    if (j + 1) < len
+      chars = chars[0..j]
+
+    chars.join('')
 
 
   downcase: (str) ->
@@ -266,94 +295,12 @@ class StringMethods
     false
 
 
-
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
     _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
     ).join('')
-
-
-# @private
-#
-# @example
-#     tbl = new CharTable(['abc', 'd-f'])
-#     tbl.include('c') # => true
-#     tbl.include('e') # => true
-#
-# @example negating
-#     tbl = new CharTable(['^abc', 'd-f'])
-#     tbl.include('c') # => false
-#     tbl.include('e') # => true
-#     tbl.include('z') # => true
-#
-class CharTable
-  # @param patterns Array[String]
-  constructor: (patterns) ->
-    @patterns = patterns
-
-    @incl = null
-    @excl = null
-
-    for w in @patterns
-      v = RCoerce.to_str_native(w)
-      if v.length == 0
-
-      else if v[0] == '^' and v.length > 1
-        arr = @__char_table__(v[1..-1])
-        @excl = if @excl then @excl['&'] arr else R(arr)
-      else
-        arr = @__char_table__(v)
-        @incl = if @incl then @incl['&'] arr else R(arr)
-
-  include_chars: ->
-    @incl || new R.Array([])
-
-  exclude_chars: ->
-    @excl || new R.Array([])
-
-  exclude: (chr) ->
-    !@include(chr)
-
-  include: (chr) ->
-    if @incl && @excl
-      @incl.include(chr) && !@excl.include(chr)
-    else if @incl
-      @incl.include(chr)
-    else if @excl
-      !@excl.include(chr)
-    else
-      false
-
-  # @private
-  # @example
-  #    __char_table__('a-c')  # => ['a','b','c']
-  #    __char_table__('a-cf')  # => ['a','b','c','f']
-  __char_table__: (str) ->
-    arr = []
-    if m = str.match(/[^\\]\-./g)
-      for s in m
-        arr = arr.concat @__char_range__(s[0], s[2])
-    arr = arr.concat str.replace(/[^\\]\-./g, '').split("")
-    arr
-
-  # @private
-  # @example
-  #     __char_range__('a', 'c')   # => ['a','b','c']
-  #     __char_range__('1', '3')   # => ['1','2','3']
-  #
-  __char_range__: (a, b) ->
-    arr = []
-    a = R(a)
-    throw R.ArgumentError.new() unless a['<='](b)
-    counter = 0
-    while a['<='](b)
-      counter++
-      arr.push a.to_native()
-      a = a.succ()
-      throw R.ArgumentError.new("ERROR: #{a} #{b}") if counter == 10000
-    arr
 
 
 _str = R._str = new StringMethods()
