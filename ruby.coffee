@@ -426,6 +426,12 @@ RCoerce = R._coerce =
   to_ary: (obj) ->
     @coerce(obj, 'to_ary')
 
+  to_ary_native: (obj) ->
+    if RArray.isNativeArray(obj)
+      obj
+    else
+      @coerce(obj, 'to_ary').to_native()
+
 
 R.RCoerce = RCoerce
 
@@ -624,13 +630,13 @@ class RubyJS.Base extends RubyJS.Object
   # TODO: TEST
   pollute_global: ->
     if arguments.length is 0
-      args = ['_str', '_arr', '_enum', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['_str', '_arr', '_enum', '_num' 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
     for method in args
       if root[method]?
-        R.puts("pollute_global(): #{method} already exists.")
+        R.puts("RubyJS.pollute_global(): #{method} already exists.")
       else
         root[method] = @[method]
 
@@ -703,8 +709,7 @@ for name, method of RubyJS.Base.prototype
   RubyJS[name] = method
 
 
-_num = R._num =
-
+class NumericMethods
   cmp: (num, other) ->
     if num is other then 0 else null
 
@@ -760,9 +765,6 @@ _num = R._num =
   #   else
   #     mod
 
-
-  round: (num, n) ->
-    num.round(n)
 
 
   step: (num, limit, step = 1, block) ->
@@ -825,114 +827,146 @@ _num = R._num =
     num is 0
 
 
-
-_num.magnitude = _num.abs
-
-errors = [
-  'ArgumentError'
-  'RegexpError'
-  'TypeError'
-  'KeyError'
-  'IndexError'
-  'FloatDomainError'
-  'RangeError'
-  'StandardError'
-  'ZeroDivisionError'
-  'NotSupportedError'
-  'NotImplementedError'
-]
-
-for error in errors
-  do (error) ->
-    errorClass     = class extends Error
-    errorClass.new = -> new RubyJS[error](error)
-    RubyJS[error]  = errorClass
+  even: (num) ->
+    num % 2 == 0
 
 
-# The Comparable mixin is used by classes whose objects may be ordered. The
-# class must define the <=> operator, which compares the receiver against
-# another object, returning -1, 0, or +1 depending on whether the receiver is
-# less than, equal to, or greater than the other object. If the other object
-# is not comparable then the <=> operator should return nil. Comparable uses
-# <=> to implement the conventional comparison operators (<, <=, ==, >=, and
-# >) and the method between?.
-#
-class RubyJS.Comparable
+  gcd: (num, other) ->
+    t = null
+    while (other != 0)
+      t = other
+      other = num % other
+      num = t
 
-  '<': (other) ->
-    cmp = @['<=>'](other)
-    throw R.TypeError.new() if cmp is null
-    cmp < 0
+    if num < 0 then (- num) else num
 
-  '>': (other) ->
-    cmp = @['<=>'](other)
-    throw R.TypeError.new() if cmp is null
-    cmp > 0
 
-  '<=': (other) ->
-    cmp = @['<=>'](other)
-    throw R.TypeError.new() if cmp is null
-    cmp <= 0
-
-  '>=': (other) ->
-    cmp = @['<=>'](other)
-    throw R.TypeError.new() if cmp is null
-    cmp >= 0
-
-  # Returns false if obj <=> min is less than zero or if anObject <=> max is
-  # greater than zero, true otherwise.
+  # Returns an array; [int.gcd(int2), int.lcm(int2)].
   #
   # @example
-  #     R(3).between(1, 5)               # => true
-  #     R(6).between(1, 5)               # => false
-  #     R(3).between(3, 3)               # => true
-  #     R('cat').between('ant', 'dog')   # => true
-  #     R('gnu').between('ant', 'dog')   # => false
   #
-  between: (min, max) ->
-    @['>='](min) and @['<='](max)
+  #     R(2).gcdlcm(2)                    #=> [2, 2]
+  #     R(3).gcdlcm(-7)                   #=> [1, 21]
+  #     R((1<<31)-1).gcdlcm((1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #
+  # @return [R.Array<R.Fixnum, R.Fixnum>]
+  #
+  gcdlcm: (other) ->
+    other = @box(other)
+    @__ensure_args_length(arguments, 1)
+    @__ensure_integer__(other)
 
-  # Equivalent of calling
-  # R(a).cmp(b) but faster for natives.
-  @cmp: (a, b) ->
-    if typeof a isnt 'object' and typeof a is typeof b
-      if a is b
-        0
-      else
-        if a < b then -1 else 1
+    new R.Array([@gcd(other), @lcm(other)])
+
+  # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
+  #
+  # @example
+  #
+  #     R(2).lcm(2)                    #=> 2
+  #     R(3).lcm(-7)                   #=> 21
+  #     R((1<<31)-1).lcm((1<<61)-1)    #=> 4951760154835678088235319297
+  #
+  # @return [R.Fixnum]
+  #
+  lcm: (other) ->
+    other = R(other)
+    @__ensure_args_length(arguments, 1)
+    @__ensure_integer__(other)
+
+    lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
+    lcm.numerator()
+
+
+  numerator: (num) ->
+    if num < 0 then (- num) else num
+
+
+  # Returns true if int is an odd number.
+  #
+  # @return [Boolean]
+  #
+  odd:  -> !@even()
+
+
+  # Returns the int itself.
+  #
+  #      a.ord    #=> 97
+  #
+  # This method is intended for compatibility to character constant in Ruby
+  # 1.9. For example, ?a.ord returns 97 both in 1.8 and 1.9.
+  #
+  # @return [this]
+  #
+  ord:  ->
+    this
+
+
+  # Returns the Integer equal to int + 1.
+  #
+  # @example
+  #
+  #     R(1).next(     #=> 2
+  #     R(-1).next()   #=> 0
+  #
+  # @return [R.Fixnum]
+  # @alias #succ
+  #
+  next: (num) ->
+    num + 1
+
+
+  # Returns the Integer equal to int - 1.
+  #
+  # @example
+  #
+  #     R(1).pred()    #=> 0
+  #     R(-1).pred()   #=> -2
+  #
+  # @return [R.Fixnum]
+  #
+  pred: (num) ->
+    num - 1
+
+
+  round: (num, n) ->
+    return num if n is undefined
+
+    multiplier = Math.pow(10, n)
+    Math.round(num * multiplier) / multiplier
+
+
+  # Iterates block int times, passing in values from zero to int - 1.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #
+  #     R(5).times(function(i) { R.puts(i) })
+  #     # => 0 1 2 3 4
+  #
+  # @return [this]
+  #
+  times: (num, block) ->
+    # return @to_enum('times') unless block?.call?
+    if num > 0
+      idx = 0
+      while idx < num
+        block( idx )
+        idx = idx + 1
+      num
     else
-      a = R(a)
-      throw 'NoMethodError' unless a['<=>']?
-      a['<=>'](b)
+      num
 
 
-  # Same as cmp, but throws ArgumentError if it cannot
-  # coerce elements.
-  @cmpstrict: (a, b) ->
-    if typeof a is typeof b and typeof a isnt 'object'
-      if a is b
-        0
-      else
-        if a < b then -1 else 1
-    else
-      a = R(a)
-      throw 'NoMethodError' unless a['<=>']?
-      cmp = a['<=>'](b)
-      throw R.ArgumentError.new() if cmp is null
-      cmp
+  magnitude: @prototype.abs
 
+  succ: @prototype.next
 
+_num = R._num = new NumericMethods()
 
-  # aliases
-  cmp:  @prototype['<=>']
-  lt:   @prototype['<']
-  lteq: @prototype['<=']
-  gt:   @prototype['>']
-  gteq: @prototype['>=']
-
-_enum = R._enum =
+# Module
+class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
-
 
   each: (coll, block) ->
     if coll.each?
@@ -1496,8 +1530,33 @@ _enum = R._enum =
 
 
 
-# --- Aliases ---------------------------------------------------------------
+  # --- Aliases ---------------------------------------------------------------
+  detect: @prototype.find
+  select: @prototype.find_all
+  collectConcat: @prototype.collect_concat
+  dropWhile: @prototype.drop_while
+  eachCons: @prototype.each_cons
+  eachEntry: @prototype.each_entry
+  eachSlice: @prototype.each_slice
+  eachWithIndex: @prototype.each_with_index
+  eachWithObject: @prototype.each_with_object
+  findAll: @prototype.find_all
+  findIndex: @prototype.find_index
+  flatMap: @prototype.flat_map
+  groupBy: @prototype.group_by
+  maxBy: @prototype.max_by
+  minBy: @prototype.min_by
+  minmaxBy: @prototype.minmax_by
+  reverseEach: @prototype.reverse_each
+  sliceBefore: @prototype.slice_before
+  sortBy: @prototype.sort_by
+  takeWhile: @prototype.take_while
+  toA: @prototype.to_a
 
+  collect: @prototype.map
+  member: @prototype.include
+  reduce: @prototype.inject
+  entries: @prototype.to_a
 
 
 # `value` is the original element and `sort_by` the one to be sorted by
@@ -1510,35 +1569,335 @@ class MYSortedElement
     @sort_by?['<=>'](other.sort_by)
 
 
-
-REnumerable = RubyJS.Enumerable
-_enum.detect = _enum.find
-_enum.select = _enum.find_all
-_enum.collectConcat = _enum.collect_concat
-_enum.dropWhile = _enum.drop_while
-_enum.eachCons = _enum.each_cons
-_enum.eachEntry = _enum.each_entry
-_enum.eachSlice = _enum.each_slice
-_enum.eachWithIndex = _enum.each_with_index
-_enum.eachWithObject = _enum.each_with_object
-_enum.findAll = _enum.find_all
-_enum.findIndex = _enum.find_index
-_enum.flatMap = _enum.flat_map
-_enum.groupBy = _enum.group_by
-_enum.maxBy = _enum.max_by
-_enum.minBy = _enum.min_by
-_enum.minmaxBy = _enum.minmax_by
-_enum.reverseEach = _enum.reverse_each
-_enum.sliceBefore = _enum.slice_before
-_enum.sortBy = _enum.sort_by
-_enum.takeWhile = _enum.take_while
-_enum.toA = _enum.to_a
+_enum = R._enum = new EnumerableMethods()
 
 
-_enum.collect = _enum.map
-_enum.member = _enum.include
-_enum.reduce = _enum.inject
-_enum.entries = _enum.to_a
+class ArrayMethods extends EnumerableMethods
+  equals: (arr, other) ->
+    return true  if arr is other
+    return false unless other?
+
+    unless RArray.isNativeArray(other)
+      return false unless other.to_ary?
+      # return other['=='] arr
+
+    return false unless arr.length is other.length
+
+    i = 0
+    total = i + arr.length
+    while i < total
+      return false unless R.is_equal(arr[i], other[i])
+      i += 1
+
+    true
+
+  append: (arr, obj) ->
+    arr.push(obj)
+    arr
+
+
+  '&': (other) ->
+    other = RCoerce.to_ary(other)
+    arr   = new R.Array([])
+    # TODO suboptimal solution.
+    @each (el) -> arr.push(el) if other.include(el)
+    arr.uniq()
+
+
+  # @private
+  '<=>': (other) ->
+    # TODO
+
+
+  at: (arr, index) ->
+    if index < 0
+      arr[arr.length + index]
+    else
+      arr[index]
+
+
+  combination: (arr, num, block) ->
+    len = arr.length
+
+    if num == 0
+      block([])
+    else if num == 1
+      @each arr, (args...) ->
+        block.call(arr, args)
+
+    else if num == len
+      block(arr.slice(0))
+
+    else if num >= 0 && num < len
+      num    = num
+      stack  = (0 for i in [0..num+1])
+      chosen = []
+      lev    = 0
+      done   = false
+      stack[0] = -1
+      until done
+        chosen[lev] = arr[stack[lev+1]]
+        while lev < num - 1
+          lev += 1
+          stack[lev+1] = stack[lev] + 1
+          chosen[lev] = arr[stack[lev+1]]
+
+        block.call(arr, chosen.slice(0))
+        lev += 1
+
+        # this is begin ... while
+        done = lev == 0
+        stack[lev] += 1
+        lev = lev - 1
+        while (stack[lev+1] + num == len + lev + 1)
+          done = lev == 0
+          stack[lev] += 1
+          lev = lev - 1
+    arr
+
+
+  compact: (arr) ->
+    ary = []
+    @each arr, (el) ->
+      ary.push(el) if el?
+    ary
+
+  # @destructive
+  delete: (arr, obj, block) ->
+    deleted = []
+
+    i = 0
+    len = arr.length
+    while i < len
+      if R.is_equal(obj, arr[i])
+        deleted.push(i)
+      i += 1
+
+    if deleted.length > 0
+      arr.splice(i,1) for i in deleted.reverse()
+      return obj
+
+    if block then block() else null
+
+
+  # @destructive
+  delete_at: (arr, idx) ->
+    idx = idx + arr.length if idx < 0
+    return null if idx < 0 or idx >= arr.length
+    arr.splice(idx, 1)[0]
+
+
+  flatten: (coll, recursion = -1) ->
+    recursion = RCoerce.to_int_native(recursion)
+
+    arr = []
+
+    @each coll, (element) ->
+      el = R(element)
+      if recursion != 0 && el?.to_ary?
+        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
+      else
+        arr.push(element)
+    arr
+
+
+  each: (arr, block) ->
+    if block.length > 0 # 'if' needed for to_a
+      block = Block.supportMultipleArgs(block)
+
+    idx = -1
+    len = arr.length
+    while ++idx < arr.length
+      block(arr[idx])
+
+    arr
+
+
+  get: (a, b) ->
+    @slice(a,b)
+
+
+  empty: (arr) ->
+    arr.length is 0
+
+
+  fetch: (arr, idx, default_or_block) ->
+    len = arr.length
+    orig = idx
+    idx = idx + len if idx < 0
+
+    if idx < 0 or idx >= len
+      return default_or_block(orig) if default_or_block?.call?
+      return default_or_block   unless default_or_block is undefined
+
+      throw R.IndexError.new()
+
+    arr[idx]
+
+
+  fill: ->
+    # TODO
+
+
+  # @destructive
+  insert: (arr, idx, items...) ->
+    throw R.ArgumentError.new() if idx is undefined
+
+    return arr if items.length == 0
+
+    # Adjust the index for correct insertion
+    idx = idx + arr.length + 1 if idx < 0 # Negatives add AFTER the element
+
+    # TODO: add message "#{idx} out of bounds"
+    throw R.IndexError.new() if idx < 0
+
+    after  = arr.slice(idx)
+    len = items.length
+
+    if idx > arr.length
+      for i in [(arr.length)...idx]
+        arr[i] = null
+
+    for el, i in items
+      arr[idx+i] = el
+
+    for el, i in after
+      arr[idx+len+i] = el
+
+    arr
+
+
+  join: (arr, separator) ->
+    return '' if @empty(arr)
+    separator = R['$,']  if separator is undefined
+    separator = ''       if separator is null
+    arr.join(separator)
+
+
+
+
+  reverse_each: (coll, block) ->
+    if block.length > 0 # if needed for to_a
+      block = Block.supportMultipleArgs(block)
+
+    idx = coll.length
+    while idx--
+      block(coll[idx])
+
+    coll
+
+
+
+  __native_array_with__: (size, obj) ->
+    ary = nativeArray(RCoerce.to_int_native(size))
+    idx = -1
+    while ++idx < size
+      ary[idx] = obj
+    ary
+
+_arr = R._arr = new ArrayMethods()
+
+errors = [
+  'ArgumentError'
+  'RegexpError'
+  'TypeError'
+  'KeyError'
+  'IndexError'
+  'FloatDomainError'
+  'RangeError'
+  'StandardError'
+  'ZeroDivisionError'
+  'NotSupportedError'
+  'NotImplementedError'
+]
+
+for error in errors
+  do (error) ->
+    errorClass     = class extends Error
+    errorClass.new = -> new RubyJS[error](error)
+    RubyJS[error]  = errorClass
+
+
+# The Comparable mixin is used by classes whose objects may be ordered. The
+# class must define the <=> operator, which compares the receiver against
+# another object, returning -1, 0, or +1 depending on whether the receiver is
+# less than, equal to, or greater than the other object. If the other object
+# is not comparable then the <=> operator should return nil. Comparable uses
+# <=> to implement the conventional comparison operators (<, <=, ==, >=, and
+# >) and the method between?.
+#
+class RubyJS.Comparable
+
+  '<': (other) ->
+    cmp = @['<=>'](other)
+    throw R.TypeError.new() if cmp is null
+    cmp < 0
+
+  '>': (other) ->
+    cmp = @['<=>'](other)
+    throw R.TypeError.new() if cmp is null
+    cmp > 0
+
+  '<=': (other) ->
+    cmp = @['<=>'](other)
+    throw R.TypeError.new() if cmp is null
+    cmp <= 0
+
+  '>=': (other) ->
+    cmp = @['<=>'](other)
+    throw R.TypeError.new() if cmp is null
+    cmp >= 0
+
+  # Returns false if obj <=> min is less than zero or if anObject <=> max is
+  # greater than zero, true otherwise.
+  #
+  # @example
+  #     R(3).between(1, 5)               # => true
+  #     R(6).between(1, 5)               # => false
+  #     R(3).between(3, 3)               # => true
+  #     R('cat').between('ant', 'dog')   # => true
+  #     R('gnu').between('ant', 'dog')   # => false
+  #
+  between: (min, max) ->
+    @['>='](min) and @['<='](max)
+
+  # Equivalent of calling
+  # R(a).cmp(b) but faster for natives.
+  @cmp: (a, b) ->
+    if typeof a isnt 'object' and typeof a is typeof b
+      if a is b
+        0
+      else
+        if a < b then -1 else 1
+    else
+      a = R(a)
+      throw 'NoMethodError' unless a['<=>']?
+      a['<=>'](b)
+
+
+  # Same as cmp, but throws ArgumentError if it cannot
+  # coerce elements.
+  @cmpstrict: (a, b) ->
+    if typeof a is typeof b and typeof a isnt 'object'
+      if a is b
+        0
+      else
+        if a < b then -1 else 1
+    else
+      a = R(a)
+      throw 'NoMethodError' unless a['<=>']?
+      cmp = a['<=>'](b)
+      throw R.ArgumentError.new() if cmp is null
+      cmp
+
+
+
+  # aliases
+  cmp:  @prototype['<=>']
+  lt:   @prototype['<']
+  lteq: @prototype['<=']
+  gt:   @prototype['>']
+  gteq: @prototype['>=']
 
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
@@ -2398,52 +2757,6 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
     @proc( new RubyJS.Enumerator.Yielder( enclosed_yield ) )
 
 
-_arr = R._arr =
-  flatten: (coll, recursion = -1) ->
-    recursion = RCoerce.to_int_native(recursion)
-
-    arr = []
-
-    @each coll, (element) ->
-      el = R(element)
-      if recursion != 0 && el?.to_ary?
-        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
-      else
-        arr.push(element)
-    arr
-
-
-  each: (coll, block) ->
-    if block && block.call?
-
-      if block.length > 0 # 'if' needed for to_a
-        block = Block.supportMultipleArgs(block)
-
-      idx = -1
-      len = coll.length
-      while ++idx < len
-        block(coll[idx])
-
-      this
-    else
-      new R.Enumerator(coll, 'each')
-
-
-  reverse_each: (coll, block) ->
-    if block.length > 0 # if needed for to_a
-      block = Block.supportMultipleArgs(block)
-
-    idx = coll.length
-    while idx--
-      block(coll[idx])
-
-    coll
-
-
-
-_arr.map = _enum.map
-_arr.sort = _enum.sort
-
 
 
 # Array wraps a javascript array.
@@ -2636,26 +2949,13 @@ class RubyJS.Array extends RubyJS.Object
   # ---- Instance methods -----------------------------------------------------
 
   '==': (other) ->
-    return true if this is other
-    return false unless other?
-
     other = R(other)
     unless other.is_array?
       return false unless other.to_ary?
-      return other['=='] this
+      return other.equals(this)
 
-    return false unless @size().equals other.size()
+    _arr.equals(@__native__, other.__native__)
 
-    md = @to_native_clone()
-    od = other.to_native()
-
-    i = 0
-    total = i + @size().to_native()
-    while i < total
-      return false unless R(md[i])['=='](R(od[i]))
-      i += 1
-
-    true
 
   '<<': (obj) ->
     @__native__.push(obj)
@@ -2668,6 +2968,7 @@ class RubyJS.Array extends RubyJS.Object
     # TODO suboptimal solution.
     @each (el) -> arr.push(el) if other.include(el)
     arr.uniq()
+
 
   # @private
   '<=>': (other) ->
@@ -2707,11 +3008,7 @@ class RubyJS.Array extends RubyJS.Object
   at: (index) ->
     # UNSUPPORTED: @__ensure_args_length(arguments, 1)
     index = RCoerce.to_int_native(index)
-
-    if index < 0
-      @__native__[@__size__() + index]
-    else
-      @__native__[index]
+    _arr.at(@__native__, index)
 
 
   # Removes all elements from self.
@@ -2724,7 +3021,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   clear: () ->
     @__ensure_args_length(arguments, 0)
-    @replace []
+    @__native__.length = 0
+    @replace @__native__
     this
 
 
@@ -2750,8 +3048,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   collect_bang: (block) ->
     return @to_enum('collect_bang') unless block?.call?
-
-    @replace @collect(block)
+    @replace _arr.collect(@__native__, block)
 
 
   # When invoked with a block, yields all combinations of length n of elements
@@ -2775,41 +3072,8 @@ class RubyJS.Array extends RubyJS.Object
   combination: (args...) ->
     block = @__extract_block(args)
     num   = RCoerce.to_int_native args[0]
-
     return @to_enum('combination', num) unless block?.call?
-
-    if num == 0
-      block([])
-    else if num == 1
-      @each (args...) ->
-        block.call(this, args)
-    else if num == +@size()
-      block @dup()
-    else if num >= 0 && num < @size()
-      num    = num
-      stack  = (0 for i in [0..num+1])
-      chosen = []
-      lev    = 0
-      done   = false
-      stack[0] = -1
-      until done
-        chosen[lev] = @at(stack[lev+1])
-        while lev < num - 1
-          lev += 1
-          stack[lev+1] = stack[lev] + 1
-          chosen[lev] = @at(stack[lev+1])
-
-        block.call(this, chosen.slice(0))
-        lev += 1
-
-        # this is begin ... while
-        done = lev == 0
-        stack[lev] += 1
-        lev = lev - 1
-        while (stack[lev+1] + num == @__size__() + lev + 1)
-          done = lev == 0
-          stack[lev] += 1
-          lev = lev - 1
+    _arr.combination(@__native__, num, block)
     this
 
 
@@ -2822,7 +3086,8 @@ class RubyJS.Array extends RubyJS.Object
   # @return [R.Array]
   #
   compact: ->
-    @dup().tap (a) -> a.compact_bang()
+    new RArray(_arr.compact(@__native__))
+
 
   # Removes nil elements from the array. Returns nil if no changes were made,
   # otherwise returns ary.
@@ -2837,15 +3102,10 @@ class RubyJS.Array extends RubyJS.Object
   # @return self or null if nothing changed
   #
   compact_bang: ->
-    length = @__native__.length
-
-    arr = []
-    # TODO: use while
-    @each (el) ->
-      arr.push(el) unless el is null
-    @replace arr
-
-    if length == arr.length then null else this
+    len = @__native__.length
+    ary = _arr.compact(@__native__)
+    @replace ary
+    if len == ary.length then null else this
 
 
   # Appends the elements of other_ary to self.
@@ -2857,8 +3117,8 @@ class RubyJS.Array extends RubyJS.Object
   # @return R.Array
   #
   concat: (other) ->
-    other = R(other).to_ary() # TODO: use RCoerce
-    @replace @__native__.concat(other.to_native())
+    other = RCoerce.to_ary_native(other)
+    @replace @__native__.concat(other)
 
 
   # Deletes items from self that are equal to obj. If any items are found,
@@ -2875,23 +3135,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   delete: (args...) ->
     block   = @__extract_block(args)
-    orig    = args[0]
-    obj     = R(orig)
-    total   = @__native__.length
-    deleted = []
+    _arr.delete(@__native__, args[0], block)
 
-    i = 0
-
-    while i < total
-      if obj.equals(@__native__[i])
-        deleted.push(i)
-      i += 1
-
-    if deleted.length > 0
-      @delete_at(i) for i in deleted.reverse()
-      return orig
-
-    if block then block() else null
 
   # Deletes the element at the specified index, returning that element, or nil
   # if the index is out of range. See also Array#slice!.
@@ -2906,13 +3151,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   delete_at: (idx) ->
     idx = RCoerce.to_int_native(idx)
+    _arr.delete_at(@__native__, idx)
 
-    idx = idx + @__size__() if idx < 0
-    return null if idx < 0 or idx >= @__size__()
-
-    val = @__native__[idx]
-    @replace @__native__.slice(0, idx).concat(@__native__.slice(idx+1))
-    val
 
 
   # Deletes every element of self for which block evaluates to true. The array
@@ -2986,19 +3226,11 @@ class RubyJS.Array extends RubyJS.Object
   # @alias #each
   #
   each: (block) ->
-    # block = R.string_to_proc(block)
-    if block && block.call?
+    return @to_enum() unless block?.call?
+    _arr.each(@__native__, block)
+    this
 
-      if block.length > 0 # 'if' needed for to_a
-        block = Block.supportMultipleArgs(block)
 
-      idx = -1
-      while ++idx < @__native__.length
-        block(@__native__[idx])
-
-      this
-    else
-      @to_enum()
 
 
   # Alias for R.Array#[] R.Array#slice
@@ -3071,22 +3303,10 @@ class RubyJS.Array extends RubyJS.Object
   #     a.fetch(4, 'cat')        #=> "cat"
   #     a.fetch(4, (i) -> i*i))  #=> 16
   #
-  fetch: (args...) ->
-    block    = @__extract_block(args)
-    orig     = args[0]
-    idx      = RCoerce.to_int_native(args[0])
-    _default = args[1]
+  fetch: (idx, default_or_block) ->
+    idx = RCoerce.to_int_native(idx)
+    _arr.fetch(@__native__, idx, default_or_block)
 
-    len = @__size__()
-    idx = idx + len if idx < 0
-
-    if idx < 0 or idx >= len
-      return block(orig) if block?.call?
-      return _default   unless _default is undefined
-
-      throw R.IndexError.new()
-
-    @at(idx)
 
   # Fills array with obj or block.
   #
@@ -3201,24 +3421,12 @@ class RubyJS.Array extends RubyJS.Object
   #
   insert: (idx, items...) ->
     throw R.ArgumentError.new() if idx is undefined
-
     return this if items.length == 0
-
     # Adjust the index for correct insertion
     idx = RCoerce.to_int_native(idx)
-    idx = idx + @__size__() + 1 if idx < 0 # Negatives add AFTER the element
 
-    # TODO: add message "#{idx} out of bounds"
-    throw R.IndexError.new() if idx < 0
-
-    before = @__native__.slice(0, idx)
-
-    if idx > before.length
-      fill = @__native_array_with__(idx - before.length, null)
-      before = before.concat( fill )
-
-    after  = @__native__.slice(idx)
-    @replace before.concat(items).concat(after)
+    ary = _arr.insert.apply(_arr, [@__native__, idx].concat(items))
+    this
 
 
   # Creates a string representation of self.
@@ -3249,13 +3457,9 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @todo Does not ducktype via #to_str, #to_ary, #to_s or throw error
   #
-  join: (separator) ->
-    return R('') if @empty()
-    separator = R['$,']  if separator is undefined
-    separator = ''       if separator is null
-    separator = RCoerce.to_str_native(separator)
-
-    new R.String(@__native__.join(separator))
+  join: (sep) ->
+    sep = RCoerce.to_str_native(sep) if sep?
+    new RString(_arr.join(@__native__, sep))
 
 
   # Deletes every element of self for which block evaluates to false. See also
@@ -5319,9 +5523,9 @@ _str = R._str =
   upcase: (str) ->
     return null unless str.match(/[a-z]/)
 
-    R(str.split('')).map((c) ->
+    _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('').to_native()
+    ).join('')
 
 
 class RubyJS.String extends RubyJS.Object
@@ -7919,6 +8123,7 @@ class RubyJS.Numeric extends RubyJS.Object
   uminus: ->
     @multiply(-1)
 
+
   # Returns true if num has a zero value.
   #
   # @return [Boolean]
@@ -8023,18 +8228,12 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum]
   #
   gcd: (other) ->
-    other = @box(other)
+    other = R(other)
     @__ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    a = @to_native()
-    b = other.to_native()
-    t = null
-    while (b != 0)
-      t = b
-      b = a % b
-      a = t
-    new R.Fixnum(a).numerator()
+    n = _num.gcd(@__native__, other.to_native())
+    new R.Fixnum(n)
 
   # Returns an array; [int.gcd(int2), int.lcm(int2)].
   #
@@ -8077,10 +8276,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum,this]
   #
   numerator: ->
-    if @lt(0)
-      new R.Fixnum(@to_native() * -1)
-    else
-      this
+    new R.Fixnum(_num.numerator(@__native__))
 
   # Returns true if int is an odd number.
   #
@@ -8147,8 +8343,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     else if n is 0
       this
     else
-      multiplier = Math.pow(10, n)
-      new R.Fixnum(Math.round(@to_native() * multiplier) / multiplier)
+      new R.Fixnum(_num.round(@__native__, n))
 
 
   succ:  @prototype.next
@@ -8167,17 +8362,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   times: (block) ->
     return @to_enum('times') unless block?.call?
-
-    len = @to_native()
-    if len > 0
-      idx = 0
-      while idx < len
-        block( new R.Fixnum(idx) )
-        idx = idx + 1
-      this
-    else
-      this
-
+    new R.Fixnum(_num.times(@__native__, block))
 
   # As int is already an Integer, all these methods simply return the receiver
   # @return [this]
@@ -9492,3 +9677,16 @@ class RubyJS.Time extends RubyJS.Object
   @__add_default_aliases__(@prototype)
 
   eql: @prototype['==']
+
+
+RubyJS.i_am_feeling_evil = ->
+  for [proto, methods] in [[Array.prototype, _arr], [Number, _num]]
+    for own name, func of methods
+      do (name) ->
+        if typeof func == 'function'
+          if proto[name] is undefined
+            proto[name] = ->
+              methods[name].apply(methods, [this].concat(_slice_.call(arguments, 0)))
+              this
+          else
+            console.log("Array.#{name} exists. Skip.")

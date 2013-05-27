@@ -10,23 +10,23 @@ describe "Integer#times", ->
 
   it "yields each value from 0 to self - 1", ->
     a = []
-    R(9).times (i) -> a.push(i.unbox())
-    R(-2).times (i) -> a.push(i.unbox())
+    R(9).times (i) -> a.push(i)
+    R(-2).times (i) -> a.push(i)
     expect(a).toEqual [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
   it "skips the current iteration when encountering 'next'", ->
     a = []
     ret = R(3).times (i) ->
-      return 'next' if i.unbox() == 1
-      a.push(i.unbox())
+      return 'next' if i == 1
+      a.push(i)
     expect(a).toEqual [0, 2]
 
   it "skips all iterations when encountering 'break'", ->
     a = []
     x = R.catch_break (_b) ->
       R(5).times (i) ->
-        _b.break() if i['=='](3)
-        a.push(i.unbox())
+        _b.break() if i == 3
+        a.push(i)
 
     expect(x).toEqual null
     expect(a).toEqual [0, 1, 2]

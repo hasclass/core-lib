@@ -34,13 +34,13 @@ class RubyJS.Base extends RubyJS.Object
   # TODO: TEST
   pollute_global: ->
     if arguments.length is 0
-      args = ['_str', '_arr', '_enum', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['_str', '_arr', '_enum', '_num' 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
     for method in args
       if root[method]?
-        R.puts("pollute_global(): #{method} already exists.")
+        R.puts("RubyJS.pollute_global(): #{method} already exists.")
       else
         root[method] = @[method]
 

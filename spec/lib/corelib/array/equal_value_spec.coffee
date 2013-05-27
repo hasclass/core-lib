@@ -28,22 +28,24 @@ describe "Array#==", ->
   it "returns false if any corresponding elements are not #==", ->
     a = R(["a", "b", "c"])
     b = R(["a", "b", "not equal value"])
-    # expect( a['=='](b) ).toEqual false
+    # expect( a.equals(b) ).toEqual false
 
     c =
       '==': -> false
-    expect( R(["a", "b", c])['=='] a).toEqual false
+      equals: -> false
+    expect( R(["a", "b", c]).equals a).toEqual false
 
   it "returns true if corresponding elements are #==", ->
-    expect( R([])['==']    [] ).toEqual true
-    expect( R([])['=='] R([])).toEqual true
-    expect( R(["a", "c", 7])['=='] ["a", "c", 7]).toEqual true
+    expect( R([]).equals    [] ).toEqual true
+    expect( R([]).equals R([])).toEqual true
+    expect( R(["a", "c", 7]).equals ["a", "c", 7]).toEqual true
 
-    expect( R([1, 2, 3])['=='] [1.0, 2.0, 3.0]).toEqual true
+    expect( R([1, 2, 3]).equals [1.0, 2.0, 3.0]).toEqual true
 
     obj =
       "==": -> true
-    expect( R([obj])['=='] [5] ).toEqual true
+      equals: -> true
+    expect( R([obj]).equals [5] ).toEqual true
 
   # As per bug #1720
   xit "returns false for [NaN] == [NaN]", ->

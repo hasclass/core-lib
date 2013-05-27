@@ -24,7 +24,7 @@ describe "Array#combination", ->
 
   it "yields a copy of self if the argument is the size of the receiver", ->
     r = @array.combination(4).to_a()
-    expect( r ).toEqual R([@array])
+    expect( r ).toEqual R([@array.to_native()])
     expect( r.at(0) is @array).toEqual false
 
   it "yields [] when length is 0", ->

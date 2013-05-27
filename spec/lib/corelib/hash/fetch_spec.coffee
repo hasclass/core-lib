@@ -4,14 +4,13 @@ describe "Hash#fetch", ->
 
   describe "1.9", ->
     it "raises an KeyError if key is not found", ->
-      expect( -> R.hashify({}).fetch('a')    ).toThrow('KeyError')
-      # TODO
-      # expect( -> R.hashify((5).fetch('a')    ).toThrow('KeyError')
+      expect( -> R.hashify({}    ).fetch('a') ).toThrow('KeyError')
+      expect( -> R.hashify({}, 5 ).fetch('a') ).toThrow('KeyError')
       expect( -> R.hashify({5: 1}).fetch('a') ).toThrow('KeyError')
 
   it "returns default if key is not found when passed a default", ->
     expect( R.hashify({}).fetch('a', null) ).toEqual null
-    # expect( R.hashify({}).fetch(:a, 'not here!').should == "not here!"
+    expect( R.hashify({}, 5).fetch('a', 'not here!') ).toEqual "not here!"
     expect( R.hashify({a: null}).fetch('a', 'not here!') ).toEqual null
     # expect( R.hashify({a: undefined}).fetch('a', 'not here!') ).toEqual undefined
 

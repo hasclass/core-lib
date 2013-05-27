@@ -190,26 +190,13 @@ class RubyJS.Array extends RubyJS.Object
   # ---- Instance methods -----------------------------------------------------
 
   '==': (other) ->
-    return true if this is other
-    return false unless other?
-
     other = R(other)
     unless other.is_array?
       return false unless other.to_ary?
-      return other['=='] this
+      return other.equals(this)
 
-    return false unless @size().equals other.size()
+    _arr.equals(@__native__, other.__native__)
 
-    md = @to_native_clone()
-    od = other.to_native()
-
-    i = 0
-    total = i + @size().to_native()
-    while i < total
-      return false unless R(md[i])['=='](R(od[i]))
-      i += 1
-
-    true
 
   '<<': (obj) ->
     @__native__.push(obj)
@@ -222,6 +209,7 @@ class RubyJS.Array extends RubyJS.Object
     # TODO suboptimal solution.
     @each (el) -> arr.push(el) if other.include(el)
     arr.uniq()
+
 
   # @private
   '<=>': (other) ->
@@ -261,11 +249,7 @@ class RubyJS.Array extends RubyJS.Object
   at: (index) ->
     # UNSUPPORTED: @__ensure_args_length(arguments, 1)
     index = RCoerce.to_int_native(index)
-
-    if index < 0
-      @__native__[@__size__() + index]
-    else
-      @__native__[index]
+    _arr.at(@__native__, index)
 
 
   # Removes all elements from self.
@@ -278,7 +262,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   clear: () ->
     @__ensure_args_length(arguments, 0)
-    @replace []
+    @__native__.length = 0
+    @replace @__native__
     this
 
 
@@ -304,8 +289,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   collect_bang: (block) ->
     return @to_enum('collect_bang') unless block?.call?
-
-    @replace @collect(block)
+    @replace _arr.collect(@__native__, block)
 
 
   # When invoked with a block, yields all combinations of length n of elements
@@ -329,41 +313,8 @@ class RubyJS.Array extends RubyJS.Object
   combination: (args...) ->
     block = @__extract_block(args)
     num   = RCoerce.to_int_native args[0]
-
     return @to_enum('combination', num) unless block?.call?
-
-    if num == 0
-      block([])
-    else if num == 1
-      @each (args...) ->
-        block.call(this, args)
-    else if num == +@size()
-      block @dup()
-    else if num >= 0 && num < @size()
-      num    = num
-      stack  = (0 for i in [0..num+1])
-      chosen = []
-      lev    = 0
-      done   = false
-      stack[0] = -1
-      until done
-        chosen[lev] = @at(stack[lev+1])
-        while lev < num - 1
-          lev += 1
-          stack[lev+1] = stack[lev] + 1
-          chosen[lev] = @at(stack[lev+1])
-
-        block.call(this, chosen.slice(0))
-        lev += 1
-
-        # this is begin ... while
-        done = lev == 0
-        stack[lev] += 1
-        lev = lev - 1
-        while (stack[lev+1] + num == @__size__() + lev + 1)
-          done = lev == 0
-          stack[lev] += 1
-          lev = lev - 1
+    _arr.combination(@__native__, num, block)
     this
 
 
@@ -376,7 +327,8 @@ class RubyJS.Array extends RubyJS.Object
   # @return [R.Array]
   #
   compact: ->
-    @dup().tap (a) -> a.compact_bang()
+    new RArray(_arr.compact(@__native__))
+
 
   # Removes nil elements from the array. Returns nil if no changes were made,
   # otherwise returns ary.
@@ -391,15 +343,10 @@ class RubyJS.Array extends RubyJS.Object
   # @return self or null if nothing changed
   #
   compact_bang: ->
-    length = @__native__.length
-
-    arr = []
-    # TODO: use while
-    @each (el) ->
-      arr.push(el) unless el is null
-    @replace arr
-
-    if length == arr.length then null else this
+    len = @__native__.length
+    ary = _arr.compact(@__native__)
+    @replace ary
+    if len == ary.length then null else this
 
 
   # Appends the elements of other_ary to self.
@@ -411,8 +358,8 @@ class RubyJS.Array extends RubyJS.Object
   # @return R.Array
   #
   concat: (other) ->
-    other = R(other).to_ary() # TODO: use RCoerce
-    @replace @__native__.concat(other.to_native())
+    other = RCoerce.to_ary_native(other)
+    @replace @__native__.concat(other)
 
 
   # Deletes items from self that are equal to obj. If any items are found,
@@ -429,23 +376,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   delete: (args...) ->
     block   = @__extract_block(args)
-    orig    = args[0]
-    obj     = R(orig)
-    total   = @__native__.length
-    deleted = []
+    _arr.delete(@__native__, args[0], block)
 
-    i = 0
-
-    while i < total
-      if obj.equals(@__native__[i])
-        deleted.push(i)
-      i += 1
-
-    if deleted.length > 0
-      @delete_at(i) for i in deleted.reverse()
-      return orig
-
-    if block then block() else null
 
   # Deletes the element at the specified index, returning that element, or nil
   # if the index is out of range. See also Array#slice!.
@@ -460,13 +392,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   delete_at: (idx) ->
     idx = RCoerce.to_int_native(idx)
+    _arr.delete_at(@__native__, idx)
 
-    idx = idx + @__size__() if idx < 0
-    return null if idx < 0 or idx >= @__size__()
-
-    val = @__native__[idx]
-    @replace @__native__.slice(0, idx).concat(@__native__.slice(idx+1))
-    val
 
 
   # Deletes every element of self for which block evaluates to true. The array
@@ -540,19 +467,11 @@ class RubyJS.Array extends RubyJS.Object
   # @alias #each
   #
   each: (block) ->
-    # block = R.string_to_proc(block)
-    if block && block.call?
+    return @to_enum() unless block?.call?
+    _arr.each(@__native__, block)
+    this
 
-      if block.length > 0 # 'if' needed for to_a
-        block = Block.supportMultipleArgs(block)
 
-      idx = -1
-      while ++idx < @__native__.length
-        block(@__native__[idx])
-
-      this
-    else
-      @to_enum()
 
 
   # Alias for R.Array#[] R.Array#slice
@@ -625,22 +544,10 @@ class RubyJS.Array extends RubyJS.Object
   #     a.fetch(4, 'cat')        #=> "cat"
   #     a.fetch(4, (i) -> i*i))  #=> 16
   #
-  fetch: (args...) ->
-    block    = @__extract_block(args)
-    orig     = args[0]
-    idx      = RCoerce.to_int_native(args[0])
-    _default = args[1]
+  fetch: (idx, default_or_block) ->
+    idx = RCoerce.to_int_native(idx)
+    _arr.fetch(@__native__, idx, default_or_block)
 
-    len = @__size__()
-    idx = idx + len if idx < 0
-
-    if idx < 0 or idx >= len
-      return block(orig) if block?.call?
-      return _default   unless _default is undefined
-
-      throw R.IndexError.new()
-
-    @at(idx)
 
   # Fills array with obj or block.
   #
@@ -755,24 +662,12 @@ class RubyJS.Array extends RubyJS.Object
   #
   insert: (idx, items...) ->
     throw R.ArgumentError.new() if idx is undefined
-
     return this if items.length == 0
-
     # Adjust the index for correct insertion
     idx = RCoerce.to_int_native(idx)
-    idx = idx + @__size__() + 1 if idx < 0 # Negatives add AFTER the element
 
-    # TODO: add message "#{idx} out of bounds"
-    throw R.IndexError.new() if idx < 0
-
-    before = @__native__.slice(0, idx)
-
-    if idx > before.length
-      fill = @__native_array_with__(idx - before.length, null)
-      before = before.concat( fill )
-
-    after  = @__native__.slice(idx)
-    @replace before.concat(items).concat(after)
+    ary = _arr.insert.apply(_arr, [@__native__, idx].concat(items))
+    this
 
 
   # Creates a string representation of self.
@@ -803,13 +698,9 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @todo Does not ducktype via #to_str, #to_ary, #to_s or throw error
   #
-  join: (separator) ->
-    return R('') if @empty()
-    separator = R['$,']  if separator is undefined
-    separator = ''       if separator is null
-    separator = RCoerce.to_str_native(separator)
-
-    new R.String(@__native__.join(separator))
+  join: (sep) ->
+    sep = RCoerce.to_str_native(sep) if sep?
+    new RString(_arr.join(@__native__, sep))
 
 
   # Deletes every element of self for which block evaluates to false. See also

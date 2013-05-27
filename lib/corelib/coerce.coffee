@@ -78,5 +78,11 @@ RCoerce = R._coerce =
   to_ary: (obj) ->
     @coerce(obj, 'to_ary')
 
+  to_ary_native: (obj) ->
+    if RArray.isNativeArray(obj)
+      obj
+    else
+      @coerce(obj, 'to_ary').to_native()
+
 
 R.RCoerce = RCoerce

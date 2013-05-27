@@ -7,6 +7,7 @@ describe "Array#each", ->
     expect( a ).toEqual [1]
 
   it "checks array hasn't changed from outside", ->
+    # For now unsupported
     a = []
     b = [1, 2, 3]
     x = R(b)

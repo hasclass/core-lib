@@ -1,6 +1,6 @@
-_enum = R._enum =
+# Module
+class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
-
 
   each: (coll, block) ->
     if coll.each?
@@ -564,8 +564,33 @@ _enum = R._enum =
 
 
 
-# --- Aliases ---------------------------------------------------------------
+  # --- Aliases ---------------------------------------------------------------
+  detect: @prototype.find
+  select: @prototype.find_all
+  collectConcat: @prototype.collect_concat
+  dropWhile: @prototype.drop_while
+  eachCons: @prototype.each_cons
+  eachEntry: @prototype.each_entry
+  eachSlice: @prototype.each_slice
+  eachWithIndex: @prototype.each_with_index
+  eachWithObject: @prototype.each_with_object
+  findAll: @prototype.find_all
+  findIndex: @prototype.find_index
+  flatMap: @prototype.flat_map
+  groupBy: @prototype.group_by
+  maxBy: @prototype.max_by
+  minBy: @prototype.min_by
+  minmaxBy: @prototype.minmax_by
+  reverseEach: @prototype.reverse_each
+  sliceBefore: @prototype.slice_before
+  sortBy: @prototype.sort_by
+  takeWhile: @prototype.take_while
+  toA: @prototype.to_a
 
+  collect: @prototype.map
+  member: @prototype.include
+  reduce: @prototype.inject
+  entries: @prototype.to_a
 
 
 # `value` is the original element and `sort_by` the one to be sorted by
@@ -578,32 +603,4 @@ class MYSortedElement
     @sort_by?['<=>'](other.sort_by)
 
 
-
-REnumerable = RubyJS.Enumerable
-_enum.detect = _enum.find
-_enum.select = _enum.find_all
-_enum.collectConcat = _enum.collect_concat
-_enum.dropWhile = _enum.drop_while
-_enum.eachCons = _enum.each_cons
-_enum.eachEntry = _enum.each_entry
-_enum.eachSlice = _enum.each_slice
-_enum.eachWithIndex = _enum.each_with_index
-_enum.eachWithObject = _enum.each_with_object
-_enum.findAll = _enum.find_all
-_enum.findIndex = _enum.find_index
-_enum.flatMap = _enum.flat_map
-_enum.groupBy = _enum.group_by
-_enum.maxBy = _enum.max_by
-_enum.minBy = _enum.min_by
-_enum.minmaxBy = _enum.minmax_by
-_enum.reverseEach = _enum.reverse_each
-_enum.sliceBefore = _enum.slice_before
-_enum.sortBy = _enum.sort_by
-_enum.takeWhile = _enum.take_while
-_enum.toA = _enum.to_a
-
-
-_enum.collect = _enum.map
-_enum.member = _enum.include
-_enum.reduce = _enum.inject
-_enum.entries = _enum.to_a
+_enum = R._enum = new EnumerableMethods()

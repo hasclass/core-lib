@@ -93,18 +93,12 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum]
   #
   gcd: (other) ->
-    other = @box(other)
+    other = R(other)
     @__ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    a = @to_native()
-    b = other.to_native()
-    t = null
-    while (b != 0)
-      t = b
-      b = a % b
-      a = t
-    new R.Fixnum(a).numerator()
+    n = _num.gcd(@__native__, other.to_native())
+    new R.Fixnum(n)
 
   # Returns an array; [int.gcd(int2), int.lcm(int2)].
   #
@@ -147,10 +141,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum,this]
   #
   numerator: ->
-    if @lt(0)
-      new R.Fixnum(@to_native() * -1)
-    else
-      this
+    new R.Fixnum(_num.numerator(@__native__))
 
   # Returns true if int is an odd number.
   #
@@ -217,8 +208,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     else if n is 0
       this
     else
-      multiplier = Math.pow(10, n)
-      new R.Fixnum(Math.round(@to_native() * multiplier) / multiplier)
+      new R.Fixnum(_num.round(@__native__, n))
 
 
   succ:  @prototype.next
@@ -237,17 +227,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   times: (block) ->
     return @to_enum('times') unless block?.call?
-
-    len = @to_native()
-    if len > 0
-      idx = 0
-      while idx < len
-        block( new R.Fixnum(idx) )
-        idx = idx + 1
-      this
-    else
-      this
-
+    new R.Fixnum(_num.times(@__native__, block))
 
   # As int is already an Integer, all these methods simply return the receiver
   # @return [this]

@@ -290,6 +290,7 @@ class RubyJS.Numeric extends RubyJS.Object
   uminus: ->
     @multiply(-1)
 
+
   # Returns true if num has a zero value.
   #
   # @return [Boolean]

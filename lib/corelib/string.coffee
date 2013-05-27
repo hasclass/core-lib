@@ -59,9 +59,9 @@ _str = R._str =
   upcase: (str) ->
     return null unless str.match(/[a-z]/)
 
-    R(str.split('')).map((c) ->
+    _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('').to_native()
+    ).join('')
 
 
 class RubyJS.String extends RubyJS.Object

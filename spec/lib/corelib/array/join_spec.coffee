@@ -9,7 +9,9 @@ describe "Array#join", ->
       to_str: -> R(', ')
     expect( R([1, 2]).join(sep) ).toEqual R("1, 2")
 
-  it "does not call #to_str on the separator if the array is empty", ->
+
+  xit "does not call #to_str on the separator if the array is empty", ->
+    # UNSUPPORTED
     sep =
       to_str: -> throw 'should not be called'
     expect( R([]).join(sep) ).toEqual R("")

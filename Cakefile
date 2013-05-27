@@ -13,15 +13,17 @@ appFiles  = [
   'corelib/breaker'
   'corelib/base'
 
-  'corelib/_num'
+  'lite/num'
+  'lite/itr'
+  'lite/arr'
 
   'corelib/errors'
   'corelib/comparable'
-  'corelib/_enum'
+
   'corelib/enumerable'
   'corelib/enumerable_array'
   'corelib/enumerator'
-  'corelib/_arr'
+
   'corelib/array'
   'corelib/hash'
   'corelib/range'
@@ -36,6 +38,8 @@ appFiles  = [
   'corelib/float'
 
   'corelib/time'
+
+  'corext/feeling_evil'
 ]
 
 task 'stats', '', ->

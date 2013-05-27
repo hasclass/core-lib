@@ -145,12 +145,12 @@ describe "Integer block args", ->
 
   it "#times", ->
     num = R(1)
-    num.times((a   ) -> expect( a ).toEqual(  R(0)   ))
-    num.times((a...) -> expect( a ).toEqual(  [R(0)] ))
-    num.times((a, b) -> expect( a ).toEqual(  R(0)   ))
+    num.times((a   ) -> expect( a ).toEqual(  0   ))
+    num.times((a...) -> expect( a ).toEqual(  [0] ))
+    num.times((a, b) -> expect( a ).toEqual(  0   ))
     num.times((a, b) -> expect( b ).toEqual(  undefined   ))
 
-    z = R(0)
+    z = 0
     en = num.times()
     en.each_with_index((a   ) -> expect(a).toEqual( z      ))
     en.each_with_index((a...) -> expect(a).toEqual( [z, 0] ))
