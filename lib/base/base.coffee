@@ -69,14 +69,16 @@ class RubyJS.Base
     for [proto, methods] in overwrites
       for name, func of methods
         if typeof func == 'function'
-          if proto[name] is undefined
-            do (name, func) ->
-              proto[name] = ->
-                # use this.valueOf() to get the literal back.
-                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
-                func.apply(methods, args)
-          else
-            console.log("#{name} exists. Skip.")
+          if proto[name]?
+            console.log("#{proto}.#{name} exists. Method prefixed with 'rb_'")
+            name = "rb_#{name}"
+
+          do (name, methods) ->
+            proto[name] = ->
+              # use this.valueOf() to get the literal back.
+              args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+              methods[name].apply(methods, args)
+
     "harr harr"
 
 
