@@ -86,7 +86,7 @@ class RubyJS.Kernel
   #      R.w('')              # => ['']
   #
   w: (str) ->
-    R(str).split(/\s+/)
+    new R.String(str).split(/\s+/)
 
   # Shortcut for creating a R.Range.
   #
