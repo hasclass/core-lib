@@ -100,7 +100,9 @@ class RubyJS.Base
   #
   proc: (key, args...) ->
     if args.length == 0
-      (el) -> el[key]()
+      (el) ->
+        fn = el[key]
+        if typeof fn is 'function' then fn() else fn
     else
       (el) -> el[key].apply(el, args)
 
