@@ -34,7 +34,7 @@ class RubyJS.Base
   # TODO: TEST
   pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['w', 'fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
@@ -102,7 +102,7 @@ class RubyJS.Base
     if args.length == 0
       (el) ->
         fn = el[key]
-        if typeof fn is 'function' then fn() else fn
+        if typeof fn is 'function' then fn.call(el) else fn
     else
       (el) -> el[key].apply(el, args)
 
