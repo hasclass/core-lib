@@ -44,7 +44,10 @@ RCoerce = R._coerce =
 
 
   to_native: (obj) ->
-    obj.to_native?()
+    if typeof obj != 'object'
+      obj
+    else
+      obj.valueOf()
 
   # Coerces element to a Number primitive.
   #
