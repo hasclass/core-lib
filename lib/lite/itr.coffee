@@ -2,6 +2,11 @@
 class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
 
+
+  to_enum: (args...) ->
+    new RubyJS.Enumerator(args...)
+
+
   each: (coll, block) ->
     if coll.each?
       coll.each(block)
@@ -599,4 +604,4 @@ class MYSortedElement
     @sort_by?['<=>'](other.sort_by)
 
 
-_enum = R._enum = new EnumerableMethods()
+_itr = R._itr = _enum = R._enum = new EnumerableMethods()

@@ -1,4 +1,3 @@
-
 class StringMethods
   capitalize: (str) ->
     return "" if str.length == 0

@@ -1,3 +1,8 @@
+# Rules:
+#
+# Do not call methods as instance methods, but through the singleton object "_arr".
+# This allows for painless method chaining: _arr.map(["foo"], _str.capitalize)
+#
 class ArrayMethods extends EnumerableMethods
   equals: (arr, other) ->
     return true  if arr is other
@@ -26,7 +31,7 @@ class ArrayMethods extends EnumerableMethods
     other = RCoerce.to_ary(other)
     arr   = new R.Array([])
     # TODO suboptimal solution.
-    @each (el) -> arr.push(el) if other.include(el)
+    _arr.each (el) -> arr.push(el) if other.include(el)
     arr.uniq()
 
 
@@ -48,7 +53,7 @@ class ArrayMethods extends EnumerableMethods
     if num == 0
       block([])
     else if num == 1
-      @each arr, (args...) ->
+      _arr.each arr, (args...) ->
         block.call(arr, args)
 
     else if num == len
@@ -84,7 +89,7 @@ class ArrayMethods extends EnumerableMethods
 
   compact: (arr) ->
     ary = []
-    @each arr, (el) ->
+    _arr.each arr, (el) ->
       ary.push(el) if el?
     ary
 
@@ -118,7 +123,7 @@ class ArrayMethods extends EnumerableMethods
 
     arr = []
 
-    @each coll, (element) ->
+    _arr.each coll, (element) ->
       el = R(element)
       if recursion != 0 && el?.to_ary?
         el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
@@ -128,6 +133,8 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
+    return _itr.to_enum(arr, 'each') unless block?.call?
+
     if block.length > 0 # 'if' needed for to_a
       block = Block.supportMultipleArgs(block)
 
@@ -140,7 +147,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   get: (a, b) ->
-    @slice(a,b)
+    _arr.slice(a,b)
 
 
   empty: (arr) ->
@@ -194,7 +201,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   join: (arr, separator) ->
-    return '' if @empty(arr)
+    return '' if arr.length == 0
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
     arr_join.call(arr, separator)
@@ -213,7 +220,7 @@ class ArrayMethods extends EnumerableMethods
 
   uniq: (arr) ->
     ary = []
-    @each arr, (el) ->
+    _arr.each arr, (el) ->
       ary.push(el) if ary.indexOf(el) < 0
     ary
 
