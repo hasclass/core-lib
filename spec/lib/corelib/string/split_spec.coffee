@@ -12,18 +12,18 @@ describe "String#split with String", ->
     expect( R("mellow yellow").split("ello").unbox(true) ).toEqual ["m", "w y", "w"]
 
   it "suppresses trailing empty fields when limit isn't given or 0", ->
-    expect( R("1,2,,3,4,,").split(',').unbox(true) ).toEqual ["1", "2", "", "3", "4"]
-    expect( R("1,2,,3,4,,").split(',', 0).unbox(true) ).toEqual ["1", "2", "", "3", "4"]
-    expect( R("  a  b  c\nd  ").split("  ").unbox(true) ).toEqual ["", "a", "b", "c\nd"]
-    expect( R("hai").split("hai").unbox(true) ).toEqual []
-    expect( R(",").split(",").unbox(true) ).toEqual []
-    expect( R(",").split(",", 0).unbox(true) ).toEqual []
+    expect( R("1,2,,3,4,,").split(',').unbox() ).toEqual ["1", "2", "", "3", "4"]
+    expect( R("1,2,,3,4,,").split(',', 0).unbox() ).toEqual ["1", "2", "", "3", "4"]
+    expect( R("  a  b  c\nd  ").split("  ").unbox() ).toEqual ["", "a", "b", "c\nd"]
+    expect( R("hai").split("hai").unbox() ).toEqual []
+    expect( R(",").split(",").unbox() ).toEqual []
+    expect( R(",").split(",", 0).unbox() ).toEqual []
 
   xit "returns an array with one entry if limit is 1: the original string", ->
-    expect( R("hai").split("hai", 1).unbox(true) ).toEqual ["hai"]
-    expect( R("x.y.z").split(".", 1).unbox(true) ).toEqual ["x.y.z"]
-    expect( R("hello world ").split(" ", 1).unbox(true) ).toEqual ["hello world "]
-    expect( R("hi!").split("", 1).unbox(true) ).toEqual ["hi!"]
+    expect( R("hai").split("hai", 1).unbox() ).toEqual ["hai"]
+    expect( R("x.y.z").split(".", 1).unbox() ).toEqual ["x.y.z"]
+    expect( R("hello world ").split(" ", 1).unbox() ).toEqual ["hello world "]
+    expect( R("hi!").split("", 1).unbox() ).toEqual ["hi!"]
 
   xit "returns at most limit fields when limit > 1", ->
     expect( R("hai").split("hai", 2).unbox(true) ).toEqual ["", ""]
@@ -100,7 +100,7 @@ describe "String#split with String", ->
     R("x.y.z").split(".")
     expect(R['$~']).toEqual null
 
-  it "returns subclass instances based on self", ->
+  xit "returns subclass instances based on self", ->
     str = new StringSpecs.MyString('foo bar')
     arr = str.split(' ')
     expect( arr.first() ).toBeInstanceOf( StringSpecs.MyString )

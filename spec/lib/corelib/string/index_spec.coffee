@@ -19,7 +19,8 @@ describe "String#index with String", ->
     for str in ["blablabla", "hello cruel world...!"]
       str = R(str)
       str.split("").uniq().each (str) ->
-        chr = str.chr()
+        chr = str[0]
+        str = R(str)
         expect( str.index(str) ).toEqual str.index(chr)
 
         R(0).upto str.length + 1, (start) ->

@@ -11,3 +11,11 @@ describe 'RubyJS', ->
     expect( ['foo', 'bar'].map((el) -> el.reverse()) ).toEqual ['oof', 'rab']
 
     expect( typeof 5.0.times(->) == 'number').toEqual true
+
+
+  it "R.proc", ->
+    expect( _arr.map(['foo'], R.proc('length')) ).toEqual [3]
+    expect( _arr.map([R('foo')], R.proc('size')) ).toEqual [R(3)]
+
+    expect( _arr.map([R('foo')], R.proc('multiply', 2)) ).toEqual [R('foofoo')]
+

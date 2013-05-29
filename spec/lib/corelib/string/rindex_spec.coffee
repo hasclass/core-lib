@@ -104,7 +104,8 @@ describe "String#rindex with String", ->
   it "behaves the same as String#rindex(char) for one-character strings", ->
     R(["blablabla", "hello cruel world...!"]).each (str) ->
       R(str).split("").uniq().each (str) ->
-        chr = str.to_native()[0]
+        chr = str[0]
+        str = R(str)
         expect( str.rindex(str) ).toEqual str.rindex(chr)
 
         R(0).upto (str.size() + 1), (start) ->
