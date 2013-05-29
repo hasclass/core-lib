@@ -189,7 +189,7 @@ class RubyJS.Kernel
 
 
   puts: (obj) ->
-    console.log(obj)
+    console.log(obj.valueOf())
 
 
   rand: (limit) ->
