@@ -1351,10 +1351,6 @@ class RubyJS.String extends RubyJS.Object
     @replace _str.swapcase(@__native__)
 
 
-  to_a: ->
-    if @empty() then @$Array([]) else @$Array([this])
-
-
   #to_c
 
 
