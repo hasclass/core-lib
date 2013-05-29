@@ -2,3 +2,5 @@
 # setups the RubyJS environment
 
 RubyJS.pollute_global()
+RubyJS.pollute_more()
+root.puts = _puts
