@@ -1174,21 +1174,9 @@ class RubyJS.String extends RubyJS.Object
   #
   split: (pattern = " ", limit) ->
     unless R.Regexp.isRegexp(pattern)
-      pattern = RCoerce.to_str(pattern).to_native()
+      pattern = RCoerce.to_str_native(pattern)
 
-    ret = @to_native().split(pattern)
-    ret = new RArray(str for str in ret)
-
-    # remove trailing empty fields
-    while R.truthy(str = ret.last())
-      break unless str.length == 0
-      ret.pop()
-
-    if pattern is ' '
-      ret.delete_if (str) -> _str.empty(str)
-    # TODO: if regexp does not include non-matching captures in the result array
-
-    ret
+    new RArray(_str.split(@__native__, pattern, limit))
 
 
   # @todo Not yet implemented
@@ -1296,9 +1284,7 @@ class RubyJS.String extends RubyJS.Object
   sub_bang: (pattern, replacement) ->
     throw R.TypeError.new() if pattern is null
     replacement = RCoerce.to_str_native(replacement)
-
-    subbed = _str.sub(@__native__, pattern, replacement)
-    @replace(subbed)
+    @replace(_str.sub(@__native__, pattern, replacement))
 
 
   # Returns the successor to str. The successor is calculated by incrementing
@@ -1361,15 +1347,8 @@ class RubyJS.String extends RubyJS.Object
   # effective only in ASCII region.
   #
   swapcase_bang: () ->
-    return null unless @to_native().match(/[a-zA-Z]/)
-    @replace R(@__char_natives__()).map((c) ->
-      if c.match(/[a-z]/)
-        c.toUpperCase()
-      else if c.match(/[A-Z]/)
-        c.toLowerCase()
-      else
-        c
-    ).join('').to_native()
+    return null unless @__native__.match(/[a-zA-Z]/)
+    @replace _str.swapcase(@__native__)
 
 
   to_a: ->

@@ -386,10 +386,50 @@ class StringMethods
       return str[index]
 
 
+  split: (str, pattern = " ", limit) ->
+    # pattern string or regexp
+    pattern = pattern.valueOf() if typeof pattern isnt 'string'
+    # TODO: implement limit
+
+    ary = str.split(pattern)
+
+    # remove trailing empty fields
+    while R.truthy(str = ary[ary.length - 1])
+      break unless str.length == 0
+      ary.pop()
+
+    if pattern is ' '
+      tmp = []
+      for el in ary
+        tmp.push(el) if el != ''
+      ary = tmp
+
+    # TODO: if regexp does not include non-matching captures in the result array
+
+    ary
+
+
   start_with: (str, needles...) ->
     for needle in needles
       return true if str.indexOf(needle) is 0
     false
+
+
+  swapcase: (str) ->
+    return str unless str.match(/[a-zA-Z]/)
+
+    chars = str.split('')
+    # TODO optimize using charCodeAt
+    for c,i in chars
+      # TODO: optimize using new String(c) to avoid shadow wrappers
+      # c = new String(c)
+      if c.match(/[a-z]/)
+        chars[i] = c.toUpperCase()
+      else if c.match(/[A-Z]/)
+        chars[i] = c.toLowerCase()
+
+    chars.join('')
+
 
 
   upcase: (str) ->
