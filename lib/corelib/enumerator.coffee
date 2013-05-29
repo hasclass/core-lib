@@ -72,7 +72,7 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   valueOf: ->
-    @to_a()
+    @to_a().valueOf()
 
 
   eachWithIndex: @prototype.each_with_index
