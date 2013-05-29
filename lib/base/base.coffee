@@ -40,7 +40,7 @@ class RubyJS.Base
 
     for method in args
       name = prefix + method.replace(/_/, '')
-      if root[name]?
+      if root[name]? && root[name] isnt @[method]
         R.puts("RubyJS.pollute_global(): #{name} already exists.")
       else
         root[name] = @[method]
@@ -55,6 +55,9 @@ class RubyJS.Base
       _str:  '_s'
       _enum: '_e'
       _hsh:  '_h'
+
+    for k,v of shortcuts
+      root[v] = root[k]
 
 
   # Adds RubyJS methods to JS native classes.
@@ -98,18 +101,38 @@ class RubyJS.Base
   #     R.w('foo bar').map( R.proc('capitalize') )
   #     R.w('foo bar').map( R.proc('ljust', 10) )
   #
-  proc: (key, args...) ->
-    if args.length == 0
+  proc:  ->
+    key = arguments[0]
+    # OPTIMIZE: dont use args... but arguments instead
+    if arguments.length == 1
+      # Wrapper block doesnt need to mangle arguments
       (el) ->
         fn = el[key]
-        if typeof fn is 'function' then fn.call(el) else fn
+        if typeof fn is 'function'
+          fn.call(el)
+        else if fn is undefined
+          R(el)[key]().valueOf()
+        else
+          fn
     else
-      (el) -> el[key].apply(el, args)
+      args = arr_slice.call(arguments, 1)
+      # Wrapper block that mangles arguments
+      (el) ->
+        fn = el[key]
+        if typeof fn is 'function'
+          el[key].apply(el, args)
+        else
+          # no method found, now check if it exists in rubyjs equivalent
+          el = R(el)
+          el[key].apply(el, args).valueOf()
 
 
-  fn: (func, args...) ->
+  fn: (func) ->
     (el) ->
-      func.apply(null, [el].concat(args))
+      arguments[0] = el
+      func.apply(null, arguments)
+
+
 
 
   # Check wether an obj is falsey according to Ruby
