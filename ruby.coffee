@@ -296,7 +296,7 @@ class RubyJS.Kernel
   #      R.w('')              # => ['']
   #
   w: (str) ->
-    R(str).split(/\s+/)
+    new R.String(str).split(/\s+/)
 
   # Shortcut for creating a R.Range.
   #
@@ -399,7 +399,7 @@ class RubyJS.Kernel
 
 
   puts: (obj) ->
-    console.log(obj)
+    console.log(obj.valueOf())
 
 
   rand: (limit) ->
@@ -478,13 +478,13 @@ class RubyJS.Base
   # TODO: TEST
   pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['w', 'fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
     for method in args
       name = prefix + method.replace(/_/, '')
-      if root[name]?
+      if root[name]? && root[name] isnt @[method]
         R.puts("RubyJS.pollute_global(): #{name} already exists.")
       else
         root[name] = @[method]
@@ -499,6 +499,9 @@ class RubyJS.Base
       _str:  '_s'
       _enum: '_e'
       _hsh:  '_h'
+
+    for k,v of shortcuts
+      root[v] = root[k]
 
 
   # Adds RubyJS methods to JS native classes.
@@ -542,16 +545,38 @@ class RubyJS.Base
   #     R.w('foo bar').map( R.proc('capitalize') )
   #     R.w('foo bar').map( R.proc('ljust', 10) )
   #
-  proc: (key, args...) ->
-    if args.length == 0
-      (el) -> el[key]()
+  proc:  ->
+    key = arguments[0]
+    # OPTIMIZE: dont use args... but arguments instead
+    if arguments.length == 1
+      # Wrapper block doesnt need to mangle arguments
+      (el) ->
+        fn = el[key]
+        if typeof fn is 'function'
+          fn.call(el)
+        else if fn is undefined
+          R(el)[key]().valueOf()
+        else
+          fn
     else
-      (el) -> el[key].apply(el, args)
+      args = arr_slice.call(arguments, 1)
+      # Wrapper block that mangles arguments
+      (el) ->
+        fn = el[key]
+        if typeof fn is 'function'
+          el[key].apply(el, args)
+        else
+          # no method found, now check if it exists in rubyjs equivalent
+          el = R(el)
+          el[key].apply(el, args).valueOf()
 
 
-  fn: (func, args...) ->
+  fn: (func) ->
     (el) ->
-      func.apply(null, [el].concat(args))
+      arguments[0] = el
+      func.apply(null, arguments)
+
+
 
 
   # Check wether an obj is falsey according to Ruby
@@ -658,7 +683,10 @@ RCoerce = R._coerce =
 
 
   to_native: (obj) ->
-    obj.to_native?()
+    if typeof obj != 'object'
+      obj
+    else
+      obj.valueOf()
 
   # Coerces element to a Number primitive.
   #
@@ -1037,6 +1065,11 @@ _num = R._num = new NumericMethods()
 # Module
 class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
+
+
+  to_enum: (args...) ->
+    new RubyJS.Enumerator(args...)
+
 
   each: (coll, block) ->
     if coll.each?
@@ -1635,9 +1668,14 @@ class MYSortedElement
     @sort_by?['<=>'](other.sort_by)
 
 
-_enum = R._enum = new EnumerableMethods()
+_itr = R._itr = _enum = R._enum = new EnumerableMethods()
 
 
+# Rules:
+#
+# Do not call methods as instance methods, but through the singleton object "_arr".
+# This allows for painless method chaining: _arr.map(["foo"], _str.capitalize)
+#
 class ArrayMethods extends EnumerableMethods
   equals: (arr, other) ->
     return true  if arr is other
@@ -1666,7 +1704,7 @@ class ArrayMethods extends EnumerableMethods
     other = RCoerce.to_ary(other)
     arr   = new R.Array([])
     # TODO suboptimal solution.
-    @each (el) -> arr.push(el) if other.include(el)
+    _arr.each (el) -> arr.push(el) if other.include(el)
     arr.uniq()
 
 
@@ -1688,7 +1726,7 @@ class ArrayMethods extends EnumerableMethods
     if num == 0
       block([])
     else if num == 1
-      @each arr, (args...) ->
+      _arr.each arr, (args...) ->
         block.call(arr, args)
 
     else if num == len
@@ -1724,7 +1762,7 @@ class ArrayMethods extends EnumerableMethods
 
   compact: (arr) ->
     ary = []
-    @each arr, (el) ->
+    _arr.each arr, (el) ->
       ary.push(el) if el?
     ary
 
@@ -1758,7 +1796,7 @@ class ArrayMethods extends EnumerableMethods
 
     arr = []
 
-    @each coll, (element) ->
+    _arr.each coll, (element) ->
       el = R(element)
       if recursion != 0 && el?.to_ary?
         el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
@@ -1768,6 +1806,8 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
+    return _itr.to_enum(arr, 'each') unless block?.call?
+
     if block.length > 0 # 'if' needed for to_a
       block = Block.supportMultipleArgs(block)
 
@@ -1780,7 +1820,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   get: (a, b) ->
-    @slice(a,b)
+    _arr.slice(a,b)
 
 
   empty: (arr) ->
@@ -1834,7 +1874,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   join: (arr, separator) ->
-    return '' if @empty(arr)
+    return '' if arr.length == 0
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
     arr_join.call(arr, separator)
@@ -1853,7 +1893,7 @@ class ArrayMethods extends EnumerableMethods
 
   uniq: (arr) ->
     ary = []
-    @each arr, (el) ->
+    _arr.each arr, (el) ->
       ary.push(el) if ary.indexOf(el) < 0
     ary
 
@@ -1867,7 +1907,6 @@ class ArrayMethods extends EnumerableMethods
 
 
 _arr = R._arr = new ArrayMethods()
-
 
 class StringMethods
   capitalize: (str) ->
@@ -1929,56 +1968,45 @@ class StringMethods
     _str.__matched__(str, args).length
 
 
-  __matched__: (str, args) ->
-    for el in args
-      rgx = _str.__to_regexp__(el)
-      str = (str_match.call(str, rgx) || []).join('')
-    str
-
-
-  # creates a regexp from the "a-z", "^ab" arguments used in #count
-  __to_regexp__: (str) ->
-    r = ""
-
-    if str.length == 0
-      r = "(?!)"
-    else if str == '^'
-      r = "\\^"
-    else
-      if str.lastIndexOf("^") >= 1
-        str = str[0] + str[1..-1].replace("^", "\\^")
-      r = "[#{str}]"
-
-    try
-      return new RegExp(r, 'g')
-    catch e
-      throw R.ArgumentError.new()
-
-
   'delete': (str, args...) ->
     throw R.ArgumentError.new() if args.length == 0
     trash = _str.__matched__(str, args)
     str.replace(new RegExp("[#{trash}]", 'g'), '')
 
 
-  squeeze: (str, pattern...) ->
-    trash = _str.__matched__(str, pattern)
-    chars = str.split("")
-    len   = str.length
-    i     = 1
-    j     = 0
-    last  = chars[0]
-    all   = pattern.length == 0
-    while i < len
-      c = chars[i]
-      unless c == last and (all || trash.indexOf(c) >= 0)
-        chars[j+=1] = last = c
-      i += 1
+  each_line: (str, separator, block) ->
+    unless block?
+      if separator?
+        if separator.call?
+          block = separator
+          separator = null
+      else
+        block(str)
+        return
 
-    if (j + 1) < len
-      chars = chars[0..j]
 
-    chars.join('')
+    # unless separator?
+    separator ||= R['$/']
+
+    # TODO: Use RCoerce?
+    # throw R.TypeError.new() unless separator.to_str?
+    if separator.length is 0
+      separator = "\n\n"
+
+    lft = 0
+    rgt = null
+    dup = str # allows the string to be changed with bang methods
+    while (rgt = _str.index(dup, separator, lft)) != null
+      rgt = rgt + 1
+      str = _str.slice(dup, lft, rgt - lft)
+      lft = rgt
+      block(str)
+
+    remainder = str_slice.call(dup, lft)
+    if remainder?
+      block(remainder) unless remainder.length == 0
+
+    this
 
 
   downcase: (str) ->
@@ -2000,7 +2028,23 @@ class StringMethods
     false
 
 
+  gsub: (str, pattern, replacement) ->
+    throw R.TypeError.new() if pattern is null
+
+    pattern_lit = R.String.string_native(pattern)
+    if pattern_lit isnt null
+      pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
+
+    unless R.Regexp.isRegexp(pattern)
+      throw R.TypeError.new()
+
+    unless pattern.global
+      throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
+
+    str.replace(pattern, replacement)
+
   include: (str, other) ->
+
     str.indexOf(other) >= 0
 
 
@@ -2107,6 +2151,26 @@ class StringMethods
 
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
+
+
+  squeeze: (str, pattern...) ->
+    trash = _str.__matched__(str, pattern)
+    chars = str.split("")
+    len   = str.length
+    i     = 1
+    j     = 0
+    last  = chars[0]
+    all   = pattern.length == 0
+    while i < len
+      c = chars[i]
+      unless c == last and (all || trash.indexOf(c) >= 0)
+        chars[j+=1] = last = c
+      i += 1
+
+    if (j + 1) < len
+      chars = chars[0..j]
+
+    chars.join('')
 
 
   strip: (str) ->
@@ -2244,6 +2308,32 @@ class StringMethods
     _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
     ).join('')
+
+
+  __matched__: (str, args) ->
+    for el in args
+      rgx = _str.__to_regexp__(el)
+      str = (str_match.call(str, rgx) || []).join('')
+    str
+
+
+  # creates a regexp from the "a-z", "^ab" arguments used in #count
+  __to_regexp__: (str) ->
+    r = ""
+
+    if str.length == 0
+      r = "(?!)"
+    else if str == '^'
+      r = "\\^"
+    else
+      if str.lastIndexOf("^") >= 1
+        str = str[0] + str[1..-1].replace("^", "\\^")
+      r = "[#{str}]"
+
+    try
+      return new RegExp(r, 'g')
+    catch e
+      throw R.ArgumentError.new()
 
 
 _str = R._str = new StringMethods()
@@ -3079,6 +3169,10 @@ class RubyJS.Enumerator extends RubyJS.Object
 
   to_enum: (iter = "each", args...) ->
     new RubyJS.Enumerator(this, iter, args)
+
+
+  valueOf: ->
+    @to_a().valueOf()
 
 
   eachWithIndex: @prototype.each_with_index
@@ -6361,8 +6455,8 @@ class RubyJS.String extends RubyJS.Object
 
   # Returns true if str ends with one of the suffixes given.
   #
-  end_with: (needles...) ->
-    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
+  end_with: ->
+    needles = _arr.select(arguments, (s) -> R(s)?.to_str? )
     neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
 
     _str.end_with(@__native__, needles...)
@@ -6460,21 +6554,10 @@ class RubyJS.String extends RubyJS.Object
   #
   gsub: (pattern, replacement) ->
     throw R.TypeError.new() if pattern is null
+    replacement = RCoerce.to_str_native(replacement)
 
-    pattern_lit = String.string_native(pattern)
-    if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
-
-    unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
-
-    unless pattern.global
-      throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
-
-    replacement = RCoerce.to_str(replacement).to_native()
-    gsubbed     = @to_native().replace(pattern, replacement)
-
-    new @constructor(gsubbed) # makes String subclasseable
+    gsubbed = _str.gsub(@__native__, pattern, replacement)
+    new RString(gsubbed)
 
 
   #hash
@@ -6903,7 +6986,8 @@ class RubyJS.String extends RubyJS.Object
 
   #setbyte
 
-  size: -> @$Integer(@to_native().length)
+  size: ->
+    @$Integer(@to_native().length)
 
 
   # Element Reference—If passed a single Fixnum, returns a substring of one
@@ -7016,15 +7100,15 @@ class RubyJS.String extends RubyJS.Object
       pattern = RCoerce.to_str(pattern).to_native()
 
     ret = @to_native().split(pattern)
-    ret = R(new @constructor(str) for str in ret)
+    ret = new RArray(str for str in ret)
 
     # remove trailing empty fields
-    while str = ret.last()
-      break unless str.empty()
+    while R.truthy(str = ret.last())
+      break unless str.length == 0
       ret.pop()
 
     if pattern is ' '
-      ret.delete_if (str) -> str.empty()
+      ret.delete_if (str) -> _str.empty(str)
     # TODO: if regexp does not include non-matching captures in the result array
 
     ret
@@ -9701,3 +9785,5 @@ class RubyJS.Time extends RubyJS.Object
 # setups the RubyJS environment
 
 RubyJS.pollute_global()
+RubyJS.pollute_more()
+root.puts = _puts

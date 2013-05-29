@@ -9,9 +9,9 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RString, StrProto, StringMethods, arr_join, arr_slice, arr_sort, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, str_match, str_slice, _arr, _blockify, _enum, _fn, _i, _len, _num, _ref, _slice_, _str, _toString_,
-    __slice = [].slice,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RString, StrProto, StringMethods, arr_join, arr_slice, arr_sort, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, str_match, str_slice, _arr, _blockify, _enum, _fn, _i, _itr, _len, _num, _ref, _slice_, _str, _toString_,
     __hasProp = {}.hasOwnProperty,
+    __slice = [].slice,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   root = typeof global !== "undefined" && global !== null ? global : window;
@@ -299,7 +299,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Kernel.prototype.w = function(str) {
-      return R(str).split(/\s+/);
+      return new R.String(str).split(/\s+/);
     };
 
     Kernel.prototype.r = function(a, b, excluding) {
@@ -428,7 +428,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Kernel.prototype.puts = function(obj) {
-      return console.log(obj);
+      return console.log(obj.valueOf());
     };
 
     Kernel.prototype.rand = function(limit) {
@@ -506,14 +506,14 @@ http://www.rubyjs.org/LICENSE.txt
         prefix = "_";
       }
       if (arguments.length === 0) {
-        args = ['fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
+        args = ['w', 'fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
       } else {
         args = arguments;
       }
       for (_i = 0, _len = args.length; _i < _len; _i++) {
         method = args[_i];
         name = prefix + method.replace(/_/, '');
-        if (root[name] != null) {
+        if ((root[name] != null) && root[name] !== this[method]) {
           R.puts("RubyJS.pollute_global(): " + name + " already exists.");
         } else {
           root[name] = this[method];
@@ -523,14 +523,20 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Base.prototype.pollute_more = function() {
-      var shortcuts;
-      return shortcuts = {
+      var k, shortcuts, v, _results;
+      shortcuts = {
         _arr: '_a',
         _num: '_n',
         _str: '_s',
         _enum: '_e',
         _hsh: '_h'
       };
+      _results = [];
+      for (k in shortcuts) {
+        v = shortcuts[k];
+        _results.push(root[v] = root[k]);
+      }
+      return _results;
     };
 
     Base.prototype.i_am_feeling_evil = function(prefix, overwrite) {
@@ -571,23 +577,38 @@ http://www.rubyjs.org/LICENSE.txt
 
     Base.prototype.proc = function() {
       var args, key;
-      key = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      if (args.length === 0) {
+      key = arguments[0];
+      if (arguments.length === 1) {
         return function(el) {
-          return el[key]();
+          var fn;
+          fn = el[key];
+          if (typeof fn === 'function') {
+            return fn.call(el);
+          } else if (fn === void 0) {
+            return R(el)[key]().valueOf();
+          } else {
+            return fn;
+          }
         };
       } else {
+        args = arr_slice.call(arguments, 1);
         return function(el) {
-          return el[key].apply(el, args);
+          var fn;
+          fn = el[key];
+          if (typeof fn === 'function') {
+            return el[key].apply(el, args);
+          } else {
+            el = R(el);
+            return el[key].apply(el, args).valueOf();
+          }
         };
       }
     };
 
-    Base.prototype.fn = function() {
-      var args, func;
-      func = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    Base.prototype.fn = function(func) {
       return function(el) {
-        return func.apply(null, [el].concat(args));
+        arguments[0] = el;
+        return func.apply(null, arguments);
       };
     };
 
@@ -701,7 +722,11 @@ http://www.rubyjs.org/LICENSE.txt
       }
     },
     to_native: function(obj) {
-      return typeof obj.to_native === "function" ? obj.to_native() : void 0;
+      if (typeof obj !== 'object') {
+        return obj;
+      } else {
+        return obj.valueOf();
+      }
     },
     to_num_native: function(obj) {
       if (typeof obj === 'number') {
@@ -1071,6 +1096,16 @@ http://www.rubyjs.org/LICENSE.txt
     function EnumerableMethods() {}
 
     EnumerableMethods.prototype.catch_break = R.Kernel.prototype.catch_break;
+
+    EnumerableMethods.prototype.to_enum = function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args), t = typeof result;
+        return t == "object" || t == "function" ? result || child : child;
+      })(RubyJS.Enumerator, args, function(){});
+    };
 
     EnumerableMethods.prototype.each = function(coll, block) {
       var k, v;
@@ -1797,7 +1832,7 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  _enum = R._enum = new EnumerableMethods();
+  _itr = R._itr = _enum = R._enum = new EnumerableMethods();
 
   ArrayMethods = (function(_super) {
 
@@ -1843,7 +1878,7 @@ http://www.rubyjs.org/LICENSE.txt
       var arr;
       other = RCoerce.to_ary(other);
       arr = new R.Array([]);
-      this.each(function(el) {
+      _arr.each(function(el) {
         if (other.include(el)) {
           return arr.push(el);
         }
@@ -1867,7 +1902,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (num === 0) {
         block([]);
       } else if (num === 1) {
-        this.each(arr, function() {
+        _arr.each(arr, function() {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
           return block.call(arr, args);
@@ -1913,7 +1948,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.compact = function(arr) {
       var ary;
       ary = [];
-      this.each(arr, function(el) {
+      _arr.each(arr, function(el) {
         if (el != null) {
           return ary.push(el);
         }
@@ -1964,7 +1999,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
       recursion = RCoerce.to_int_native(recursion);
       arr = [];
-      this.each(coll, function(element) {
+      _arr.each(coll, function(element) {
         var el;
         el = R(element);
         if (recursion !== 0 && ((el != null ? el.to_ary : void 0) != null)) {
@@ -1980,6 +2015,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     ArrayMethods.prototype.each = function(arr, block) {
       var idx, len;
+      if ((block != null ? block.call : void 0) == null) {
+        return _itr.to_enum(arr, 'each');
+      }
       if (block.length > 0) {
         block = Block.supportMultipleArgs(block);
       }
@@ -1992,7 +2030,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     ArrayMethods.prototype.get = function(a, b) {
-      return this.slice(a, b);
+      return _arr.slice(a, b);
     };
 
     ArrayMethods.prototype.empty = function(arr) {
@@ -2054,7 +2092,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     ArrayMethods.prototype.join = function(arr, separator) {
-      if (this.empty(arr)) {
+      if (arr.length === 0) {
         return '';
       }
       if (separator === void 0) {
@@ -2081,7 +2119,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.uniq = function(arr) {
       var ary;
       ary = [];
-      this.each(arr, function(el) {
+      _arr.each(arr, function(el) {
         if (ary.indexOf(el) < 0) {
           return ary.push(el);
         }
@@ -2193,36 +2231,6 @@ http://www.rubyjs.org/LICENSE.txt
       return _str.__matched__(str, args).length;
     };
 
-    StringMethods.prototype.__matched__ = function(str, args) {
-      var el, rgx, _i, _len;
-      for (_i = 0, _len = args.length; _i < _len; _i++) {
-        el = args[_i];
-        rgx = _str.__to_regexp__(el);
-        str = (str_match.call(str, rgx) || []).join('');
-      }
-      return str;
-    };
-
-    StringMethods.prototype.__to_regexp__ = function(str) {
-      var r;
-      r = "";
-      if (str.length === 0) {
-        r = "(?!)";
-      } else if (str === '^') {
-        r = "\\^";
-      } else {
-        if (str.lastIndexOf("^") >= 1) {
-          str = str[0] + str.slice(1).replace("^", "\\^");
-        }
-        r = "[" + str + "]";
-      }
-      try {
-        return new RegExp(r, 'g');
-      } catch (e) {
-        throw R.ArgumentError["new"]();
-      }
-    };
-
     StringMethods.prototype['delete'] = function() {
       var args, str, trash;
       str = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
@@ -2233,27 +2241,39 @@ http://www.rubyjs.org/LICENSE.txt
       return str.replace(new RegExp("[" + trash + "]", 'g'), '');
     };
 
-    StringMethods.prototype.squeeze = function() {
-      var all, c, chars, i, j, last, len, pattern, str, trash;
-      str = arguments[0], pattern = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      trash = _str.__matched__(str, pattern);
-      chars = str.split("");
-      len = str.length;
-      i = 1;
-      j = 0;
-      last = chars[0];
-      all = pattern.length === 0;
-      while (i < len) {
-        c = chars[i];
-        if (!(c === last && (all || trash.indexOf(c) >= 0))) {
-          chars[j += 1] = last = c;
+    StringMethods.prototype.each_line = function(str, separator, block) {
+      var dup, lft, remainder, rgt;
+      if (block == null) {
+        if (separator != null) {
+          if (separator.call != null) {
+            block = separator;
+            separator = null;
+          }
+        } else {
+          block(str);
+          return;
         }
-        i += 1;
       }
-      if ((j + 1) < len) {
-        chars = chars.slice(0, j + 1 || 9e9);
+      separator || (separator = R['$/']);
+      if (separator.length === 0) {
+        separator = "\n\n";
       }
-      return chars.join('');
+      lft = 0;
+      rgt = null;
+      dup = str;
+      while ((rgt = _str.index(dup, separator, lft)) !== null) {
+        rgt = rgt + 1;
+        str = _str.slice(dup, lft, rgt - lft);
+        lft = rgt;
+        block(str);
+      }
+      remainder = str_slice.call(dup, lft);
+      if (remainder != null) {
+        if (remainder.length !== 0) {
+          block(remainder);
+        }
+      }
+      return this;
     };
 
     StringMethods.prototype.downcase = function(str) {
@@ -2283,6 +2303,24 @@ http://www.rubyjs.org/LICENSE.txt
         }
       }
       return false;
+    };
+
+    StringMethods.prototype.gsub = function(str, pattern, replacement) {
+      var pattern_lit;
+      if (pattern === null) {
+        throw R.TypeError["new"]();
+      }
+      pattern_lit = R.String.string_native(pattern);
+      if (pattern_lit !== null) {
+        pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g');
+      }
+      if (!R.Regexp.isRegexp(pattern)) {
+        throw R.TypeError["new"]();
+      }
+      if (!pattern.global) {
+        throw "String#gsub: " + pattern + " has not set the global flag 'g'. " + pattern + "g";
+      }
+      return str.replace(pattern, replacement);
     };
 
     StringMethods.prototype.include = function(str, other) {
@@ -2417,6 +2455,29 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.rstrip = function(str) {
       return str.replace(/[\s\n\t]+$/g, '');
+    };
+
+    StringMethods.prototype.squeeze = function() {
+      var all, c, chars, i, j, last, len, pattern, str, trash;
+      str = arguments[0], pattern = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      trash = _str.__matched__(str, pattern);
+      chars = str.split("");
+      len = str.length;
+      i = 1;
+      j = 0;
+      last = chars[0];
+      all = pattern.length === 0;
+      while (i < len) {
+        c = chars[i];
+        if (!(c === last && (all || trash.indexOf(c) >= 0))) {
+          chars[j += 1] = last = c;
+        }
+        i += 1;
+      }
+      if ((j + 1) < len) {
+        chars = chars.slice(0, j + 1 || 9e9);
+      }
+      return chars.join('');
     };
 
     StringMethods.prototype.strip = function(str) {
@@ -2598,6 +2659,36 @@ http://www.rubyjs.org/LICENSE.txt
           return c;
         }
       }).join('');
+    };
+
+    StringMethods.prototype.__matched__ = function(str, args) {
+      var el, rgx, _i, _len;
+      for (_i = 0, _len = args.length; _i < _len; _i++) {
+        el = args[_i];
+        rgx = _str.__to_regexp__(el);
+        str = (str_match.call(str, rgx) || []).join('');
+      }
+      return str;
+    };
+
+    StringMethods.prototype.__to_regexp__ = function(str) {
+      var r;
+      r = "";
+      if (str.length === 0) {
+        r = "(?!)";
+      } else if (str === '^') {
+        r = "\\^";
+      } else {
+        if (str.lastIndexOf("^") >= 1) {
+          str = str[0] + str.slice(1).replace("^", "\\^");
+        }
+        r = "[" + str + "]";
+      }
+      try {
+        return new RegExp(r, 'g');
+      } catch (e) {
+        throw R.ArgumentError["new"]();
+      }
     };
 
     return StringMethods;
@@ -3244,6 +3335,10 @@ http://www.rubyjs.org/LICENSE.txt
         iter = "each";
       }
       return new RubyJS.Enumerator(this, iter, args);
+    };
+
+    Enumerator.prototype.valueOf = function() {
+      return this.to_a().valueOf();
     };
 
     Enumerator.prototype.eachWithIndex = Enumerator.prototype.each_with_index;
@@ -5616,8 +5711,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.end_with = function() {
       var needles, neeldes;
-      needles = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      needles = _arr.select(needles, function(s) {
+      needles = _arr.select(arguments, function(s) {
         var _ref1;
         return ((_ref1 = R(s)) != null ? _ref1.to_str : void 0) != null;
       });
@@ -5659,23 +5753,13 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.gsub = function(pattern, replacement) {
-      var gsubbed, pattern_lit;
+      var gsubbed;
       if (pattern === null) {
         throw R.TypeError["new"]();
       }
-      pattern_lit = String.string_native(pattern);
-      if (pattern_lit !== null) {
-        pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g');
-      }
-      if (!R.Regexp.isRegexp(pattern)) {
-        throw R.TypeError["new"]();
-      }
-      if (!pattern.global) {
-        throw "String#gsub: " + pattern + " has not set the global flag 'g'. " + pattern + "g";
-      }
-      replacement = RCoerce.to_str(replacement).to_native();
-      gsubbed = this.to_native().replace(pattern, replacement);
-      return new this.constructor(gsubbed);
+      replacement = RCoerce.to_str_native(replacement);
+      gsubbed = _str.gsub(this.__native__, pattern, replacement);
+      return new RString(gsubbed);
     };
 
     String.prototype.include = function(other) {
@@ -5981,24 +6065,24 @@ http://www.rubyjs.org/LICENSE.txt
         pattern = RCoerce.to_str(pattern).to_native();
       }
       ret = this.to_native().split(pattern);
-      ret = R((function() {
+      ret = new RArray((function() {
         var _j, _len1, _results;
         _results = [];
         for (_j = 0, _len1 = ret.length; _j < _len1; _j++) {
           str = ret[_j];
-          _results.push(new this.constructor(str));
+          _results.push(str);
         }
         return _results;
-      }).call(this));
-      while (str = ret.last()) {
-        if (!str.empty()) {
+      })());
+      while (R.truthy(str = ret.last())) {
+        if (str.length !== 0) {
           break;
         }
         ret.pop();
       }
       if (pattern === ' ') {
         ret.delete_if(function(str) {
-          return str.empty();
+          return _str.empty(str);
         });
       }
       return ret;
@@ -7799,5 +7883,9 @@ http://www.rubyjs.org/LICENSE.txt
   })(RubyJS.Object);
 
   RubyJS.pollute_global();
+
+  RubyJS.pollute_more();
+
+  root.puts = _puts;
 
 }).call(this);
