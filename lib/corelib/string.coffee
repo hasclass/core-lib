@@ -1063,7 +1063,8 @@ class RubyJS.String extends RubyJS.Object
 
   #setbyte
 
-  size: -> @$Integer(@to_native().length)
+  size: ->
+    @$Integer(@to_native().length)
 
 
   # Element Reference—If passed a single Fixnum, returns a substring of one
@@ -1176,15 +1177,15 @@ class RubyJS.String extends RubyJS.Object
       pattern = RCoerce.to_str(pattern).to_native()
 
     ret = @to_native().split(pattern)
-    ret = R(new @constructor(str) for str in ret)
+    ret = new RArray(str for str in ret)
 
     # remove trailing empty fields
-    while str = ret.last()
-      break unless str.empty()
+    while R.truthy(str = ret.last())
+      break unless str.length == 0
       ret.pop()
 
     if pattern is ' '
-      ret.delete_if (str) -> str.empty()
+      ret.delete_if (str) -> _str.empty(str)
     # TODO: if regexp does not include non-matching captures in the result array
 
     ret
