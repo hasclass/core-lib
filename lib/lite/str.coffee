@@ -431,13 +431,30 @@ class StringMethods
     chars.join('')
 
 
-
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
     _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
     ).join('')
+
+
+  upto: (str, stop, exclusive, block) ->
+    exclusive ||= false
+    if block is undefined and exclusive?.call?
+      block = exclusive
+      exclusive = false
+
+    orig = str
+    stop_size = stop.length
+    exclusive = exclusive is true
+
+    while (str < stop || (!exclusive && str == stop)) && !(str.length > stop_size)
+      block( str )
+      str = _str.succ(str)
+
+    orig
+
 
 
   __matched__: (str, args) ->

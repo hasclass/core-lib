@@ -1359,6 +1359,7 @@ class RubyJS.String extends RubyJS.Object
     number_match = @to_native().match(/^([\+\-]?\d[_\d]*)(\.\d*)?([eE][\+\-]?[\d_]+)?$/)
     number_match?[0]?
 
+
   # Returns the result of interpreting leading characters in str as a floating point number. Extraneous characters past the end of a valid number are ignored. If there is not a valid number at the start of str, 0.0 is returned. This method never raises an exception.
   #
   # @example
@@ -1369,6 +1370,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo Some exotic formats not yet fully supported.
   #
   to_f: ->
+    # TODO
     number_match  = @to_native().match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
     number_string = number_match?[0] ? "0.0"
     @$Float Number(number_string.replace(/_/g, ''))
@@ -1415,6 +1417,7 @@ class RubyJS.String extends RubyJS.Object
   #       - e.g: R("1012").to_i(2) should return 5, but due to 2 being invalid it retunrs 0 now.
   # @todo #to_i(0) does not auto-detect base
   to_i: (base) ->
+    # TODO
     base = 10 if base is undefined
     base = RCoerce.to_int_native(base)
 
@@ -1446,6 +1449,7 @@ class RubyJS.String extends RubyJS.Object
 
   # Returns the receiver.
   to_s: -> this
+
 
   # Returns the receiver.
   to_str: @prototype.to_s
@@ -1494,17 +1498,6 @@ class RubyJS.String extends RubyJS.Object
     throw R.NotImplementedError.new()
 
 
-  #unpack
-
-
-  @upcase: (str) ->
-    str = RCoerce.to_str_native(str)
-    return null unless str.match(/[a-z]/)
-    R(str.split('')).map((c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('').to_native()
-
-
   # Returns a copy of str with all lowercase letters replaced with their
   # uppercase counterparts. The operation is locale insensitive—only
   # characters “a” to “z” are affected. Note: case replacement is effective
@@ -1515,6 +1508,7 @@ class RubyJS.String extends RubyJS.Object
   #
   upcase: () ->
     new RString(_str.upcase(@__native__))
+
 
   # Upcases the contents of str, returning nil if no changes were made. Note:
   # case replacement is effective only in ASCII region.
@@ -1546,23 +1540,15 @@ class RubyJS.String extends RubyJS.Object
   # @todo R('a').upto('c').to_a() should return ['a', 'b', 'c'] (include 'c')
   #
   upto: (stop, exclusive, block) ->
-    stop = RCoerce.to_str(stop)
-    exclusive ||= false
+    stop = RCoerce.to_str_native(stop)
     if block is undefined and exclusive?.call?
       block = exclusive
       exclusive = false
 
-    throw R.TypeError.new() unless stop?.is_string?
+    # throw R.TypeError.new() unless stop?.is_string?
     return R.Enumerator.new(this, 'upto', stop, exclusive) unless block && block.call?
 
-    # stop       = stop.to_str()
-    # return this if @lt(stop)
-    counter    = @dup()
-    compare_fn = if exclusive is false then 'lteq' else 'lt'
-    stop_size  = stop.size()
-    while counter[compare_fn](stop) && !counter.size().gt(stop_size)
-      block( counter )
-      counter = counter.succ()
+    _str.upto(@__native__, stop, exclusive, block)
 
     this
 
