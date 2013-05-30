@@ -163,16 +163,16 @@ class RubyJS.Base
       else if a['==']?
         a['=='](b)
       else
-        a == b
+        a is b
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
       else if b['==']?
         b['=='](a)
       else
-        a == b
+        a is b
     else
-      a == b
+      a is b
 
   is_eql: (a, b) ->
     if typeof a is 'object'
@@ -180,13 +180,19 @@ class RubyJS.Base
     else if typeof b is 'object'
       b.eql(a)
     else
-      a == b
+      a is b
 
 
   extend: (obj, mixin) ->
     obj[name] = method for name, method of mixin
     obj
 
+
+  camelCase: ->
+
+
+  # helper method to get an arguments object
+  argify: -> arguments
 
 # adds all methods to the global R object
 for own name, method of RubyJS.Base.prototype
