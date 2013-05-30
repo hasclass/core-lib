@@ -62,7 +62,7 @@ class RubyJS.String extends RubyJS.Object
     @__native__
 
 
-  valueOf:  -> @to_native()
+  valueOf:  -> @__native__
 
 
   toString: -> @to_native()

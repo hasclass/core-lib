@@ -610,6 +610,11 @@ class RubyJS.Hash extends RubyJS.Object
       @get(k)
     R(arr)
 
+
+  valueOf: ->
+    @__native__
+
+
   # ---- Aliases --------------------------------------------------------------
 
 

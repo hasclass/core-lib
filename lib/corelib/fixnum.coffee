@@ -32,6 +32,9 @@ class RubyJS.Fixnum extends RubyJS.Integer
   is_fixnum: -> true
 
 
+  valueOf: -> @__native__
+
+
   # ---- Javascript primitives --------------------------------------------------
 
   to_native: ->
