@@ -1,7 +1,7 @@
 describe "Enumerator", ->
   it '1.upto(2).cycle(2).to_a()', ->
-    expect( R(1).upto(2).cycle(2).to_a().toNative(true) ).toEqual [1,2,1,2]
-    expect( R(2).times().cycle(2).to_a().toNative(true) ).toEqual [0,1,0,1]
+    expect( R(1).upto(2).cycle(2).to_a().to_native(true) ).toEqual [1,2,1,2]
+    expect( R(2).times().cycle(2).to_a().to_native(true) ).toEqual [0,1,0,1]
 
   it 'inspect', ->
     expect( R([1,2,3]).inspect() ).toEqual R('[1, 2, 3]')

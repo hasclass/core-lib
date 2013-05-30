@@ -58,11 +58,12 @@ ArrProto = Array.prototype
 _toString_ = ObjProto.toString
 _slice_    = ArrProto.slice
 
-str_slice  = StrProto.slice
-str_match  = StrProto.match
-arr_join   = ArrProto.join
-arr_sort   = ArrProto.sort
-arr_slice  = ArrProto.slice
+str_slice   = StrProto.slice
+str_match   = StrProto.match
+arr_join    = ArrProto.join
+arr_sort    = ArrProto.sort
+arr_slice   = ArrProto.slice
+arr_unshift = ArrProto.unshift
 
 # TODO: create BlockNone class that coerces multiple yield arguments into array.
 
@@ -347,6 +348,11 @@ class RubyJS.Kernel
     else
       R.Array.new(obj)
 
+
+  arr_r: (obj) ->
+    new RArray(R(e) for e in obj)
+
+
   # TODO: Remove from code
   $Array_r: (obj) ->
     @$Array(obj, true)
@@ -607,16 +613,16 @@ class RubyJS.Base
       else if a['==']?
         a['=='](b)
       else
-        a == b
+        a is b
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
       else if b['==']?
         b['=='](a)
       else
-        a == b
+        a is b
     else
-      a == b
+      a is b
 
   is_eql: (a, b) ->
     if typeof a is 'object'
@@ -624,13 +630,19 @@ class RubyJS.Base
     else if typeof b is 'object'
       b.eql(a)
     else
-      a == b
+      a is b
 
 
   extend: (obj, mixin) ->
     obj[name] = method for name, method of mixin
     obj
 
+
+  camelCase: ->
+
+
+  # helper method to get an arguments object
+  argify: -> arguments
 
 # adds all methods to the global R object
 for own name, method of RubyJS.Base.prototype
@@ -770,16 +782,6 @@ class RubyJS.Object
     proto.exp        = proto['**']  if proto['**']?
     proto.divide     = proto['/']   if proto['/']?
 
-    proto.equalCase  = proto.equal_case  if proto.equal_case?
-    proto.equalValue = proto.equal_value if proto.equal_value?
-    proto.toA        = proto.to_a        if proto.to_a?
-    proto.toF        = proto.to_f        if proto.to_f?
-    proto.toI        = proto.to_i        if proto.to_i?
-    proto.toInt      = proto.to_int      if proto.to_int?
-    proto.toS        = proto.to_s        if proto.to_s?
-    proto.toStr      = proto.to_str      if proto.to_str?
-    proto.toEnum     = proto.to_enum     if proto.to_enum?
-    proto.toNative   = proto.to_native   if proto.to_native?
 
   @include RubyJS.Kernel
 
@@ -1045,7 +1047,7 @@ class NumericMethods
   # @return [this]
   #
   times: (num, block) ->
-    # return @to_enum('times') unless block?.call?
+    return R(num).to_enum('times') unless block?.call?
     if num > 0
       idx = 0
       while idx < num
@@ -2065,6 +2067,23 @@ class StringMethods
       idx
 
 
+  insert: (str, idx, other) ->
+    if idx < 0
+      # On negative count
+      idx = str.length - Math.abs(idx) + 1
+
+    if idx < 0 or idx > str.length
+      throw R.IndexError.new()
+
+    chrs = str.split("")
+
+    # TODO: OPTIMIZE!
+    before = chrs[0...idx]
+    insert = other.split("")
+    after  = chrs.slice(idx)
+    before.concat(insert).concat(after).join('')
+
+
   ljust: (str, width, padString = " ") ->
     len = str.length
     if len >= width
@@ -2137,6 +2156,46 @@ class StringMethods
 
   reverse: (str) ->
     str.split("").reverse().join("")
+
+
+  rindex: (str, needle, offset) ->
+    if offset != undefined
+      offset = offset + str.length if offset < 0
+      return null if offset < 0
+
+      if typeof needle is 'string'
+        offset = offset + needle.length
+        ret = str[0...offset].lastIndexOf(needle)
+      else
+        ret = _str.__rindex_with_regexp__(str, needle, offset)
+    else
+      if typeof needle is 'string'
+        ret = str.lastIndexOf(needle)
+      else
+        ret = _str.__rindex_with_regexp__(str, needle)
+
+    if ret is -1 then null else ret
+
+
+  # @private
+  # @param needle R.Regexp
+  # @param offset [number]
+  __rindex_with_regexp__: (str, needle, offset) ->
+    idx = 0
+    len = str.length
+    # if regexp starts with /^ do not iterate.
+    # however this is wrong behaviour, it should match from \n.
+    match_begin = needle.match(R(/\/\^/)) != null
+
+    ret         = -1
+    # TODO: FIX!
+    while match = str[idx..-1].match(R(needle))
+      break if offset && offset < (idx + match.index)
+      ret = idx
+      idx = idx + 1
+      break if match_begin or idx > length
+
+    ret
 
 
   rjust: (str, width, pad_str = " ") ->
@@ -2296,10 +2355,49 @@ class StringMethods
       return str[index]
 
 
+  split: (str, pattern = " ", limit) ->
+    # pattern string or regexp
+    pattern = pattern.valueOf() if typeof pattern isnt 'string'
+    # TODO: implement limit
+
+    ary = str.split(pattern)
+
+    # remove trailing empty fields
+    while R.truthy(str = ary[ary.length - 1])
+      break unless str.length == 0
+      ary.pop()
+
+    if pattern is ' '
+      tmp = []
+      for el in ary
+        tmp.push(el) if el != ''
+      ary = tmp
+
+    # TODO: if regexp does not include non-matching captures in the result array
+
+    ary
+
+
   start_with: (str, needles...) ->
     for needle in needles
       return true if str.indexOf(needle) is 0
     false
+
+
+  swapcase: (str) ->
+    return str unless str.match(/[a-zA-Z]/)
+
+    chars = str.split('')
+    # TODO optimize using charCodeAt
+    for c,i in chars
+      # TODO: optimize using new String(c) to avoid shadow wrappers
+      # c = new String(c)
+      if c.match(/[a-z]/)
+        chars[i] = c.toUpperCase()
+      else if c.match(/[A-Z]/)
+        chars[i] = c.toLowerCase()
+
+    chars.join('')
 
 
   upcase: (str) ->
@@ -2308,6 +2406,24 @@ class StringMethods
     _arr.map(str.split(''), (c) ->
       if c.match(/[a-z]/) then c.toUpperCase() else c
     ).join('')
+
+
+  upto: (str, stop, exclusive, block) ->
+    exclusive ||= false
+    if block is undefined and exclusive?.call?
+      block = exclusive
+      exclusive = false
+
+    orig = str
+    stop_size = stop.length
+    exclusive = exclusive is true
+
+    while (str < stop || (!exclusive && str == stop)) && !(str.length > stop_size)
+      block( str )
+      str = _str.succ(str)
+
+    orig
+
 
 
   __matched__: (str, args) ->
@@ -2338,6 +2454,12 @@ class StringMethods
 
 _str = R._str = new StringMethods()
 
+
+class HashMethods extends EnumerableMethods
+
+
+
+_hsh = R._hsh = new HashMethods()
 
 errors = [
   'ArgumentError'
@@ -5375,6 +5497,11 @@ class RubyJS.Hash extends RubyJS.Object
       @get(k)
     R(arr)
 
+
+  valueOf: ->
+    @__native__
+
+
   # ---- Aliases --------------------------------------------------------------
 
 
@@ -5985,7 +6112,7 @@ class RubyJS.String extends RubyJS.Object
     @__native__
 
 
-  valueOf:  -> @to_native()
+  valueOf:  -> @__native__
 
 
   toString: -> @to_native()
@@ -6264,8 +6391,7 @@ class RubyJS.String extends RubyJS.Object
   #     a.chr()                  # => 'h'
   #
   chr: ->
-    c = if @empty() then "" else @to_native()[0]
-    @box c
+    new RString(@__native__[0] || '')
 
 
   # Makes string empty.
@@ -6326,11 +6452,10 @@ class RubyJS.String extends RubyJS.Object
   delete_bang: ->
     args = [@__native__]
     for el, i in arguments
-      args.push(RCoerce.to_str_native(el))
+      args[i + 1] = RCoerce.to_str_native(el)
 
     str = _str.delete.apply(null, args)
-    return null if @equals(str)
-    @replace str
+    if @__native__ is str then null else @replace(str)
 
 
   # Returns a copy of str with all uppercase letters replaced with their
@@ -6351,6 +6476,7 @@ class RubyJS.String extends RubyJS.Object
   downcase_bang: () ->
     return null unless @__native__.match(/[A-Z]/)
     @replace(_str.downcase(@__native__))
+
 
   # Produces a version of str with all nonprinting characters replaced by \nnn
   # notation and all special characters escaped.
@@ -6615,23 +6741,10 @@ class RubyJS.String extends RubyJS.Object
   #     R("abcd").insert(-1, 'X')   # => "abcdX"
   #
   insert: (idx, other) ->
-    idx   = RCoerce.to_int(idx)
-    other = RCoerce.to_str(other)
-    # TODO: optimize typecast
-    idx = idx.to_native()
-    if idx < 0
-      # On negative count
-      idx = @length - Math.abs(idx) + 1
+    idx   = RCoerce.to_int_native(idx)
+    other = RCoerce.to_str_native(other)
 
-    if idx < 0 or idx > @length
-      throw R.IndexError.new()
-
-    chrs = @to_native().split("") # TODO: use @chrs
-
-    before = chrs[0...idx]
-    insert = other.to_native().split("")
-    after  = chrs.slice(idx)
-    @replace(before.concat(insert).concat(after).join(''))
+    @replace(_str.insert(@__native__, idx, other))
 
 
   # Returns a printable version of str, surrounded by quote marks, with
@@ -6646,8 +6759,6 @@ class RubyJS.String extends RubyJS.Object
   #
   inspect: -> @dump()
 
-
-  #intern
 
   # @alias #each_line
   lines: @prototype.each_line
@@ -6748,7 +6859,7 @@ class RubyJS.String extends RubyJS.Object
   #
   prepend: (other) ->
     other = RCoerce.to_str_native(other)
-    @replace(other + @to_native())
+    @replace(other + @__native__)
 
 
   # Replaces the contents and taintedness of str with the corresponding values
@@ -6812,46 +6923,13 @@ class RubyJS.String extends RubyJS.Object
     else if needle.is_regexp?  then needle = needle #.to_regexp()
     else                       throw R.TypeError.new('TypeError')
 
-    offset = @box(offset)?.to_int()
+    # FIXME:
+    offset = R(offset)?.to_int().valueOf()
+    needle = needle.valueOf()
 
-    if offset != undefined
-      offset = offset.plus(@size()) if offset.lt(0)
-      return null if offset.lt(0)
+    val = _str.rindex(@__native__, needle, offset)
+    if val is null then null else new R.Fixnum(val)
 
-      if needle.is_string?
-        offset = offset.plus(needle.size())
-        ret = @to_native()[0...offset].lastIndexOf(needle.to_native())
-      else
-        ret = @__rindex_with_regexp__(needle, offset)
-    else
-      if needle.is_string?
-        ret = @to_native().lastIndexOf(needle.to_native())
-      else
-        ret = @__rindex_with_regexp__(needle)
-
-    if ret is -1 then null else @$Integer(ret)
-
-  # @private
-  # @param needle R.Regexp
-  # @param offset [number]
-  __rindex_with_regexp__: (needle, offset) ->
-    needle = needle.to_native()
-    offset = @box(offset)
-
-    idx    = 0
-    length = @size()
-    # if regexp starts with /^ do not iterate.
-    # however this is wrong behaviour, it should match from \n.
-    match_begin = needle.toString().match(/\/\^/) != null
-
-    ret         = -1
-    while match = @to_native()[idx..-1].match(needle)
-      break if offset && offset < (idx + match.index)
-      ret = idx
-      idx = idx + 1
-      break if match_begin or idx > length
-
-    ret
 
   # If integer is greater than the length of str, returns a new String of
   # length integer with str right justified and padded with padstr; otherwise,
@@ -7097,21 +7175,9 @@ class RubyJS.String extends RubyJS.Object
   #
   split: (pattern = " ", limit) ->
     unless R.Regexp.isRegexp(pattern)
-      pattern = RCoerce.to_str(pattern).to_native()
+      pattern = RCoerce.to_str_native(pattern)
 
-    ret = @to_native().split(pattern)
-    ret = new RArray(str for str in ret)
-
-    # remove trailing empty fields
-    while R.truthy(str = ret.last())
-      break unless str.length == 0
-      ret.pop()
-
-    if pattern is ' '
-      ret.delete_if (str) -> _str.empty(str)
-    # TODO: if regexp does not include non-matching captures in the result array
-
-    ret
+    new RArray(_str.split(@__native__, pattern, limit))
 
 
   # @todo Not yet implemented
@@ -7219,9 +7285,7 @@ class RubyJS.String extends RubyJS.Object
   sub_bang: (pattern, replacement) ->
     throw R.TypeError.new() if pattern is null
     replacement = RCoerce.to_str_native(replacement)
-
-    subbed = _str.sub(@__native__, pattern, replacement)
-    @replace(subbed)
+    @replace(_str.sub(@__native__, pattern, replacement))
 
 
   # Returns the successor to str. The successor is calculated by incrementing
@@ -7284,19 +7348,8 @@ class RubyJS.String extends RubyJS.Object
   # effective only in ASCII region.
   #
   swapcase_bang: () ->
-    return null unless @to_native().match(/[a-zA-Z]/)
-    @replace R(@__char_natives__()).map((c) ->
-      if c.match(/[a-z]/)
-        c.toUpperCase()
-      else if c.match(/[A-Z]/)
-        c.toLowerCase()
-      else
-        c
-    ).join('').to_native()
-
-
-  to_a: ->
-    if @empty() then @$Array([]) else @$Array([this])
+    return null unless @__native__.match(/[a-zA-Z]/)
+    @replace _str.swapcase(@__native__)
 
 
   #to_c
@@ -7306,6 +7359,7 @@ class RubyJS.String extends RubyJS.Object
   valid_float: () ->
     number_match = @to_native().match(/^([\+\-]?\d[_\d]*)(\.\d*)?([eE][\+\-]?[\d_]+)?$/)
     number_match?[0]?
+
 
   # Returns the result of interpreting leading characters in str as a floating point number. Extraneous characters past the end of a valid number are ignored. If there is not a valid number at the start of str, 0.0 is returned. This method never raises an exception.
   #
@@ -7317,6 +7371,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo Some exotic formats not yet fully supported.
   #
   to_f: ->
+    # TODO
     number_match  = @to_native().match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
     number_string = number_match?[0] ? "0.0"
     @$Float Number(number_string.replace(/_/g, ''))
@@ -7363,6 +7418,7 @@ class RubyJS.String extends RubyJS.Object
   #       - e.g: R("1012").to_i(2) should return 5, but due to 2 being invalid it retunrs 0 now.
   # @todo #to_i(0) does not auto-detect base
   to_i: (base) ->
+    # TODO
     base = 10 if base is undefined
     base = RCoerce.to_int_native(base)
 
@@ -7394,6 +7450,7 @@ class RubyJS.String extends RubyJS.Object
 
   # Returns the receiver.
   to_s: -> this
+
 
   # Returns the receiver.
   to_str: @prototype.to_s
@@ -7442,17 +7499,6 @@ class RubyJS.String extends RubyJS.Object
     throw R.NotImplementedError.new()
 
 
-  #unpack
-
-
-  @upcase: (str) ->
-    str = RCoerce.to_str_native(str)
-    return null unless str.match(/[a-z]/)
-    R(str.split('')).map((c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('').to_native()
-
-
   # Returns a copy of str with all lowercase letters replaced with their
   # uppercase counterparts. The operation is locale insensitive—only
   # characters “a” to “z” are affected. Note: case replacement is effective
@@ -7463,6 +7509,7 @@ class RubyJS.String extends RubyJS.Object
   #
   upcase: () ->
     new RString(_str.upcase(@__native__))
+
 
   # Upcases the contents of str, returning nil if no changes were made. Note:
   # case replacement is effective only in ASCII region.
@@ -7494,23 +7541,15 @@ class RubyJS.String extends RubyJS.Object
   # @todo R('a').upto('c').to_a() should return ['a', 'b', 'c'] (include 'c')
   #
   upto: (stop, exclusive, block) ->
-    stop = RCoerce.to_str(stop)
-    exclusive ||= false
+    stop = RCoerce.to_str_native(stop)
     if block is undefined and exclusive?.call?
       block = exclusive
       exclusive = false
 
-    throw R.TypeError.new() unless stop?.is_string?
+    # throw R.TypeError.new() unless stop?.is_string?
     return R.Enumerator.new(this, 'upto', stop, exclusive) unless block && block.call?
 
-    # stop       = stop.to_str()
-    # return this if @lt(stop)
-    counter    = @dup()
-    compare_fn = if exclusive is false then 'lteq' else 'lt'
-    stop_size  = stop.size()
-    while counter[compare_fn](stop) && !counter.size().gt(stop_size)
-      block( counter )
-      counter = counter.succ()
+    _str.upto(@__native__, stop, exclusive, block)
 
     this
 
@@ -7542,13 +7581,6 @@ class RubyJS.String extends RubyJS.Object
   # @alias #<<
   concat:   @prototype['<<']
 
-  asciiOnly:    @prototype.ascii_only
-  caseCompare:  @prototype.case_compare
-  eachChar:     @prototype.each_char
-  eachLine:     @prototype.each_line
-  endWith:      @prototype.end_with
-  startWith:    @prototype.start_with
-  trS:          @prototype.tr_s
 
 
 
@@ -7788,6 +7820,9 @@ class RubyJS.Regexp extends RubyJS.Object
   to_s: () ->
     R("(#{@source()})")
 
+
+  valueOf: ->
+    @__native__
 
   # ---- Class methods --------------------------------------------------------
 
@@ -8548,6 +8583,9 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # ---- RubyJSism ------------------------------------------------------------
 
   is_fixnum: -> true
+
+
+  valueOf: -> @__native__
 
 
   # ---- Javascript primitives --------------------------------------------------

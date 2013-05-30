@@ -9,7 +9,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RString, StrProto, StringMethods, arr_join, arr_slice, arr_sort, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, str_match, str_slice, _arr, _blockify, _enum, _fn, _i, _itr, _len, _num, _ref, _slice_, _str, _toString_,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RString, StrProto, StringMethods, arr_join, arr_slice, arr_sort, arr_unshift, error, errors, method, name, nativeArray, nativeNumber, nativeObject, nativeRegExp, nativeString, previousR, root, str_match, str_slice, _arr, _blockify, _enum, _fn, _hsh, _i, _itr, _len, _num, _ref, _slice_, _str, _toString_,
     __hasProp = {}.hasOwnProperty,
     __slice = [].slice,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -95,6 +95,8 @@ http://www.rubyjs.org/LICENSE.txt
   arr_sort = ArrProto.sort;
 
   arr_slice = ArrProto.slice;
+
+  arr_unshift = ArrProto.unshift;
 
   Block = (function() {
 
@@ -362,6 +364,19 @@ http://www.rubyjs.org/LICENSE.txt
       } else {
         return R.Array["new"](obj);
       }
+    };
+
+    Kernel.prototype.arr_r = function(obj) {
+      var e;
+      return new RArray((function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = obj.length; _i < _len; _i++) {
+          e = obj[_i];
+          _results.push(R(e));
+        }
+        return _results;
+      })());
     };
 
     Kernel.prototype.$Array_r = function(obj) {
@@ -672,6 +687,12 @@ http://www.rubyjs.org/LICENSE.txt
       return obj;
     };
 
+    Base.prototype.camelCase = function() {};
+
+    Base.prototype.argify = function() {
+      return arguments;
+    };
+
     return Base;
 
   })();
@@ -804,37 +825,7 @@ http://www.rubyjs.org/LICENSE.txt
         proto.exp = proto['**'];
       }
       if (proto['/'] != null) {
-        proto.divide = proto['/'];
-      }
-      if (proto.equal_case != null) {
-        proto.equalCase = proto.equal_case;
-      }
-      if (proto.equal_value != null) {
-        proto.equalValue = proto.equal_value;
-      }
-      if (proto.to_a != null) {
-        proto.toA = proto.to_a;
-      }
-      if (proto.to_f != null) {
-        proto.toF = proto.to_f;
-      }
-      if (proto.to_i != null) {
-        proto.toI = proto.to_i;
-      }
-      if (proto.to_int != null) {
-        proto.toInt = proto.to_int;
-      }
-      if (proto.to_s != null) {
-        proto.toS = proto.to_s;
-      }
-      if (proto.to_str != null) {
-        proto.toStr = proto.to_str;
-      }
-      if (proto.to_enum != null) {
-        proto.toEnum = proto.to_enum;
-      }
-      if (proto.to_native != null) {
-        return proto.toNative = proto.to_native;
+        return proto.divide = proto['/'];
       }
     };
 
@@ -1069,6 +1060,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     NumericMethods.prototype.times = function(num, block) {
       var idx;
+      if ((block != null ? block.call : void 0) == null) {
+        return R(num).to_enum('times');
+      }
       if (num > 0) {
         idx = 0;
         while (idx < num) {
@@ -2345,6 +2339,21 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
+    StringMethods.prototype.insert = function(str, idx, other) {
+      var after, before, chrs, insert;
+      if (idx < 0) {
+        idx = str.length - Math.abs(idx) + 1;
+      }
+      if (idx < 0 || idx > str.length) {
+        throw R.IndexError["new"]();
+      }
+      chrs = str.split("");
+      before = chrs.slice(0, idx);
+      insert = other.split("");
+      after = chrs.slice(idx);
+      return before.concat(insert).concat(after).join('');
+    };
+
     StringMethods.prototype.ljust = function(str, width, padString) {
       var idx, len, out, pad_length;
       if (padString == null) {
@@ -2434,6 +2443,54 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.reverse = function(str) {
       return str.split("").reverse().join("");
+    };
+
+    StringMethods.prototype.rindex = function(str, needle, offset) {
+      var ret;
+      if (offset !== void 0) {
+        if (offset < 0) {
+          offset = offset + str.length;
+        }
+        if (offset < 0) {
+          return null;
+        }
+        if (typeof needle === 'string') {
+          offset = offset + needle.length;
+          ret = str.slice(0, offset).lastIndexOf(needle);
+        } else {
+          ret = _str.__rindex_with_regexp__(str, needle, offset);
+        }
+      } else {
+        if (typeof needle === 'string') {
+          ret = str.lastIndexOf(needle);
+        } else {
+          ret = _str.__rindex_with_regexp__(str, needle);
+        }
+      }
+      if (ret === -1) {
+        return null;
+      } else {
+        return ret;
+      }
+    };
+
+    StringMethods.prototype.__rindex_with_regexp__ = function(str, needle, offset) {
+      var idx, len, match, match_begin, ret;
+      idx = 0;
+      len = str.length;
+      match_begin = needle.match(R(/\/\^/)) !== null;
+      ret = -1;
+      while (match = str.slice(idx).match(R(needle))) {
+        if (offset && offset < (idx + match.index)) {
+          break;
+        }
+        ret = idx;
+        idx = idx + 1;
+        if (match_begin || idx > length) {
+          break;
+        }
+      }
+      return ret;
     };
 
     StringMethods.prototype.rjust = function(str, width, pad_str) {
@@ -2636,6 +2693,34 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
+    StringMethods.prototype.split = function(str, pattern, limit) {
+      var ary, el, tmp, _i, _len;
+      if (pattern == null) {
+        pattern = " ";
+      }
+      if (typeof pattern !== 'string') {
+        pattern = pattern.valueOf();
+      }
+      ary = str.split(pattern);
+      while (R.truthy(str = ary[ary.length - 1])) {
+        if (str.length !== 0) {
+          break;
+        }
+        ary.pop();
+      }
+      if (pattern === ' ') {
+        tmp = [];
+        for (_i = 0, _len = ary.length; _i < _len; _i++) {
+          el = ary[_i];
+          if (el !== '') {
+            tmp.push(el);
+          }
+        }
+        ary = tmp;
+      }
+      return ary;
+    };
+
     StringMethods.prototype.start_with = function() {
       var needle, needles, str, _i, _len;
       str = arguments[0], needles = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
@@ -2646,6 +2731,23 @@ http://www.rubyjs.org/LICENSE.txt
         }
       }
       return false;
+    };
+
+    StringMethods.prototype.swapcase = function(str) {
+      var c, chars, i, _i, _len;
+      if (!str.match(/[a-zA-Z]/)) {
+        return str;
+      }
+      chars = str.split('');
+      for (i = _i = 0, _len = chars.length; _i < _len; i = ++_i) {
+        c = chars[i];
+        if (c.match(/[a-z]/)) {
+          chars[i] = c.toUpperCase();
+        } else if (c.match(/[A-Z]/)) {
+          chars[i] = c.toLowerCase();
+        }
+      }
+      return chars.join('');
     };
 
     StringMethods.prototype.upcase = function(str) {
@@ -2659,6 +2761,23 @@ http://www.rubyjs.org/LICENSE.txt
           return c;
         }
       }).join('');
+    };
+
+    StringMethods.prototype.upto = function(str, stop, exclusive, block) {
+      var orig, stop_size;
+      exclusive || (exclusive = false);
+      if (block === void 0 && ((exclusive != null ? exclusive.call : void 0) != null)) {
+        block = exclusive;
+        exclusive = false;
+      }
+      orig = str;
+      stop_size = stop.length;
+      exclusive = exclusive === true;
+      while ((str < stop || (!exclusive && str === stop)) && !(str.length > stop_size)) {
+        block(str);
+        str = _str.succ(str);
+      }
+      return orig;
     };
 
     StringMethods.prototype.__matched__ = function(str, args) {
@@ -2696,6 +2815,20 @@ http://www.rubyjs.org/LICENSE.txt
   })();
 
   _str = R._str = new StringMethods();
+
+  HashMethods = (function(_super) {
+
+    __extends(HashMethods, _super);
+
+    function HashMethods() {
+      return HashMethods.__super__.constructor.apply(this, arguments);
+    }
+
+    return HashMethods;
+
+  })(EnumerableMethods);
+
+  _hsh = R._hsh = new HashMethods();
 
   errors = ['ArgumentError', 'RegexpError', 'TypeError', 'KeyError', 'IndexError', 'FloatDomainError', 'RangeError', 'StandardError', 'ZeroDivisionError', 'NotSupportedError', 'NotImplementedError'];
 
@@ -5004,6 +5137,10 @@ http://www.rubyjs.org/LICENSE.txt
       return R(arr);
     };
 
+    Hash.prototype.valueOf = function() {
+      return this.__native__;
+    };
+
     return Hash;
 
   })(RubyJS.Object);
@@ -5448,7 +5585,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.valueOf = function() {
-      return this.to_native();
+      return this.__native__;
     };
 
     String.prototype.toString = function() {
@@ -5602,9 +5739,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.chr = function() {
-      var c;
-      c = this.empty() ? "" : this.to_native()[0];
-      return this.box(c);
+      return new RString(this.__native__[0] || '');
     };
 
     String.prototype.clear = function() {
@@ -5634,13 +5769,14 @@ http://www.rubyjs.org/LICENSE.txt
       args = [this.__native__];
       for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
         el = arguments[i];
-        args.push(RCoerce.to_str_native(el));
+        args[i + 1] = RCoerce.to_str_native(el);
       }
       str = _str["delete"].apply(null, args);
-      if (this.equals(str)) {
+      if (this.__native__ === str) {
         return null;
+      } else {
+        return this.replace(str);
       }
-      return this.replace(str);
     };
 
     String.prototype.downcase = function() {
@@ -5782,21 +5918,9 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.insert = function(idx, other) {
-      var after, before, chrs, insert;
-      idx = RCoerce.to_int(idx);
-      other = RCoerce.to_str(other);
-      idx = idx.to_native();
-      if (idx < 0) {
-        idx = this.length - Math.abs(idx) + 1;
-      }
-      if (idx < 0 || idx > this.length) {
-        throw R.IndexError["new"]();
-      }
-      chrs = this.to_native().split("");
-      before = chrs.slice(0, idx);
-      insert = other.to_native().split("");
-      after = chrs.slice(idx);
-      return this.replace(before.concat(insert).concat(after).join(''));
+      idx = RCoerce.to_int_native(idx);
+      other = RCoerce.to_str_native(other);
+      return this.replace(_str.insert(this.__native__, idx, other));
     };
 
     String.prototype.inspect = function() {
@@ -5836,7 +5960,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.prepend = function(other) {
       other = RCoerce.to_str_native(other);
-      return this.replace(other + this.to_native());
+      return this.replace(other + this.__native__);
     };
 
     String.prototype.replace = function(val) {
@@ -5861,7 +5985,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.rindex = function(needle, offset) {
-      var ret, _ref1;
+      var val, _ref1;
       if (offset === null) {
         throw R.TypeError["new"]('TypeError');
       }
@@ -5873,53 +5997,14 @@ http://www.rubyjs.org/LICENSE.txt
       } else {
         throw R.TypeError["new"]('TypeError');
       }
-      offset = (_ref1 = this.box(offset)) != null ? _ref1.to_int() : void 0;
-      if (offset !== void 0) {
-        if (offset.lt(0)) {
-          offset = offset.plus(this.size());
-        }
-        if (offset.lt(0)) {
-          return null;
-        }
-        if (needle.is_string != null) {
-          offset = offset.plus(needle.size());
-          ret = this.to_native().slice(0, offset).lastIndexOf(needle.to_native());
-        } else {
-          ret = this.__rindex_with_regexp__(needle, offset);
-        }
-      } else {
-        if (needle.is_string != null) {
-          ret = this.to_native().lastIndexOf(needle.to_native());
-        } else {
-          ret = this.__rindex_with_regexp__(needle);
-        }
-      }
-      if (ret === -1) {
+      offset = (_ref1 = R(offset)) != null ? _ref1.to_int().valueOf() : void 0;
+      needle = needle.valueOf();
+      val = _str.rindex(this.__native__, needle, offset);
+      if (val === null) {
         return null;
       } else {
-        return this.$Integer(ret);
+        return new R.Fixnum(val);
       }
-    };
-
-    String.prototype.__rindex_with_regexp__ = function(needle, offset) {
-      var idx, length, match, match_begin, ret;
-      needle = needle.to_native();
-      offset = this.box(offset);
-      idx = 0;
-      length = this.size();
-      match_begin = needle.toString().match(/\/\^/) !== null;
-      ret = -1;
-      while (match = this.to_native().slice(idx).match(needle)) {
-        if (offset && offset < (idx + match.index)) {
-          break;
-        }
-        ret = idx;
-        idx = idx + 1;
-        if (match_begin || idx > length) {
-          break;
-        }
-      }
-      return ret;
     };
 
     String.prototype.rjust = function(width, padString) {
@@ -6057,35 +6142,13 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.split = function(pattern, limit) {
-      var ret, str;
       if (pattern == null) {
         pattern = " ";
       }
       if (!R.Regexp.isRegexp(pattern)) {
-        pattern = RCoerce.to_str(pattern).to_native();
+        pattern = RCoerce.to_str_native(pattern);
       }
-      ret = this.to_native().split(pattern);
-      ret = new RArray((function() {
-        var _j, _len1, _results;
-        _results = [];
-        for (_j = 0, _len1 = ret.length; _j < _len1; _j++) {
-          str = ret[_j];
-          _results.push(str);
-        }
-        return _results;
-      })());
-      while (R.truthy(str = ret.last())) {
-        if (str.length !== 0) {
-          break;
-        }
-        ret.pop();
-      }
-      if (pattern === ' ') {
-        ret.delete_if(function(str) {
-          return _str.empty(str);
-        });
-      }
-      return ret;
+      return new RArray(_str.split(this.__native__, pattern, limit));
     };
 
     String.prototype.squeeze_bang = function() {
@@ -6136,13 +6199,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.sub_bang = function(pattern, replacement) {
-      var subbed;
       if (pattern === null) {
         throw R.TypeError["new"]();
       }
       replacement = RCoerce.to_str_native(replacement);
-      subbed = _str.sub(this.__native__, pattern, replacement);
-      return this.replace(subbed);
+      return this.replace(_str.sub(this.__native__, pattern, replacement));
     };
 
     String.prototype.succ = function() {
@@ -6166,26 +6227,10 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.swapcase_bang = function() {
-      if (!this.to_native().match(/[a-zA-Z]/)) {
+      if (!this.__native__.match(/[a-zA-Z]/)) {
         return null;
       }
-      return this.replace(R(this.__char_natives__()).map(function(c) {
-        if (c.match(/[a-z]/)) {
-          return c.toUpperCase();
-        } else if (c.match(/[A-Z]/)) {
-          return c.toLowerCase();
-        } else {
-          return c;
-        }
-      }).join('').to_native());
-    };
-
-    String.prototype.to_a = function() {
-      if (this.empty()) {
-        return this.$Array([]);
-      } else {
-        return this.$Array([this]);
-      }
+      return this.replace(_str.swapcase(this.__native__));
     };
 
     String.prototype.valid_float = function() {
@@ -6238,20 +6283,6 @@ http://www.rubyjs.org/LICENSE.txt
       throw R.NotImplementedError["new"]();
     };
 
-    String.upcase = function(str) {
-      str = RCoerce.to_str_native(str);
-      if (!str.match(/[a-z]/)) {
-        return null;
-      }
-      return R(str.split('')).map(function(c) {
-        if (c.match(/[a-z]/)) {
-          return c.toUpperCase();
-        } else {
-          return c;
-        }
-      }).join('').to_native();
-    };
-
     String.prototype.upcase = function() {
       return new RString(_str.upcase(this.__native__));
     };
@@ -6264,26 +6295,15 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.upto = function(stop, exclusive, block) {
-      var compare_fn, counter, stop_size;
-      stop = RCoerce.to_str(stop);
-      exclusive || (exclusive = false);
+      stop = RCoerce.to_str_native(stop);
       if (block === void 0 && ((exclusive != null ? exclusive.call : void 0) != null)) {
         block = exclusive;
         exclusive = false;
       }
-      if ((stop != null ? stop.is_string : void 0) == null) {
-        throw R.TypeError["new"]();
-      }
       if (!(block && (block.call != null))) {
         return R.Enumerator["new"](this, 'upto', stop, exclusive);
       }
-      counter = this.dup();
-      compare_fn = exclusive === false ? 'lteq' : 'lt';
-      stop_size = stop.size();
-      while (counter[compare_fn](stop) && !counter.size().gt(stop_size)) {
-        block(counter);
-        counter = counter.succ();
-      }
+      _str.upto(this.__native__, stop, exclusive, block);
       return this;
     };
 
@@ -6294,20 +6314,6 @@ http://www.rubyjs.org/LICENSE.txt
     String.__add_default_aliases__(String.prototype);
 
     String.prototype.concat = String.prototype['<<'];
-
-    String.prototype.asciiOnly = String.prototype.ascii_only;
-
-    String.prototype.caseCompare = String.prototype.case_compare;
-
-    String.prototype.eachChar = String.prototype.each_char;
-
-    String.prototype.eachLine = String.prototype.each_line;
-
-    String.prototype.endWith = String.prototype.end_with;
-
-    String.prototype.startWith = String.prototype.start_with;
-
-    String.prototype.trS = String.prototype.tr_s;
 
     return String;
 
@@ -6452,6 +6458,10 @@ http://www.rubyjs.org/LICENSE.txt
 
     Regexp.prototype.to_s = function() {
       return R("(" + (this.source()) + ")");
+    };
+
+    Regexp.prototype.valueOf = function() {
+      return this.__native__;
     };
 
     Regexp.last_match = function(n) {
@@ -6949,6 +6959,10 @@ http://www.rubyjs.org/LICENSE.txt
 
     Fixnum.prototype.is_fixnum = function() {
       return true;
+    };
+
+    Fixnum.prototype.valueOf = function() {
+      return this.__native__;
     };
 
     Fixnum.prototype.to_native = function() {
