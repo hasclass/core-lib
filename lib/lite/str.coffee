@@ -155,6 +155,23 @@ class StringMethods
       idx
 
 
+  insert: (str, idx, other) ->
+    if idx < 0
+      # On negative count
+      idx = str.length - Math.abs(idx) + 1
+
+    if idx < 0 or idx > str.length
+      throw R.IndexError.new()
+
+    chrs = str.split("")
+
+    # TODO: OPTIMIZE!
+    before = chrs[0...idx]
+    insert = other.split("")
+    after  = chrs.slice(idx)
+    before.concat(insert).concat(after).join('')
+
+
   ljust: (str, width, padString = " ") ->
     len = str.length
     if len >= width
