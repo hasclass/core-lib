@@ -36,16 +36,6 @@ class RubyJS.Object
     proto.exp        = proto['**']  if proto['**']?
     proto.divide     = proto['/']   if proto['/']?
 
-    proto.equalCase  = proto.equal_case  if proto.equal_case?
-    proto.equalValue = proto.equal_value if proto.equal_value?
-    proto.toA        = proto.to_a        if proto.to_a?
-    proto.toF        = proto.to_f        if proto.to_f?
-    proto.toI        = proto.to_i        if proto.to_i?
-    proto.toInt      = proto.to_int      if proto.to_int?
-    proto.toS        = proto.to_s        if proto.to_s?
-    proto.toStr      = proto.to_str      if proto.to_str?
-    proto.toEnum     = proto.to_enum     if proto.to_enum?
-    proto.toNative   = proto.to_native   if proto.to_native?
 
   @include RubyJS.Kernel
 
