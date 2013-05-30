@@ -341,8 +341,7 @@ class RubyJS.String extends RubyJS.Object
   #     a.chr()                  # => 'h'
   #
   chr: ->
-    c = if @empty() then "" else @to_native()[0]
-    @box c
+    new RString(@__native__[0] || '')
 
 
   # Makes string empty.
@@ -403,11 +402,10 @@ class RubyJS.String extends RubyJS.Object
   delete_bang: ->
     args = [@__native__]
     for el, i in arguments
-      args.push(RCoerce.to_str_native(el))
+      args[i + 1] = RCoerce.to_str_native(el)
 
     str = _str.delete.apply(null, args)
-    return null if @equals(str)
-    @replace str
+    if @__native__ is str then null else @replace(str)
 
 
   # Returns a copy of str with all uppercase letters replaced with their
@@ -692,23 +690,10 @@ class RubyJS.String extends RubyJS.Object
   #     R("abcd").insert(-1, 'X')   # => "abcdX"
   #
   insert: (idx, other) ->
-    idx   = RCoerce.to_int(idx)
-    other = RCoerce.to_str(other)
-    # TODO: optimize typecast
-    idx = idx.to_native()
-    if idx < 0
-      # On negative count
-      idx = @length - Math.abs(idx) + 1
+    idx   = RCoerce.to_int_native(idx)
+    other = RCoerce.to_str_native(other)
 
-    if idx < 0 or idx > @length
-      throw R.IndexError.new()
-
-    chrs = @to_native().split("") # TODO: use @chrs
-
-    before = chrs[0...idx]
-    insert = other.to_native().split("")
-    after  = chrs.slice(idx)
-    @replace(before.concat(insert).concat(after).join(''))
+    @replace(_str.insert(@__native__, idx, other))
 
 
   # Returns a printable version of str, surrounded by quote marks, with
@@ -723,8 +708,6 @@ class RubyJS.String extends RubyJS.Object
   #
   inspect: -> @dump()
 
-
-  #intern
 
   # @alias #each_line
   lines: @prototype.each_line
@@ -825,7 +808,7 @@ class RubyJS.String extends RubyJS.Object
   #
   prepend: (other) ->
     other = RCoerce.to_str_native(other)
-    @replace(other + @to_native())
+    @replace(other + @__native__)
 
 
   # Replaces the contents and taintedness of str with the corresponding values
@@ -1580,13 +1563,6 @@ class RubyJS.String extends RubyJS.Object
   # @alias #<<
   concat:   @prototype['<<']
 
-  asciiOnly:    @prototype.ascii_only
-  caseCompare:  @prototype.case_compare
-  eachChar:     @prototype.each_char
-  eachLine:     @prototype.each_line
-  endWith:      @prototype.end_with
-  startWith:    @prototype.start_with
-  trS:          @prototype.tr_s
 
 
 
