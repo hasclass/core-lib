@@ -137,6 +137,11 @@ class RubyJS.Kernel
     else
       R.Array.new(obj)
 
+
+  arr_r: (obj) ->
+    new RArray(R(e) for e in obj)
+
+
   # TODO: Remove from code
   $Array_r: (obj) ->
     @$Array(obj, true)
