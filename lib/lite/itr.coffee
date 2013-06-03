@@ -604,4 +604,4 @@ class MYSortedElement
     @sort_by?['<=>'](other.sort_by)
 
 
-_itr = R._itr = _enum = R._enum = new EnumerableMethods()
+_itr = R._itr = new EnumerableMethods()

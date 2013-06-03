@@ -18,7 +18,7 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).all()                          # => false
   #
   all: (block) ->
-    _enum.all(this, block)
+    _itr.all(this, block)
 
 
 
@@ -33,7 +33,7 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).any()                          # => true
   #
   any: (block) ->
-    _enum.any(this, block)
+    _itr.any(this, block)
 
 
   # Returns a new array with the concatenated results of running block once
@@ -48,7 +48,7 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    new RArray(_enum.collect_concat(this, block))
+    new RArray(_itr.collect_concat(this, block))
 
 
   flat_map: @prototype.collect_concat
@@ -65,7 +65,7 @@ class RubyJS.Enumerable
   #     ary.count (x) -> x%2 == 0  #=> 3
   #
   count: (block) ->
-    new R.Fixnum(_enum.count(this, block))
+    new R.Fixnum(_itr.count(this, block))
 
   # this makes my head spin.
   # chunk: (initial_state = null, original_block) ->
@@ -98,7 +98,7 @@ class RubyJS.Enumerable
   cycle: (n, block) ->
     throw R.ArgumentError.new() if arguments.length > 2
 
-    _enum.cycle(this, n, block)
+    _itr.cycle(this, n, block)
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -111,7 +111,7 @@ class RubyJS.Enumerable
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
-    new RArray(_enum.drop(this, n))
+    new RArray(_itr.drop(this, n))
 
 
   # Drops elements up to, but not including, the first element for which the
@@ -126,7 +126,7 @@ class RubyJS.Enumerable
   #
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
-    new RArray(_enum.drop_while(this, block))
+    new RArray(_itr.drop_while(this, block))
 
 
   # Iterates the given block for each array of consecutive <n> elements. If no
@@ -147,7 +147,7 @@ class RubyJS.Enumerable
     n = RCoerce.to_int_native(args[0])
     throw R.ArgumentError.new() unless n > 0
 
-    _enum.each_cons(this, n, block)
+    _itr.each_cons(this, n, block)
 
   # Calls block once for each element in self, passing that element as a
   # parameter, converting multiple values from yield to an array.
@@ -158,7 +158,7 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
-    _enum.each_entry(this, block)
+    _itr.each_entry(this, block)
 
   # Iterates the given block for each slice of <n> elements. If no block is
   # given, returns an enumerator.
@@ -180,7 +180,7 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    _enum.each_slice(this, n, block)
+    _itr.each_slice(this, n, block)
 
 
   # # TODO: I'm not quite sure wether this is smart or stupid
@@ -209,7 +209,7 @@ class RubyJS.Enumerable
   #
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
-    _enum.each_with_index(this, block)
+    _itr.each_with_index(this, block)
 
 
   # Iterates the given block for each element with an arbitrary object given,
@@ -223,7 +223,7 @@ class RubyJS.Enumerable
   #
   each_with_object: (obj, block) ->
     return @to_enum('each_with_object', obj) unless block && block.call?
-    _enum.each_with_object(this, obj, block)
+    _itr.each_with_object(this, obj, block)
 
   # Passes each entry in enum to block. Returns the first for which block is not
   # false. If no object matches, calls ifnone and returns its result when it is
@@ -238,7 +238,7 @@ class RubyJS.Enumerable
   # @alias #detect
   #
   find: (ifnone, block = null) ->
-    _enum.find(this, ifnone, block)
+    _itr.find(this, ifnone, block)
 
 
   # @alias #find
@@ -256,7 +256,7 @@ class RubyJS.Enumerable
   #
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
-    new RArray(_enum.select(this, block))
+    new RArray(_itr.select(this, block))
 
   select: @prototype.find_all
 
@@ -273,7 +273,7 @@ class RubyJS.Enumerable
   #
   find_index: (value) ->
     return @to_enum('find_index') if arguments.length == 0
-    val = _enum.find_index(this, value)
+    val = _itr.find_index(this, value)
     if val != null
       new R.Fixnum(val)
     else
@@ -291,15 +291,15 @@ class RubyJS.Enumerable
   #
   first: (n) ->
     if n is null or n is undefined
-      _enum.first(this, null)
+      _itr.first(this, null)
     else
       n = RCoerce.to_int_native(n)
-      new RArray(_enum.first(this, n))
+      new RArray(_itr.first(this, n))
 
 
   # Returns true if any member of enum equals obj. Equality is tested using ==.
   include: (other) ->
-    _enum.include(this, other)
+    _itr.include(this, other)
 
 
   # Combines all elements of enum by applying a binary operation, specified by
@@ -333,7 +333,7 @@ class RubyJS.Enumerable
   # @todo implement inject('+')
   #
   inject: (init, sym, block) ->
-    _enum.inject(this, init, sym, block)
+    _itr.inject(this, init, sym, block)
 
 
   # _ruby: returns an object that works with
@@ -348,7 +348,7 @@ class RubyJS.Enumerable
   #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
   #
   grep: (pattern, block) ->
-    new RArray(_enum.grep(this, pattern, block))
+    new RArray(_itr.grep(this, pattern, block))
 
 
   # Returns a hash, which keys are evaluated result from the block, and values
@@ -362,7 +362,7 @@ class RubyJS.Enumerable
   #
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
-    _enum.group_by(this, block)
+    _itr.group_by(this, block)
 
 
   # Returns a new array with the results of running block once for every
@@ -414,7 +414,7 @@ class RubyJS.Enumerable
   #     a.max (a,b) -> R(a.length)['<=>'] b.length }   #=> "albatross"
   #
   max: (block) ->
-    _enum.max(this, block)
+    _itr.max(this, block)
 
 
   # Returns the object in enum that gives the maximum value from the given
@@ -428,7 +428,7 @@ class RubyJS.Enumerable
   #
   max_by: (block) ->
     return @to_enum('max_by') unless block?.call?
-    _enum.max_by(this, block)
+    _itr.max_by(this, block)
 
 
   # Returns the object in enum with the minimum value. The first form assumes
@@ -441,7 +441,7 @@ class RubyJS.Enumerable
   #     a.min (a,b) -> R(a.length)['<=>'] b.length }   #=> "dog"
   #
   min: (block) ->
-    _enum.min(this, block)
+    _itr.min(this, block)
 
 
   # Returns the object in enum that gives the minimum value from the given
@@ -455,7 +455,7 @@ class RubyJS.Enumerable
   #
   min_by: (block) ->
     return @to_enum('min_by') unless block?.call?
-    _enum.min_by(this, block)
+    _itr.min_by(this, block)
 
 
   # Returns two elements array which contains the minimum and the maximum
@@ -468,12 +468,12 @@ class RubyJS.Enumerable
   #     a.minmax (a,b) -> a.length <=> b.length }   #=> ["dog", "albatross"]
   #
   minmax: (block) ->
-    new RArray(_enum.minmax(this, block))
+    new RArray(_itr.minmax(this, block))
 
 
   minmax_by: (block) ->
     return @to_enum('minmax_by') unless block?.call?
-    new RArray(_enum.minmax_by(this, block))
+    new RArray(_itr.minmax_by(this, block))
 
   # Passes each element of the collection to the given block. The method returns true if the block never returns true for all elements. If the block is not given, none? will return true only if none of the collection members is true.
   #
@@ -485,7 +485,7 @@ class RubyJS.Enumerable
   #     R([nil,false]).none()                                 # => true
   #
   none: (block) ->
-    _enum.none(this, block)
+    _itr.none(this, block)
 
 
   # Passes each element of the collection to the given block. The method
@@ -501,24 +501,24 @@ class RubyJS.Enumerable
   #     R([ nil, true, false ]).one()                        # => true
   #
   one: (block) ->
-    _enum.one(this, block)
+    _itr.one(this, block)
 
 
   partition: (block) ->
     return @to_enum('partition') unless block && block.call?
-    ary = _enum.partition(this, block)
+    ary = _itr.partition(this, block)
     new RArray([new RArray(ary[0]), new RArray(ary[1])])
 
   reduce: @prototype.inject
 
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
-    new RArray(_enum.reject(this, block))
+    new RArray(_itr.reject(this, block))
 
 
   reverse_each: (block) ->
     return @to_enum('reverse_each') unless block && block.call?
-    _enum.reverse_each(this, block)
+    _itr.reverse_each(this, block)
 
 
   slice_before: (args...) ->
@@ -547,12 +547,12 @@ class RubyJS.Enumerable
 
   sort: (block) ->
     # TODO: throw Error when comparing different values.
-    new RArray(_enum.sort(this, block))
+    new RArray(_itr.sort(this, block))
 
 
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
-    new RArray(_enum.sort_by(this, block))
+    new RArray(_itr.sort_by(this, block))
 
 
   take: (n) ->
@@ -560,16 +560,16 @@ class RubyJS.Enumerable
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
-    new RArray(_enum.take(this, n))
+    new RArray(_itr.take(this, n))
 
 
   take_while: (block) ->
     return @to_enum('take_while') unless block && block.call?
-    new RArray(_enum.take_while(this, block))
+    new RArray(_itr.take_while(this, block))
 
 
   to_a: () ->
-    new RArray(_enum.to_a(this))
+    new RArray(_itr.to_a(this))
 
 
   to_enum: (iter = "each", args...) ->

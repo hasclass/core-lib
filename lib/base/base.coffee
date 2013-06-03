@@ -34,7 +34,7 @@ class RubyJS.Base
   # TODO: TEST
   pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['w', 'fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['w', 'fn', '_str', '_arr', '_itr', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
@@ -53,7 +53,7 @@ class RubyJS.Base
       _arr:  '_a'
       _num:  '_n'
       _str:  '_s'
-      _enum: '_e'
+      _itr:  '_i'
       _hsh:  '_h'
 
     for k,v of shortcuts
@@ -80,6 +80,10 @@ class RubyJS.Base
                 # use this.valueOf() to get the literal back.
                 args = [this.valueOf()].concat(_slice_.call(arguments, 0))
                 methods[name].apply(methods, args)
+              # The following is 100x faster than slicing. But needs methods to change.
+              # proto[new_name] = (a,b,c,d,e,f,g,l,m,n) ->
+              #   # use this.valueOf() to get the literal back.
+              #   methods[name].call(methods, this.valueOf(), a,b,c,d,e,f,g,l,m,n)
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
 
