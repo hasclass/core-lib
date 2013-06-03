@@ -427,6 +427,7 @@ class RubyJS.String extends RubyJS.Object
     return null unless @__native__.match(/[A-Z]/)
     @replace(_str.downcase(@__native__))
 
+
   # Produces a version of str with all nonprinting characters replaced by \nnn
   # notation and all special characters escaped.
   #
@@ -872,46 +873,13 @@ class RubyJS.String extends RubyJS.Object
     else if needle.is_regexp?  then needle = needle #.to_regexp()
     else                       throw R.TypeError.new('TypeError')
 
-    offset = @box(offset)?.to_int()
+    # FIXME:
+    offset = R(offset)?.to_int().valueOf()
+    needle = needle.valueOf()
 
-    if offset != undefined
-      offset = offset.plus(@size()) if offset.lt(0)
-      return null if offset.lt(0)
+    val = _str.rindex(@__native__, needle, offset)
+    if val is null then null else new R.Fixnum(val)
 
-      if needle.is_string?
-        offset = offset.plus(needle.size())
-        ret = @to_native()[0...offset].lastIndexOf(needle.to_native())
-      else
-        ret = @__rindex_with_regexp__(needle, offset)
-    else
-      if needle.is_string?
-        ret = @to_native().lastIndexOf(needle.to_native())
-      else
-        ret = @__rindex_with_regexp__(needle)
-
-    if ret is -1 then null else @$Integer(ret)
-
-  # @private
-  # @param needle R.Regexp
-  # @param offset [number]
-  __rindex_with_regexp__: (needle, offset) ->
-    needle = needle.to_native()
-    offset = @box(offset)
-
-    idx    = 0
-    length = @size()
-    # if regexp starts with /^ do not iterate.
-    # however this is wrong behaviour, it should match from \n.
-    match_begin = needle.toString().match(/\/\^/) != null
-
-    ret         = -1
-    while match = @to_native()[idx..-1].match(needle)
-      break if offset && offset < (idx + match.index)
-      ret = idx
-      idx = idx + 1
-      break if match_begin or idx > length
-
-    ret
 
   # If integer is greater than the length of str, returns a new String of
   # length integer with str right justified and padded with padstr; otherwise,

@@ -246,6 +246,44 @@ class StringMethods
     str.split("").reverse().join("")
 
 
+  rindex: (str, needle, offset) ->
+    if offset != undefined
+      offset = offset + str.length if offset < 0
+      return null if offset < 0
+
+      if typeof needle is 'string'
+        offset = offset + needle.length
+        ret = str[0...offset].lastIndexOf(needle)
+      else
+        ret = _str.__rindex_with_regexp__(str, needle, offset)
+    else
+      if typeof needle is 'string'
+        ret = str.lastIndexOf(needle)
+      else
+        ret = _str.__rindex_with_regexp__(str, needle)
+
+    if ret is -1 then null else ret
+
+
+  # @private
+  # @param needle R.Regexp
+  # @param offset [number]
+  __rindex_with_regexp__: (str, needle, offset) ->
+    unless needle.global
+      needle = new RegExp(needle.source, "g" + (if needle.ignoreCase then "i" else "") + (if needle.multiLine then "m" else ""));
+
+    offset = str.length unless offset?
+    idx = -1
+    stop = 0
+
+    while (result = needle.exec(str)) != null
+      break if result.index > offset
+      idx = result.index
+      needle.lastIndex = ++stop
+
+    idx
+
+
   rjust: (str, width, pad_str = " ") ->
     len = str.length
     if len >= width
