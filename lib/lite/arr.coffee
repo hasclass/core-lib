@@ -207,6 +207,20 @@ class ArrayMethods extends EnumerableMethods
     arr_join.call(arr, separator)
 
 
+  last: (arr, n) ->
+    len = arr.length
+    if n is undefined
+      return arr[len-1]
+
+    if len is 0 or n is 0
+      return []
+
+    throw R.ArgumentError.new("count must be positive") if n < 0
+
+    n = len if n > len
+    arr[-n.. -1]
+
+
   reverse_each: (coll, block) ->
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)

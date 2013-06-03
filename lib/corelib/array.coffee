@@ -797,20 +797,14 @@ class RubyJS.Array extends RubyJS.Object
   #     a.last(2)    #=> ["y", "z"]
   #
   last: (n) ->
-    len = @__size__()
-    if len < 1
+    if @__native__.length < 1
       return null if n is undefined
       return new R.Array([])
 
     return @at(-1) if n is undefined
-
     n = RCoerce.to_int_native(n)
-    return new R.Array([]) if n is 0
 
-    throw R.ArgumentError.new("count must be positive") if n < 0
-
-    n = len if n > len
-    new R.Array( @__native__[-n.. -1] )
+    new R.Array( _a.last(@__native__, n) )
 
 
   # @private
