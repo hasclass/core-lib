@@ -1848,6 +1848,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   # @destructive
+  # TODO: get rid of items...
   insert: (arr, idx, items...) ->
     throw R.ArgumentError.new() if idx is undefined
 
@@ -1860,14 +1861,16 @@ class ArrayMethods extends EnumerableMethods
     throw R.IndexError.new() if idx < 0
 
     after  = arr.slice(idx)
-    len = items.length
 
     if idx > arr.length
       for i in [(arr.length)...idx]
         arr[i] = null
 
+    len = 0
     for el, i in items
-      arr[idx+i] = el
+      if el != undefined
+        arr[idx+i] = el
+        len += 1
 
     for el, i in after
       arr[idx+len+i] = el
@@ -1880,6 +1883,20 @@ class ArrayMethods extends EnumerableMethods
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
     arr_join.call(arr, separator)
+
+
+  last: (arr, n) ->
+    len = arr.length
+    if n is undefined
+      return arr[len-1]
+
+    if len is 0 or n is 0
+      return []
+
+    throw R.ArgumentError.new("count must be positive") if n < 0
+
+    n = len if n > len
+    arr[-n.. -1]
 
 
   reverse_each: (coll, block) ->
@@ -2181,21 +2198,19 @@ class StringMethods
   # @param needle R.Regexp
   # @param offset [number]
   __rindex_with_regexp__: (str, needle, offset) ->
-    idx = 0
-    len = str.length
-    # if regexp starts with /^ do not iterate.
-    # however this is wrong behaviour, it should match from \n.
-    match_begin = needle.match(R(/\/\^/)) != null
+    unless needle.global
+      needle = new RegExp(needle.source, "g" + (if needle.ignoreCase then "i" else "") + (if needle.multiLine then "m" else ""));
 
-    ret         = -1
-    # TODO: FIX!
-    while match = str[idx..-1].match(R(needle))
-      break if offset && offset < (idx + match.index)
-      ret = idx
-      idx = idx + 1
-      break if match_begin or idx > length
+    offset = str.length unless offset?
+    idx = -1
+    stop = 0
 
-    ret
+    while (result = needle.exec(str)) != null
+      break if result.index > offset
+      idx = result.index
+      needle.lastIndex = ++stop
+
+    idx
 
 
   rjust: (str, width, pad_str = " ") ->
@@ -4128,20 +4143,14 @@ class RubyJS.Array extends RubyJS.Object
   #     a.last(2)    #=> ["y", "z"]
   #
   last: (n) ->
-    len = @__size__()
-    if len < 1
+    if @__native__.length < 1
       return null if n is undefined
       return new R.Array([])
 
     return @at(-1) if n is undefined
-
     n = RCoerce.to_int_native(n)
-    return new R.Array([]) if n is 0
 
-    throw R.ArgumentError.new("count must be positive") if n < 0
-
-    n = len if n > len
-    new R.Array( @__native__[-n.. -1] )
+    new R.Array( _a.last(@__native__, n) )
 
 
   # @private

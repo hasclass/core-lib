@@ -2068,15 +2068,18 @@ http://www.rubyjs.org/LICENSE.txt
         throw R.IndexError["new"]();
       }
       after = arr.slice(idx);
-      len = items.length;
       if (idx > arr.length) {
         for (i = _i = _ref1 = arr.length; _ref1 <= idx ? _i < idx : _i > idx; i = _ref1 <= idx ? ++_i : --_i) {
           arr[i] = null;
         }
       }
+      len = 0;
       for (i = _j = 0, _len = items.length; _j < _len; i = ++_j) {
         el = items[i];
-        arr[idx + i] = el;
+        if (el !== void 0) {
+          arr[idx + i] = el;
+          len += 1;
+        }
       }
       for (i = _k = 0, _len1 = after.length; _k < _len1; i = ++_k) {
         el = after[i];
@@ -2096,6 +2099,24 @@ http://www.rubyjs.org/LICENSE.txt
         separator = '';
       }
       return arr_join.call(arr, separator);
+    };
+
+    ArrayMethods.prototype.last = function(arr, n) {
+      var len;
+      len = arr.length;
+      if (n === void 0) {
+        return arr[len - 1];
+      }
+      if (len === 0 || n === 0) {
+        return [];
+      }
+      if (n < 0) {
+        throw R.ArgumentError["new"]("count must be positive");
+      }
+      if (n > len) {
+        n = len;
+      }
+      return arr.slice(-n);
     };
 
     ArrayMethods.prototype.reverse_each = function(coll, block) {
@@ -2475,22 +2496,23 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     StringMethods.prototype.__rindex_with_regexp__ = function(str, needle, offset) {
-      var idx, len, match, match_begin, ret;
-      idx = 0;
-      len = str.length;
-      match_begin = needle.match(R(/\/\^/)) !== null;
-      ret = -1;
-      while (match = str.slice(idx).match(R(needle))) {
-        if (offset && offset < (idx + match.index)) {
-          break;
-        }
-        ret = idx;
-        idx = idx + 1;
-        if (match_begin || idx > length) {
-          break;
-        }
+      var idx, result, stop;
+      if (!needle.global) {
+        needle = new RegExp(needle.source, "g" + (needle.ignoreCase ? "i" : "") + (needle.multiLine ? "m" : ""));
       }
-      return ret;
+      if (offset == null) {
+        offset = str.length;
+      }
+      idx = -1;
+      stop = 0;
+      while ((result = needle.exec(str)) !== null) {
+        if (result.index > offset) {
+          break;
+        }
+        idx = result.index;
+        needle.lastIndex = ++stop;
+      }
+      return idx;
     };
 
     StringMethods.prototype.rjust = function(str, width, pad_str) {
@@ -4028,9 +4050,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.last = function(n) {
-      var len;
-      len = this.__size__();
-      if (len < 1) {
+      if (this.__native__.length < 1) {
         if (n === void 0) {
           return null;
         }
@@ -4040,16 +4060,7 @@ http://www.rubyjs.org/LICENSE.txt
         return this.at(-1);
       }
       n = RCoerce.to_int_native(n);
-      if (n === 0) {
-        return new R.Array([]);
-      }
-      if (n < 0) {
-        throw R.ArgumentError["new"]("count must be positive");
-      }
-      if (n > len) {
-        n = len;
-      }
-      return new R.Array(this.__native__.slice(-n));
+      return new R.Array(_a.last(this.__native__, n));
     };
 
     Array.prototype.permutation = function() {
