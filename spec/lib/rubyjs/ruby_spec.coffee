@@ -1,6 +1,6 @@
 describe 'RubyJS', ->
   it "auto pollutes global", ->
-    for method in ['_str', '_arr', '_enum', '_num', '_proc', '_puts', '_truthy', '_falsey', '_inspect']
+    for method in ['_str', '_arr', '_itr', '_num', '_proc', '_puts', '_truthy', '_falsey', '_inspect']
       expect( window[method]? ).toEqual true
 
   it "R()", ->
