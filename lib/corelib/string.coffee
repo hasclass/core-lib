@@ -915,20 +915,8 @@ class RubyJS.String extends RubyJS.Object
   # @todo does not yet affect R['$~']
   rpartition: (pattern) ->
     # TODO: regexps
-    pattern = RCoerce.to_str(pattern).to_str()
-
-    if idx = @rindex(pattern)
-      start = idx + pattern.length
-      len = @size() -  start
-      a = @slice(0,idx)
-      b = pattern.dup()
-      c = R(@to_native().slice(start))
-
-    a ||= R("")
-    b ||= R("")
-    c ||= this
-
-    return R([a,b,c])
+    pattern = RCoerce.to_str_native(pattern)
+    new RArray(_str.rpartition(@__native__, pattern))
 
 
   # Returns a copy of str with trailing whitespace removed. See also

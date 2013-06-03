@@ -294,6 +294,20 @@ class StringMethods
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
+  rpartition: (str, pattern) ->
+    idx = _str.rindex(str, pattern)
+    unless idx is null
+      start = idx + pattern.length
+      len = str.length -  start
+      a = str.slice(0,idx)
+      b = pattern
+      c = str.slice(start)
+      [a,b,c]
+    else
+      ['', '',str]
+
+
+
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
 
