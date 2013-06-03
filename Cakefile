@@ -14,11 +14,11 @@ appFiles  = [
   'corelib/coerce'
   'corelib/object'
 
-
   'lite/num'
   'lite/itr'
   'lite/arr'
   'lite/str'
+  'lite/hsh'
 
   'corelib/errors'
   'corelib/comparable'
