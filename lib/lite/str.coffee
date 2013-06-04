@@ -3,7 +3,7 @@ class StringMethods
     return "" if str.length == 0
     b = _str.downcase(str)
     a = _str.upcase(str[0])
-    a + str_slice.call(b, 1)
+    a + nativeStrSlice.call(b, 1)
 
 
   center: (str, length, padString = ' ') ->
@@ -36,7 +36,7 @@ class StringMethods
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = str_match.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
+        ending = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
         regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
       else
         regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
@@ -92,7 +92,7 @@ class StringMethods
       lft = rgt
       block(str)
 
-    remainder = str_slice.call(dup, lft)
+    remainder = nativeStrSlice.call(dup, lft)
     if remainder?
       block(remainder) unless remainder.length == 0
 
@@ -100,10 +100,10 @@ class StringMethods
 
 
   downcase: (str) ->
-    return str unless str_match.call(str, /[A-Z]/)
+    return str unless nativeStrMatch.call(str, /[A-Z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
     _arr.map(str.split(''), (c) ->
-      if str_match.call(c, /[A-Z]/) then c.toLowerCase() else c
+      if nativeStrMatch.call(c, /[A-Z]/) then c.toLowerCase() else c
     ).join('')
 
 
@@ -203,11 +203,11 @@ class StringMethods
 
     if offset?
       opts = {string: str, offset: offset}
-      str = str_slice.call(str, offset)
-      matches = str_match.call(str, pattern, offset)
+      str = nativeStrSlice.call(str, offset)
+      matches = nativeStrMatch.call(str, pattern, offset)
     else
       # Firefox breaks if you'd pass str.match(..., undefined)
-      matches = str_match.call(str, pattern)
+      matches = nativeStrMatch.call(str, pattern)
 
     result = if matches
       new R.MatchData(matches, opts)
@@ -236,7 +236,7 @@ class StringMethods
       start = idx + pattern.length
       a = _str.slice(str, 0, idx) || ''
       b = pattern
-      c = str_slice.call(str, start)
+      c = nativeStrSlice.call(str, start)
       [a,b,c]
     else
       [str, '', '']
@@ -418,7 +418,7 @@ class StringMethods
 
         return null if length < 0 or start < 0 or start > size
 
-        return str_slice.call(str, start, start + length)
+        return nativeStrSlice.call(str, start, start + length)
 
     if index.is_regexp?
       throw R.NotImplementedError.new()
@@ -448,7 +448,7 @@ class StringMethods
       length = length - start
       length = 0 if length < 0
 
-      return str_slice.call(str, start, start + length)
+      return nativeStrSlice.call(str, start, start + length)
     else
       index += size if index < 0
       return null if index < 0 or index >= size
@@ -529,7 +529,7 @@ class StringMethods
   __matched__: (str, args) ->
     for el in args
       rgx = _str.__to_regexp__(el)
-      str = (str_match.call(str, rgx) || []).join('')
+      str = (nativeStrMatch.call(str, rgx) || []).join('')
     str
 
 

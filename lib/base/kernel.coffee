@@ -33,7 +33,7 @@ class RubyJS.Kernel
           # Small performance improvement. which probably should be somewhere else.
           object_type = '[object Array]'
         else
-          object_type = _toString_.call(obj)
+          object_type = nativeToString.call(obj)
 
     # check primitives first
     if typeof obj is 'number'

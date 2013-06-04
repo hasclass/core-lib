@@ -237,7 +237,7 @@ class NumericMethods
   # @return [this]
   #
   times: (num, block) ->
-    # return @to_enum('times') unless block?.call?
+    return R(num).to_enum('times') unless block?.call?
     if num > 0
       idx = 0
       while idx < num

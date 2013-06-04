@@ -508,7 +508,7 @@ class EnumerableMethods
     # TODO: throw Error when comparing different values.
     block ||= R.Comparable.cmpstrict
     coll = coll.to_native() if coll.to_native?
-    arr_sort.call(coll, block)
+    nativeSort.call(coll, block)
 
 
   sort_by: (coll, block) ->
@@ -549,7 +549,7 @@ class EnumerableMethods
     ary = []
 
     @each coll, ->
-      # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
+      # args = if arguments.length == 1 then arguments[0] else nativeSlice.call(arguments)
       ary.push(BlockMulti.prototype.args(arguments))
       null
 

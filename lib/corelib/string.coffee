@@ -24,7 +24,7 @@ class RubyJS.String extends RubyJS.Object
     return true  if typeof obj == 'string'
     return false if typeof obj != 'object'
     return true  if obj.is_string?
-    _toString_.call(obj) is '[object String]'
+    nativeToString.call(obj) is '[object String]'
 
 
   @try_convert: (obj) ->

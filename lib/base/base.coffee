@@ -78,7 +78,7 @@ class RubyJS.Base
             do (new_name, name, methods) ->
               proto[new_name] = ->
                 # use this.valueOf() to get the literal back.
-                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
+                args = [this.valueOf()].concat(nativeSlice.call(arguments, 0))
                 methods[name].apply(methods, args)
               # The following is 100x faster than slicing. But needs methods to change.
               # proto[new_name] = (a,b,c,d,e,f,g,l,m,n) ->
@@ -119,7 +119,7 @@ class RubyJS.Base
         else
           fn
     else
-      args = arr_slice.call(arguments, 1)
+      args = nativeSlice.call(arguments, 1)
       # Wrapper block that mangles arguments
       (el) ->
         fn = el[key]

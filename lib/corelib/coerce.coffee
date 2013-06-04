@@ -16,11 +16,11 @@ RCoerce = R._coerce =
   single_block_args: (args, block) ->
     if block
       if block.length != 1
-        if args.length > 1 then _slice_.call(args) else args[0]
+        if args.length > 1 then nativeSlice.call(args) else args[0]
       else
         args[0]
     else
-      if args.length != 1 then _slice_.call(args) else args[0]
+      if args.length != 1 then nativeSlice.call(args) else args[0]
 
 
   # @example

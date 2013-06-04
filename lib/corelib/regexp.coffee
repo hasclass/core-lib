@@ -37,7 +37,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
 
   @isRegexp: (obj) ->
-    obj?.is_regexp? or _toString_.call(obj) is '[object RegExp]'
+    obj?.is_regexp? or nativeToString.call(obj) is '[object RegExp]'
 
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -168,7 +168,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #     match(str,pos) → matchdata or nil
   #
   match: (str, offset) ->
-    block   = @__extract_block(_slice_.call(arguments))
+    block   = @__extract_block(nativeSlice.call(arguments))
 
     if str is null
       R['$~'] = null

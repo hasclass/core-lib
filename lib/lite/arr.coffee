@@ -173,6 +173,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   # @destructive
+  # TODO: get rid of items...
   insert: (arr, idx, items...) ->
     throw R.ArgumentError.new() if idx is undefined
 
@@ -185,14 +186,16 @@ class ArrayMethods extends EnumerableMethods
     throw R.IndexError.new() if idx < 0
 
     after  = arr.slice(idx)
-    len = items.length
 
     if idx > arr.length
       for i in [(arr.length)...idx]
         arr[i] = null
 
+    len = 0
     for el, i in items
-      arr[idx+i] = el
+      if el != undefined
+        arr[idx+i] = el
+        len += 1
 
     for el, i in after
       arr[idx+len+i] = el
@@ -204,7 +207,7 @@ class ArrayMethods extends EnumerableMethods
     return '' if arr.length == 0
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    arr_join.call(arr, separator)
+    nativeJoin.call(arr, separator)
 
 
   last: (arr, n) ->

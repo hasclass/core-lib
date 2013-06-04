@@ -62,7 +62,7 @@ class BlockMulti
   constructor: (@block, @thisArg) ->
 
   args: (args) ->
-    if args.length > 1 then _slice_.call(args) else args[0]
+    if args.length > 1 then nativeSlice.call(args) else args[0]
 
   # @param args array or arguments
   invoke: (args) ->

@@ -129,7 +129,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # @private
   @isNativeArray: nativeArray.isArray or (obj) ->
-    _toString_.call(obj) is '[object Array]'
+    nativeToString.call(obj) is '[object Array]'
 
 
   # Try to convert obj into an array, using to_ary method. Returns converted

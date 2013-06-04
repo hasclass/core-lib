@@ -9,12 +9,10 @@ ObjProto = Object.prototype
 StrProto = String.prototype
 ArrProto = Array.prototype
 
-_toString_ = ObjProto.toString
-_slice_    = ArrProto.slice
-
-str_slice   = StrProto.slice
-str_match   = StrProto.match
-arr_join    = ArrProto.join
-arr_sort    = ArrProto.sort
-arr_slice   = ArrProto.slice
-arr_unshift = ArrProto.unshift
+nativeToString = ObjProto.toString
+nativeStrSlice = StrProto.slice
+nativeStrMatch = StrProto.match
+nativeJoin     = ArrProto.join
+nativeSort     = ArrProto.sort
+nativeSlice    = ArrProto.slice
+nativeUnshift  = ArrProto.unshift
