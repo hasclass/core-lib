@@ -75,15 +75,27 @@ class RubyJS.Base
 
         if typeof func == 'function'
           if overwrite or proto[new_name] is undefined
-            do (new_name, name, methods) ->
-              proto[new_name] = ->
-                # use this.valueOf() to get the literal back.
-                args = [this.valueOf()].concat(nativeSlice.call(arguments, 0))
-                methods[name].apply(methods, args)
-              # The following is 100x faster than slicing. But needs methods to change.
-              # proto[new_name] = (a,b,c,d,e,f,g,l,m,n) ->
-              #   # use this.valueOf() to get the literal back.
-              #   methods[name].call(methods, this.valueOf(), a,b,c,d,e,f,g,l,m,n)
+
+            do (new_name, func) ->
+              # The following is 100x faster than slicing.
+              proto[new_name] = (a, b, c, d, e, f) ->
+                idx = arguments.length
+                while idx--
+                  break if arguments[idx] isnt undefined
+
+                val = this.valueOf()
+                switch idx + 1
+                  when 0 then func(val)
+                  when 1 then func(val, a)
+                  when 2 then func(val, a, b)
+                  when 3 then func(val, a, b, c)
+                  when 4 then func(val, a, b, c, d)
+                  when 5 then func(val, a, b, c, d, e)
+                  when 6 then func(val, a, b, c, d, e, f)
+                  # Slow fallback when passed more than 6 arguments.
+                  else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
+
+
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
 
