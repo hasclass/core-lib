@@ -10,9 +10,7 @@ appFiles  = [
   'base/breaker'
   'base/kernel'
   'base/base'
-
-  'corelib/coerce'
-  'corelib/object'
+  'base/errors'
 
   'lite/coerce'
   'lite/num'
@@ -21,7 +19,8 @@ appFiles  = [
   'lite/str'
   'lite/hsh'
 
-  'corelib/errors'
+  'corelib/object'
+  'corelib/coerce'
   'corelib/comparable'
 
   'corelib/enumerable'
@@ -78,7 +77,7 @@ task 'build_tests', 'Builds all spec files', ->
 
 
 task 'build', 'Build single application file from source files', ->
-  appContents = new Array remaining = appFiles.length
+  appContents = new Array(remaining = appFiles.length)
   for file, index in appFiles then do (file, index) ->
     fs.readFile "lib/#{file}.coffee", 'utf8', (err, fileContents) ->
       throw err if err
