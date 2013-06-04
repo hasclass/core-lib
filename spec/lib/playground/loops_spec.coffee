@@ -67,12 +67,12 @@ describe "Examples/Loops: context", ->
       arr    = R.$Array_r([1,2,4,8,16])
       record = []
       # arr.each_with_context (n) ->
-      #   record.push(@unbox())
+      #   record.push(@valueOf())
       # expect( record ).toEqual [1,2,4,8,16]
 
       record = []
       arr.each_with_context this, (n) ->
-        record.push(n.unbox())
+        record.push(n.valueOf())
       expect( record ).toEqual [1,2,4,8,16]
 
     it "loops with context", ->
@@ -80,7 +80,7 @@ describe "Examples/Loops: context", ->
       record  = []
       context = R(1)
       arr.each_with_context context, (c) ->
-        record.push(@unbox())
+        record.push(@valueOf())
       expect( record ).toEqual [1,1,1,1,1]
 
 

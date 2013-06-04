@@ -33,7 +33,7 @@ describe "Kernel.Float", ->
     string = R "10"
     #spyOn(string)
     expect( R.$Float(string).is_float? ).toEqual true
-    expect( R.$Float(string).unbox() ).toEqual 10.0
+    expect( R.$Float(string).valueOf() ).toEqual 10.0
     #expect( string.to_f ).toNotHaveBeenCalled()
 
   it "converts Strings with decimal points into Floats", ->

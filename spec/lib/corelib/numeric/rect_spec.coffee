@@ -30,7 +30,7 @@ describe "Numeric#rect", ->
 
   it "returns 0 as the last element", ->
    @numbers.each (number) ->
-     expect( number.rect().unbox()[1] ).toEqual R(0)
+     expect( number.rect().valueOf()[1] ).toEqual R(0)
 
   it "raises an ArgumentError if given any arguments", ->
    @numbers.each (number) ->

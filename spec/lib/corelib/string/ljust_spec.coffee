@@ -1,32 +1,32 @@
 describe "String#ljust with length, padding", ->
   it "returns a new string of specified length with self left justified and padded with padstr", ->
-    expect(R("hello").ljust(20, '1234').unbox()).toEqual("hello123412341234123")
+    expect(R("hello").ljust(20, '1234').valueOf()).toEqual("hello123412341234123")
 
-    expect(R("").ljust(1, "abcd").unbox()).toEqual("a")
-    expect(R("").ljust(2, "abcd").unbox()).toEqual("ab")
-    expect(R("").ljust(3, "abcd").unbox()).toEqual("abc")
-    expect(R("").ljust(4, "abcd").unbox()).toEqual("abcd")
-    expect(R("").ljust(6, "abcd").unbox()).toEqual("abcdab")
+    expect(R("").ljust(1, "abcd").valueOf()).toEqual("a")
+    expect(R("").ljust(2, "abcd").valueOf()).toEqual("ab")
+    expect(R("").ljust(3, "abcd").valueOf()).toEqual("abc")
+    expect(R("").ljust(4, "abcd").valueOf()).toEqual("abcd")
+    expect(R("").ljust(6, "abcd").valueOf()).toEqual("abcdab")
 
-    expect(R("OK").ljust(3, "abcd").unbox()).toEqual("OKa")
-    expect(R("OK").ljust(4, "abcd").unbox()).toEqual("OKab")
-    expect(R("OK").ljust(6, "abcd").unbox()).toEqual("OKabcd")
-    expect(R("OK").ljust(8, "abcd").unbox()).toEqual("OKabcdab")
+    expect(R("OK").ljust(3, "abcd").valueOf()).toEqual("OKa")
+    expect(R("OK").ljust(4, "abcd").valueOf()).toEqual("OKab")
+    expect(R("OK").ljust(6, "abcd").valueOf()).toEqual("OKabcd")
+    expect(R("OK").ljust(8, "abcd").valueOf()).toEqual("OKabcdab")
 
   it "pads with whitespace if no padstr is given", ->
-    expect(R("hello").ljust(20).unbox()).toEqual("hello               ")
+    expect(R("hello").ljust(20).valueOf()).toEqual("hello               ")
 
   it "returns self if it's longer than or as long as the specified length", ->
-    expect(R("").ljust(0).unbox()).toEqual("")
-    expect(R("").ljust(-1).unbox()).toEqual("")
-    expect(R("hello").ljust(4).unbox()).toEqual("hello")
-    expect(R("hello").ljust(-1).unbox()).toEqual("hello")
-    expect(R("this").ljust(3).unbox()).toEqual("this")
-    expect(R("radiology").ljust(8, '-').unbox()).toEqual("radiology")
+    expect(R("").ljust(0).valueOf()).toEqual("")
+    expect(R("").ljust(-1).valueOf()).toEqual("")
+    expect(R("hello").ljust(4).valueOf()).toEqual("hello")
+    expect(R("hello").ljust(-1).valueOf()).toEqual("hello")
+    expect(R("this").ljust(3).valueOf()).toEqual("this")
+    expect(R("radiology").ljust(8, '-').valueOf()).toEqual("radiology")
 
   it "tries to convert length to an integer using to_int", ->
-    expect(R("^").ljust(3.8, "_^").unbox()).toEqual("^_^")
-    expect(R("o").ljust(3, "_o").unbox()).toEqual("o_o")
+    expect(R("^").ljust(3.8, "_^").valueOf()).toEqual("^_^")
+    expect(R("o").ljust(3, "_o").valueOf()).toEqual("o_o")
 
   it "raises a TypeError when padstr can't be converted", ->
     expect(-> R("hello").ljust(20, [])).toThrow("TypeError")
@@ -45,7 +45,7 @@ describe "String#ljust with length, padding", ->
     expect( R("hello").ljust(10, padstr) ).toEqual  R("hello12312")
 
 #  it "taints result when self or padstr is tainted", ->
-#    expect("x".taint.ljust(4).tainted?.unbox()).toEqual(true)
+#    expect("x".taint.ljust(4).tainted?.valueOf()).toEqual(true)
 #    expect("x".taint.ljust(0).tainted?).toEqual(true)
 #    expect("".taint.ljust(0).tainted?).toEqual(true)
 #    expect("x".taint.ljust(4, "*").tainted?).toEqual(true)

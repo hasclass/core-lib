@@ -18,7 +18,7 @@ class EnumerableSpecs.Numerous extends RubyJS.Object
     if func && func.call?
       @list.each( (i) -> func(i) )
     else
-      @list.unbox() # @to_enum('each')
+      @list.valueOf() # @to_enum('each')
 
   to_native: ->
     @list.__native__
@@ -38,7 +38,7 @@ class EnumerableSpecs.NumerousLiteral extends RubyJS.Object
     if func && func.call?
       @list.each( (i) -> func(i) )
     else
-      @list.unbox() # @to_enum('each')
+      @list.valueOf() # @to_enum('each')
 
   to_native: ->
     @list.__native__

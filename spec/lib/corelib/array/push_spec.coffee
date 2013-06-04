@@ -2,9 +2,9 @@ describe "Array#push", ->
   it "appends the arguments to the array", ->
     a = R [ "a", "b", "c" ]
     expect( a.push("d", "e", "f") == a).toEqual true
-    expect( a.push().unbox() ).toEqual ["a", "b", "c", "d", "e", "f"]
+    expect( a.push().valueOf() ).toEqual ["a", "b", "c", "d", "e", "f"]
     a.push(5)
-    expect( a.unbox() ).toEqual ["a", "b", "c", "d", "e", "f", 5]
+    expect( a.valueOf() ).toEqual ["a", "b", "c", "d", "e", "f", 5]
 
   it "isn't confused by previous shift", ->
     a = R [ "a", "b", "c" ]

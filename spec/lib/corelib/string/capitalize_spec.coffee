@@ -4,17 +4,17 @@ class MyString extends String
 describe "String#capitalize", ->
 
   it "returns a copy of self with the first character converted to uppercase and the remainder to lowercase", ->
-    expect(R("").capitalize().unbox()      ).toEqual ""
-    expect(R("h").capitalize().unbox()     ).toEqual "H"
-    expect(R("H").capitalize().unbox()     ).toEqual "H"
-    expect(R("hello").capitalize().unbox() ).toEqual "Hello"
-    expect(R("HELLO").capitalize().unbox() ).toEqual "Hello"
-    expect(R("123ABC").capitalize().unbox()).toEqual "123abc"
+    expect(R("").capitalize().valueOf()      ).toEqual ""
+    expect(R("h").capitalize().valueOf()     ).toEqual "H"
+    expect(R("H").capitalize().valueOf()     ).toEqual "H"
+    expect(R("hello").capitalize().valueOf() ).toEqual "Hello"
+    expect(R("HELLO").capitalize().valueOf() ).toEqual "Hello"
+    expect(R("123ABC").capitalize().valueOf()).toEqual "123abc"
 
   it "is locale insensitive (only upcases a-z and only downcases A-Z)", ->
-    expect(R("ÄÖÜ").capitalize().unbox()  ).toEqual "ÄÖÜ"
-    expect(R("ärger").capitalize().unbox()).toEqual "ärger"
-    expect(R("BÄR").capitalize().unbox()  ).toEqual "BÄr"
+    expect(R("ÄÖÜ").capitalize().valueOf()  ).toEqual "ÄÖÜ"
+    expect(R("ärger").capitalize().valueOf()).toEqual "ärger"
+    expect(R("BÄR").capitalize().valueOf()  ).toEqual "BÄr"
 
   #it "taints resulting string when self is tainted", ->
   #  expect("".taint.capitalize().tainted?).toEqual true

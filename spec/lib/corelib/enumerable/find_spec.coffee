@@ -16,7 +16,7 @@ describe "Enumerable#find", ->
   it "passes each entry in enum to block while block when block is false", ->
     visited_elements = []
     @numerous.find (element) ->
-      visited_elements.push element.unbox()
+      visited_elements.push element.valueOf()
       false
 
     expect( visited_elements ).toEqual @elements

@@ -12,18 +12,18 @@ describe "String#split with String", ->
     expect( R("mellow yellow").split("ello").unbox(true) ).toEqual ["m", "w y", "w"]
 
   it "suppresses trailing empty fields when limit isn't given or 0", ->
-    expect( R("1,2,,3,4,,").split(',').unbox() ).toEqual ["1", "2", "", "3", "4"]
-    expect( R("1,2,,3,4,,").split(',', 0).unbox() ).toEqual ["1", "2", "", "3", "4"]
-    expect( R("  a  b  c\nd  ").split("  ").unbox() ).toEqual ["", "a", "b", "c\nd"]
-    expect( R("hai").split("hai").unbox() ).toEqual []
-    expect( R(",").split(",").unbox() ).toEqual []
-    expect( R(",").split(",", 0).unbox() ).toEqual []
+    expect( R("1,2,,3,4,,").split(',').valueOf() ).toEqual ["1", "2", "", "3", "4"]
+    expect( R("1,2,,3,4,,").split(',', 0).valueOf() ).toEqual ["1", "2", "", "3", "4"]
+    expect( R("  a  b  c\nd  ").split("  ").valueOf() ).toEqual ["", "a", "b", "c\nd"]
+    expect( R("hai").split("hai").valueOf() ).toEqual []
+    expect( R(",").split(",").valueOf() ).toEqual []
+    expect( R(",").split(",", 0).valueOf() ).toEqual []
 
   xit "returns an array with one entry if limit is 1: the original string", ->
-    expect( R("hai").split("hai", 1).unbox() ).toEqual ["hai"]
-    expect( R("x.y.z").split(".", 1).unbox() ).toEqual ["x.y.z"]
-    expect( R("hello world ").split(" ", 1).unbox() ).toEqual ["hello world "]
-    expect( R("hi!").split("", 1).unbox() ).toEqual ["hi!"]
+    expect( R("hai").split("hai", 1).valueOf() ).toEqual ["hai"]
+    expect( R("x.y.z").split(".", 1).valueOf() ).toEqual ["x.y.z"]
+    expect( R("hello world ").split(" ", 1).valueOf() ).toEqual ["hello world "]
+    expect( R("hi!").split("", 1).valueOf() ).toEqual ["hi!"]
 
   xit "returns at most limit fields when limit > 1", ->
     expect( R("hai").split("hai", 2).unbox(true) ).toEqual ["", ""]

@@ -16,7 +16,7 @@ describe "Array#combination", ->
     expect( @array.combination(5, ->) is @array ).toEqual true
 
   it "yields the expected combinations", ->
-    expect( @array.combination(3).to_a().unbox(true) ).toEqual [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
+    expect( @array.combination(3).to_a().valueOf() ).toEqual [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
 
   it "yields nothing if the argument is out of bounds", ->
     expect( @array.combination(-1).to_a() ).toEqual R([])
@@ -28,11 +28,11 @@ describe "Array#combination", ->
     expect( r.at(0) is @array).toEqual false
 
   it "yields [] when length is 0", ->
-    expect( @array.combination(0).to_a().unbox(true) ).toEqual [[]] # one combination of length 0
-    expect( R([]).combination(0).to_a().unbox(true) ).toEqual [[]] # one combination of length 0
+    expect( @array.combination(0).to_a().valueOf() ).toEqual [[]] # one combination of length 0
+    expect( R([]).combination(0).to_a().valueOf() ).toEqual [[]] # one combination of length 0
 
   it "yields a partition consisting of only singletons", ->
-    expect( @array.combination(1).to_a().unbox(true) ).toEqual [[1],[2],[3],[4]]
+    expect( @array.combination(1).to_a().valueOf() ).toEqual [[1],[2],[3],[4]]
 
   it "generates from a defensive copy, ignoring mutations", ->
     # TODO: test

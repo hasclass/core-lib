@@ -7,10 +7,10 @@ describe "Range#to_a", ->
     expect( -> RubyJS.Range.new(0.5, 2.4).to_a()      ).toThrow("TypeError")
 
   it "returns empty array for descending-ordered", ->
-    expect( RubyJS.Range.new(5,-5).to_a().unbox() ).toEqual  []
-    expect( RubyJS.Range.new('D','A').to_a().unbox() ).toEqual  []
-    expect( RubyJS.Range.new('D','A', true).to_a().unbox() ).toEqual  []
-    expect( RubyJS.Range.new(0xffff,0xfffd, true).to_a().unbox() ).toEqual  []
+    expect( RubyJS.Range.new(5,-5).to_a().valueOf() ).toEqual  []
+    expect( RubyJS.Range.new('D','A').to_a().valueOf() ).toEqual  []
+    expect( RubyJS.Range.new('D','A', true).to_a().valueOf() ).toEqual  []
+    expect( RubyJS.Range.new(0xffff,0xfffd, true).to_a().valueOf() ).toEqual  []
 
   xdescribe 'ruby_version_is "1.9"', ->
     # This crashed on 1.9 prior to r24573

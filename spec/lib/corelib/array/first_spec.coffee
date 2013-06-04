@@ -7,7 +7,7 @@ describe "Array#first", ->
     expect( R([]).first() ).toEqual null
 
   it "returns the first count elements if given a count", ->
-    expect( R([true, false, true, null, false]).first(2).unbox()).toEqual [true, false]
+    expect( R([true, false, true, null, false]).first(2).valueOf()).toEqual [true, false]
 
   it "returns an empty array when passed count on an empty array", ->
     expect( R([]).first(0) ).toEqual R([])
@@ -64,6 +64,6 @@ describe "Array#first", ->
   it "is not destructive", ->
     a = R [1, 2, 3]
     a.first()
-    expect( a.unbox() ).toEqual [1, 2, 3]
+    expect( a.valueOf() ).toEqual [1, 2, 3]
     a.first(2)
-    expect( a.unbox() ).toEqual [1, 2, 3]
+    expect( a.valueOf() ).toEqual [1, 2, 3]

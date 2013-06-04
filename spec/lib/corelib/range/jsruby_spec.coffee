@@ -6,4 +6,4 @@ describe 'Range', ->
     range = RubyJS.Range.new('a', 'e')
     expect( range.to_a().unbox(true) ).toEqual(['a', 'b', 'c', 'd', 'e'])
 
-    expect( (i.unbox() for i in RubyJS.Range.new(1,3).iterator()) ).toEqual [1,2,3]
+    expect( (i.valueOf() for i in RubyJS.Range.new(1,3).iterator()) ).toEqual [1,2,3]

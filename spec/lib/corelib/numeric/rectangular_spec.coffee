@@ -30,7 +30,7 @@ describe "Numeric#rectangular", ->
 
   it "returns 0 as the last element", ->
    @numbers.each (number) ->
-     expect( number.rectangular().unbox()[1] ).toEqual R(0)
+     expect( number.rectangular().valueOf()[1] ).toEqual R(0)
 
   it "raises an ArgumentError if given any arguments", ->
    @numbers.each (number) ->

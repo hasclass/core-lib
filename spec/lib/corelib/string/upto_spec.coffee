@@ -2,12 +2,12 @@ describe "String#upto", ->
   it "passes successive values, starting at self and ending at other_string, to the block", ->
     a = R []
     R("*+").upto("*3", (s) -> a.push s )
-    expect(a.unbox()).toEqual ["*+", "*,", "*-", "*.", "*/", "*0", "*1", "*2", "*3"]
+    expect(a.valueOf()).toEqual ["*+", "*,", "*-", "*.", "*/", "*0", "*1", "*2", "*3"]
 
   it "calls the block once even when start eqals stop", ->
     a = R []
     R("abc").upto("abc", (s) -> a.push s )
-    expect(a.unbox()).toEqual ["abc"]
+    expect(a.valueOf()).toEqual ["abc"]
 
   # This is weird (in 1.8), but MRI behaves like that
   # ruby_version_is '' ... '1.9' do
@@ -21,22 +21,22 @@ describe "String#upto", ->
     it "doesn't call block with self even if self is less than stop but stop length is less than self length", ->
       a = R []
       R("25").upto("5", (s) -> a.push s )
-      expect(a.unbox()).toEqual []
+      expect(a.valueOf()).toEqual []
 
   it "doesn't call block if stop is less than self and stop length is less than self length", ->
     a = R []
     R("25").upto("1", (s) -> a.push s )
-    expect(a.unbox()).toEqual []
+    expect(a.valueOf()).toEqual []
 
   it "doesn't call the block if self is greater than stop", ->
     a = R []
     R("5").upto("2", (s) -> a.push s )
-    expect(a.unbox()).toEqual []
+    expect(a.valueOf()).toEqual []
 
   it "stops iterating as soon as the current value's character count gets higher than stop's", ->
     a = R []
     R("96").upto("AA", (s) -> a.push s )
-    expect(a.unbox()).toEqual ["96", "97", "98", "99"]
+    expect(a.valueOf()).toEqual ["96", "97", "98", "99"]
 
   it "returns self", ->
     expect( R("abc").upto("abd", ->)    ).toEqual R("abc")
@@ -80,11 +80,11 @@ describe "String#upto", ->
     xit "uses the ASCII map for single letters", ->
       a = R []
       R("9").upto("A", (s) -> a.push s )
-      expect(a.unbox()).toEqual ["9", ":", ";", "<", "=", ">", "?", "@", "A"]
+      expect(a.valueOf()).toEqual ["9", ":", ";", "<", "=", ">", "?", "@", "A"]
 
   describe "ruby_version_is '1.8.7'", ->
     it "stops before the last value if exclusive", ->
       a = R []
       R("a").upto("d", true, (s) -> a.push s )
-      expect(a.unbox()).toEqual ["a", "b", "c"]
+      expect(a.valueOf()).toEqual ["a", "b", "c"]
 

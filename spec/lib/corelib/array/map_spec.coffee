@@ -15,7 +15,7 @@ describe "Array#map", ->
     a = R ['a', 'b', 'c', 'd']
     b = a.map (i) ->
       i + '!'
-    expect( b.unbox() ).toEqual ["a!", "b!", "c!", "d!"]
+    expect( b.valueOf() ).toEqual ["a!", "b!", "c!", "d!"]
     expect( b == a).toEqual false
 
   xit "does not return subclass instance", ->
@@ -26,7 +26,7 @@ describe "Array#map", ->
     a = R ['a', 'b', 'c', 'd']
     b = a.map (i) ->
       i + '!'
-    expect( a.unbox() ).toEqual ['a', 'b', 'c', 'd']
+    expect( a.valueOf() ).toEqual ['a', 'b', 'c', 'd']
 
   it "returns the evaluated value of block if it broke in the block", ->
     a = R ['a', 'b', 'c', 'd']

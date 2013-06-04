@@ -9,7 +9,7 @@ describe "Enumerator", ->
 
   it "playground", ->
     en = RubyJS.Enumerator.new( R([1,2,3]), 'each')
-    expect( en.to_a().unbox() ).toEqual [1,2,3]
+    expect( en.to_a().valueOf() ).toEqual [1,2,3]
 
   it "playground R(1).upto(5)", ->
     en = R(1).upto(5)
@@ -42,7 +42,7 @@ describe "Enumerator", ->
     out = R []
 
     en  = RubyJS.Enumerator.new(arr, 'each')
-    expect( en.to_a().unbox() ).toEqual [1, 3]
+    expect( en.to_a().valueOf() ).toEqual [1, 3]
 
     out.push([i,el]) for el, i in en.iterator()
     expect( out.unbox(true)).toEqual [[0,1], [1,3]]
@@ -52,7 +52,7 @@ describe "Enumerator", ->
 
     en  = RubyJS.Enumerator.new(arr, 'each_with_index')
     expect( en.object ).toEqual arr
-    expect( en.to_a().map((e) -> e.join('.')).unbox() ).toEqual ['1.0', '7.1', '3.2']
+    expect( en.to_a().map((e) -> e.join('.')).valueOf() ).toEqual ['1.0', '7.1', '3.2']
 
   it "Integer#upto", ->
     arr = []

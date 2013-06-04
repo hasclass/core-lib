@@ -1,13 +1,13 @@
 describe "Array#compact", ->
   it "returns a copy of array with all null elements removed", ->
     a = R [1, 2, 4]
-    expect( a.compact().unbox() ).toEqual [1, 2, 4]
+    expect( a.compact().valueOf() ).toEqual [1, 2, 4]
     a = R [1, null, 2, 4]
-    expect( a.compact().unbox() ).toEqual [1, 2, 4]
+    expect( a.compact().valueOf() ).toEqual [1, 2, 4]
     a = R [1, 2, 4, null]
-    expect( a.compact().unbox() ).toEqual [1, 2, 4]
+    expect( a.compact().valueOf() ).toEqual [1, 2, 4]
     a = R [null, 1, 2, 4]
-    expect( a.compact().unbox() ).toEqual [1, 2, 4]
+    expect( a.compact().valueOf() ).toEqual [1, 2, 4]
 
   it "does not return self", ->
     a = R [1, 2, 3]
@@ -48,13 +48,13 @@ describe "Array#compact!", ->
   it "removes all null elements", ->
     a = R ['a', null, 'b', false, 'c']
     expect( a.compact_bang() == a).toEqual true
-    expect( a.unbox() ).toEqual ["a", "b", false, "c"]
+    expect( a.valueOf() ).toEqual ["a", "b", false, "c"]
     a = R [null, 'a', 'b', false, 'c']
     expect( a.compact_bang() == a).toEqual true
-    expect( a.unbox() ).toEqual ["a", "b", false, "c"]
+    expect( a.valueOf() ).toEqual ["a", "b", false, "c"]
     a = R ['a', 'b', false, 'c', null]
     expect( a.compact_bang() == a).toEqual true
-    expect( a.unbox() ).toEqual ["a", "b", false, "c"]
+    expect( a.valueOf() ).toEqual ["a", "b", false, "c"]
 
   it "returns self if some null elements are removed", ->
     a = R ['a', null, 'b', false, 'c']

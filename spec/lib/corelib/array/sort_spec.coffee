@@ -2,7 +2,7 @@
 describe "Array#sort", ->
   it "returns a new array sorted based on comparing elements with <=>", ->
     a = R([1, -2, 3, 9, 1, 5, -5, 1000, -5, 2, -10, 14, 6, 23, 0])
-    expect( a.sort().unbox() ).toEqual [-10, -5, -5, -2, 0, 1, 1, 2, 3, 5, 6, 9, 14, 23, 1000]
+    expect( a.sort().valueOf() ).toEqual [-10, -5, -5, -2, 0, 1, 1, 2, 3, 5, 6, 9, 14, 23, 1000]
 
   it "does not affect the original Array", ->
     a = R([0, 15, 2, 3, 4, 6, 14, 5, 7, 12, 8, 9, 1, 10, 11, 13])

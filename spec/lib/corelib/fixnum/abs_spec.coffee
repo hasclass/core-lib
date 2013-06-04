@@ -10,14 +10,14 @@
 
 describe "Fixnum#abs", ->
   it "returns self's absolute value", ->
-    expect( R(0).abs().unbox() ).toEqual 0
-    expect( R(-0).abs().unbox() ).toEqual 0
-    expect( R(+0).abs().unbox() ).toEqual 0
+    expect( R(0).abs().valueOf() ).toEqual 0
+    expect( R(-0).abs().valueOf() ).toEqual 0
+    expect( R(+0).abs().valueOf() ).toEqual 0
 
-    expect( R( 2).abs().unbox() ).toEqual 2
-    expect( R(-2).abs().unbox() ).toEqual 2
-    expect( R(+2).abs().unbox() ).toEqual 2
+    expect( R( 2).abs().valueOf() ).toEqual 2
+    expect( R(-2).abs().valueOf() ).toEqual 2
+    expect( R(+2).abs().valueOf() ).toEqual 2
 
-    expect( R( 100).abs().unbox() ).toEqual 100
-    expect( R(-100).abs().unbox() ).toEqual 100
-    expect( R(+100).abs().unbox() ).toEqual 100
+    expect( R( 100).abs().valueOf() ).toEqual 100
+    expect( R(-100).abs().valueOf() ).toEqual 100
+    expect( R(+100).abs().valueOf() ).toEqual 100

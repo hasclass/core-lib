@@ -23,16 +23,16 @@ describe "Enumerable#each_with_object", ->
 
   it "does work with jruby objects", ->
     ret = @enum.each_with_object R(""), (e, o) -> o.replace(o+e)
-    expect( ret.unbox() ).toEqual('253614')
+    expect( ret.valueOf() ).toEqual('253614')
 
   it "does not overwrite the object", ->
     ret = @enum.each_with_object R(""), (e, o) ->
       o.replace(o+e)
       o = 'foo'
-    expect( ret.unbox() ).toEqual('253614')
+    expect( ret.valueOf() ).toEqual('253614')
 
   it "does work with arrays", ->
-    ret = @enum.each_with_object [], (e, o) -> o.push(e.unbox())
+    ret = @enum.each_with_object [], (e, o) -> o.push(e.valueOf())
     expect( ret ).toEqual([2, 5, 3, 6, 1, 4])
 
   it "returns an enumerator if no block", ->

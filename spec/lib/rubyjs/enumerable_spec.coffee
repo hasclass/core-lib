@@ -54,7 +54,7 @@ describe "Enumerable", ->
 
     xit "each_with_index().each_with_context('foo')", ->
       expect(
-        @arr.each_with_index().each_with_context('foo').to_a().unbox()
+        @arr.each_with_index().each_with_context('foo').to_a().valueOf()
       ).toEqual [[[2, 0], "foo"]]
 
       @arr.each_with_index().each_with_context 'foo', (first, second) ->

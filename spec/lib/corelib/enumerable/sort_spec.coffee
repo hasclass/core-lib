@@ -7,7 +7,7 @@ describe "Enumerable#sort", ->
     ).toEqual [1, 2, 3, 4, 5, 6]
 
     s = EnumerableSpecs.ComparesByVowelCount.wrap("a", "aa", "aaaa", "aaaa", "aaaaa")
-    s = s.unbox() # unbox so we can access elements with []
+    s = s.valueOf() # unbox so we can access elements with []
     expect(
       new EnumerableSpecs.Numerous(s[2],s[0],s[1],s[3],s[4]).sort().unbox(true)
     ).toEqual ["a", "aa", "aaaa", "aaaa", "aaaaa"]

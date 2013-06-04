@@ -18,7 +18,7 @@ describe "Fixnum#div", ->
     expect( R(-1).div(50.4)   ).toEqual R(-1)
 
   xit "bignums", ->
-    expect( R(1).div(bignum_value).unbox()   ).toEqual 0
+    expect( R(1).div(bignum_value).valueOf()   ).toEqual 0
 
   xdescribe 'ruby_version_is "...1.9"', ->
     it "raises a FloatDomainError when the given argument is 0 and a Float", ->

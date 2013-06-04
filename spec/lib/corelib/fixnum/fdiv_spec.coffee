@@ -1,12 +1,12 @@
 describe "Fixnum#fdiv", ->
   it "performs floating-point division between self and a Fixnum", ->
-    expect( R(8).fdiv(7).unbox() ).toEqual(1.1428571428571428)
+    expect( R(8).fdiv(7).valueOf() ).toEqual(1.1428571428571428)
 
   xit "performs floating-point division between self and a Bignum", ->
     expect( R(8).fdiv(bignum_value) ).toEqual(8.673617379884035e-19)
 
   it "performs floating-point division between self and a Float", ->
-    expect( R(8).fdiv(9.0).unbox() ).toEqual(0.8888888888888888)
+    expect( R(8).fdiv(9.0).valueOf() ).toEqual(0.8888888888888888)
 
   xit "returns NaN when the argument is NaN", ->
   #   -1.fdiv(nan_value).nan?.should be_true

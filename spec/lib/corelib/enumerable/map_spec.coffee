@@ -9,7 +9,7 @@ xdescribe "Enumerable#map", ->
   describe 'ruby_version_is "1.8.7"', ->
     it "passes through the values yielded by #each_with_index", ->
       arr = []
-      res = R(["a", "b"]).each_with_index().map (x, i) -> arr.push [x, i.unbox()]; null
+      res = R(["a", "b"]).each_with_index().map (x, i) -> arr.push [x, i.valueOf()]; null
       expect( arr ).toEqual [['a', 0], ["b", 1]]
 
 
