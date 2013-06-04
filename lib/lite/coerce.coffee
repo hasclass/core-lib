@@ -54,6 +54,18 @@ _coerce =
     obj
 
 
+  split_args: (args, offset) ->
+    arg_len = args.length
+
+    ary = []
+    idx = offset
+    while idx < arg_len
+      el = args[idx]
+      ary.push(el) unless el is undefined
+      idx += 1
+
+    ary
+
 __str = _coerce.str
 __int = _coerce.int
 __num = _coerce.num

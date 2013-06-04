@@ -49,9 +49,11 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
+    num = __int(num)
     len = arr.length
 
-    if num == 0
+
+    if num is 0
       block([])
     else if num == 1
       _arr.each arr, (args...) ->
@@ -89,10 +91,12 @@ class ArrayMethods extends EnumerableMethods
 
 
   compact: (arr) ->
+    # one liner: _arr.select arr, (el) -> el?
     ary = []
-    _arr.each arr, (el) ->
+    for el in arr
       ary.push(el) if el?
     ary
+
 
   # @destructive
   delete: (arr, obj, block) ->
@@ -156,9 +160,9 @@ class ArrayMethods extends EnumerableMethods
 
 
   fetch: (arr, idx, default_or_block) ->
-    len = arr.length
+    len  = arr.length
     orig = idx
-    idx = idx + len if idx < 0
+    idx  = idx + len if idx < 0
 
     if idx < 0 or idx >= len
       return default_or_block(orig) if default_or_block?.call?
@@ -174,22 +178,24 @@ class ArrayMethods extends EnumerableMethods
 
 
   # @destructive
-  # TODO: get rid of items...
-  insert: (arr, idx, items...) ->
+  # @param items...
+  insert: (arr, idx) ->
     throw R.ArgumentError.new() if idx is undefined
 
-    return arr if items.length == 0
+    return arr if arguments.length == 2
+    items = _coerce.split_args(arguments, 2)
 
+    len = arr.length
     # Adjust the index for correct insertion
-    idx = idx + arr.length + 1 if idx < 0 # Negatives add AFTER the element
+    idx = idx + len + 1 if idx < 0 # Negatives add AFTER the element
 
     # TODO: add message "#{idx} out of bounds"
     throw R.IndexError.new() if idx < 0
 
     after  = arr.slice(idx)
 
-    if idx > arr.length
-      for i in [(arr.length)...idx]
+    if idx > len
+      for i in [len...idx]
         arr[i] = null
 
     len = 0
@@ -225,15 +231,15 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
-  reverse_each: (coll, block) ->
+  reverse_each: (arr, block) ->
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)
 
-    idx = coll.length
+    idx = arr.length
     while idx--
-      block(coll[idx])
+      block(arr[idx])
 
-    coll
+    arr
 
 
   uniq: (arr) ->

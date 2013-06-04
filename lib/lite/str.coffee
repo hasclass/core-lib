@@ -52,14 +52,16 @@ class StringMethods
       _str.slice str, 0, str.length - 1
 
 
-  count: (str, args...) ->
-    throw R.ArgumentError.new("String.count needs arguments") if args.length == 0
+  count: (str) ->
+    throw R.ArgumentError.new("String.count needs arguments") if arguments.length == 1
+    args = _coerce.split_args(arguments, 1)
 
     _str.__matched__(str, args).length
 
 
-  'delete': (str, args...) ->
-    throw R.ArgumentError.new() if args.length == 0
+  'delete': (str) ->
+    throw R.ArgumentError.new() if arguments.length == 1
+    args  = _coerce.split_args(arguments, 1)
     trash = _str.__matched__(str, args)
     str.replace(new RegExp("[#{trash}]", 'g'), '')
 
@@ -78,8 +80,6 @@ class StringMethods
     # unless separator?
     separator ||= R['$/']
 
-    # TODO: Use RCoerce?
-    # throw R.TypeError.new() unless separator.to_str?
     if separator.length is 0
       separator = "\n\n"
 
@@ -111,7 +111,8 @@ class StringMethods
     str.length == 0
 
 
-  end_with: (str, needles...) ->
+  end_with: (str) ->
+    needles = _coerce.split_args(arguments, 1)
     for w in needles
       if str.lastIndexOf(w) + w.length is str.length
         return true
@@ -312,7 +313,9 @@ class StringMethods
     str.replace(/[\s\n\t]+$/g, '')
 
 
-  squeeze: (str, pattern...) ->
+  squeeze: (str) ->
+    pattern = _coerce.split_args(arguments, 1)
+
     trash = _str.__matched__(str, pattern)
     chars = str.split("")
     len   = str.length
