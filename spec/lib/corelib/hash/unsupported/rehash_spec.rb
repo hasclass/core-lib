@@ -1,8 +1,8 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
 
-describe "Hash#rehash" do
-  it "reorganizes the hash by recomputing all key hash codes" do
+describe "Hash#rehash", ->
+  it "reorganizes the hash by recomputing all key hash codes", ->
     k1 = [1]
     k2 = [2]
     h = new_hash
@@ -33,19 +33,14 @@ describe "Hash#rehash" do
     h.rehash
     h[k1].should == v1
     h[k2].should == v2
-  end
 
-  ruby_version_is ""..."1.9" do
-    it "raises a TypeError if called on a frozen instance" do
+  ruby_version_is ""..."1.9", ->
+    it "raises a TypeError if called on a frozen instance", ->
       lambda { HashSpecs.frozen_hash.rehash  }.should raise_error(TypeError)
       lambda { HashSpecs.empty_frozen_hash.rehash }.should raise_error(TypeError)
-    end
-  end
 
-  ruby_version_is "1.9" do
-    it "raises a RuntimeError if called on a frozen instance" do
+  ruby_version_is "1.9", ->
+    it "raises a RuntimeError if called on a frozen instance", ->
       lambda { HashSpecs.frozen_hash.rehash  }.should raise_error(RuntimeError)
       lambda { HashSpecs.empty_frozen_hash.rehash }.should raise_error(RuntimeError)
-    end
   end
-end

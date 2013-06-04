@@ -1,12 +1,11 @@
 describe :hash_equal, :shared => true do
-  it "does not compare values when keys don't match" do
+  it "does not compare values when keys don't match", ->
     value = mock('x')
     value.should_not_receive(:==)
     value.should_not_receive(:eql?)
     new_hash(1 => value).send(@method, new_hash(2 => value)).should be_false
-  end
 
-  it "returns false when the numbers of keys differ without comparing any elements" do
+  it "returns false when the numbers of keys differ without comparing any elements", ->
     obj = mock('x')
     h = new_hash(obj => obj)
 
@@ -15,18 +14,16 @@ describe :hash_equal, :shared => true do
 
     new_hash.send(@method, h).should be_false
     h.send(@method, new_hash).should be_false
-  end
 
-  it "first compares keys via hash" do
+  it "first compares keys via hash", ->
     x = mock('x')
     x.should_receive(:hash).and_return(0)
     y = mock('y')
     y.should_receive(:hash).and_return(0)
 
     new_hash(x => 1).send(@method, new_hash(y => 1)).should be_false
-  end
 
-  it "does not compare keys with different hash codes via eql?" do
+  it "does not compare keys with different hash codes via eql?", ->
     x = mock('x')
     y = mock('y')
     x.should_not_receive(:eql?)
@@ -39,17 +36,15 @@ describe :hash_equal, :shared => true do
     def y.hash() 1 end
 
     new_hash(x => 1).send(@method, new_hash(y => 1)).should be_false
-  end
 
-  it "computes equality for recursive hashes" do
+  it "computes equality for recursive hashes", ->
     h = new_hash
     h[:a] = h
     h.send(@method, h[:a]).should be_true
     (h == h[:a]).should be_true
-  end
 
-  ruby_bug "redmine #2448", "1.9.1" do
-    it "computes equality for complex recursive hashes" do
+  ruby_bug "redmine #2448", "1.9.1", ->
+    it "computes equality for complex recursive hashes", ->
       a, b = {}, {}
       a.merge! :self => a, :other => b
       b.merge! :self => b, :other => a
@@ -66,9 +61,8 @@ describe :hash_equal, :shared => true do
       c.send(@method, a).should be_false
       b[:delta] = 42
       c.send(@method, a).should be_true
-    end
 
-    it "computes equality for recursive hashes & arrays" do
+    it "computes equality for recursive hashes & arrays", ->
       x, y, z = [], [], []
       a, b, c = {:foo => x, :bar => 42}, {:foo => y, :bar => 42}, {:foo => z, :bar => 42}
       x << a
@@ -87,6 +81,5 @@ describe :hash_equal, :shared => true do
       a.send(@method, b).should be_false
       b[:bar] = b[:foo]
       b.send(@method, c).should be_false
-    end
-  end # ruby_bug
+    end # ruby_bug
 end

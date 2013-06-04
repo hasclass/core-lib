@@ -1,28 +1,24 @@
-ruby_version_is "1.9" do
-  describe "Hash#compare_by_identity" do
+ruby_version_is "1.9", ->
+  describe "Hash#compare_by_identity", ->
     before(:each) do
       @h = new_hash
       @idh = new_hash.compare_by_identity
-    end
 
-    it "causes future comparisons on the receiver to be made by identity" do
+    it "causes future comparisons on the receiver to be made by identity", ->
       @h["a"] = :a
       @h["a"].should == :a
       @h.compare_by_identity
       @h["a"].should be_nil
-    end
 
-    it "causes #compare_by_identity? to return true" do
+    it "causes #compare_by_identity? to return true", ->
       @idh.compare_by_identity?.should be_true
-    end
 
-    it "returns self" do
+    it "returns self", ->
       h = new_hash
       h[:foo] = :bar
       h.compare_by_identity.should == h
-    end
 
-    it "uses the semantics of BasicObject#equal? to determine key identity" do
+    it "uses the semantics of BasicObject#equal? to determine key identity", ->
       1.1.should_not equal(1.1)
       @idh[1.1] = :a
       @idh[1.1] = :b
@@ -36,74 +32,61 @@ ruby_version_is "1.9" do
       @idh["bar"] = :g
       @idh["bar"] = :h
       @idh.values.should == [:a, :b, :c, :d, :f, :g, :h]
-    end
 
-    it "uses #equal? semantics, but doesn't actually call #equal? to determine identity" do
+    it "uses #equal? semantics, but doesn't actually call #equal? to determine identity", ->
       obj = mock('equal')
       obj.should_not_receive(:equal?)
       @idh[:foo] = :glark
       @idh[obj] = :a
       @idh[obj].should == :a
-    end
 
-    it "regards #dup'd objects as having different identities" do
+    it "regards #dup'd objects as having different identities", ->
       str = 'foo'
       @idh[str.dup] = :str
       @idh[str].should be_nil
-    end
 
-    it "regards #clone'd objects as having different identities" do
+    it "regards #clone'd objects as having different identities", ->
       str = 'foo'
       @idh[str.clone] = :str
       @idh[str].should be_nil
-    end
 
-    it "regards references to the same object as having the same identity" do
+    it "regards references to the same object as having the same identity", ->
       o = Object.new
       @h[o] = :o
       @h[:a] = :a
       @h[o].should == :o
-    end
 
-    it "raises a RuntimeError on frozen hashes" do
+    it "raises a RuntimeError on frozen hashes", ->
       @h = @h.freeze
       lambda { @h.compare_by_identity }.should raise_error(RuntimeError)
-    end
 
     # Behaviour confirmed in bug #1871
-    it "perists over #dups" do
+    it "perists over #dups", ->
       @idh['foo'] = :bar
       @idh['foo'] = :glark
       @idh.dup.should == @idh
       @idh.dup.size.should == @idh.size
-    end
 
-    it "persists over #clones" do
+    it "persists over #clones", ->
       @idh['foo'] = :bar
       @idh['foo'] = :glark
       @idh.clone.should == @idh
       @idh.clone.size.should == @idh.size
-    end
-  end
 
-  describe "Hash#compare_by_identity?" do
-    it "returns false by default" do
+  describe "Hash#compare_by_identity?", ->
+    it "returns false by default", ->
       h = new_hash
       h.compare_by_identity?.should be_false
-    end
 
-    it "returns true once #compare_by_identity has been invoked on self" do
+    it "returns true once #compare_by_identity has been invoked on self", ->
       h = new_hash
       h.compare_by_identity
       h.compare_by_identity?.should be_true
-    end
 
-    it "returns true when called multiple times on the same ident hash" do
+    it "returns true when called multiple times on the same ident hash", ->
       h = new_hash
       h.compare_by_identity
       h.compare_by_identity?.should be_true
       h.compare_by_identity?.should be_true
       h.compare_by_identity?.should be_true
-    end
   end
-end
