@@ -74,7 +74,7 @@ class EnumerableMethods
         n     = null
 
     if !(n is null or n is undefined)
-      many  = RCoerce.to_int_native(n)
+      many  = __int(n)
       return null if many <= 0
     else
       many = null

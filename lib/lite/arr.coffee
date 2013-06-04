@@ -28,11 +28,12 @@ class ArrayMethods extends EnumerableMethods
 
 
   '&': (other) ->
-    other = RCoerce.to_ary(other)
-    arr   = new R.Array([])
+    arr   = []
     # TODO suboptimal solution.
-    _arr.each (el) -> arr.push(el) if other.include(el)
-    arr.uniq()
+    _arr.each arr, (el) ->
+      arr.push(el) if _arr.include(other, el)
+
+    _arr.uniq(arr)
 
 
   # @private
@@ -118,19 +119,29 @@ class ArrayMethods extends EnumerableMethods
     arr.splice(idx, 1)[0]
 
 
-  flatten: (coll, recursion = -1) ->
-    recursion = RCoerce.to_int_native(recursion)
+  # flatten: (coll, recursion = -1) ->
+  #   arr = []
 
-    arr = []
+  #   _arr.each coll, (element) ->
+  #     el = R(element)
+  #     if recursion != 0 && el?.to_ary?
+  #       el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
+  #     else
+  #       arr.push(element)
+  #   arr
 
-    _arr.each coll, (element) ->
-      el = R(element)
-      if recursion != 0 && el?.to_ary?
-        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
+  flatten: (arr, recursion = -1) ->
+    arr = __arr(arr)
+    ary = []
+
+    _arr.each arr, (el) ->
+      if recursion != 0 && __isArr(el)
+        for item in _arr.flatten(el, recursion - 1)
+          ary.push(item)
       else
-        arr.push(element)
-    arr
+        ary.push(el)
 
+    ary
 
   each: (arr, block) ->
     return _itr.to_enum(arr, 'each') unless block?.call?
@@ -243,7 +254,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   __native_array_with__: (size, obj) ->
-    ary = nativeArray(RCoerce.to_int_native(size))
+    ary = nativeArray(__int(size))
     idx = -1
     while ++idx < size
       ary[idx] = obj

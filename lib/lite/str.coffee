@@ -32,7 +32,7 @@ class StringMethods
     if sep == null
       if _str.empty(str) then "" else null
     else
-      sep = RCoerce.to_str_native(sep)
+      sep = _coerce.str(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
@@ -433,8 +433,8 @@ class StringMethods
       return if _str.include(str, index) then index else null
 
     else if index.is_range?
-      start   = RCoerce.to_int_native index.begin()
-      length  = RCoerce.to_int_native index.end()
+      start   = __int(index.begin())
+      length  = __int(index.end())
 
       start += size if start < 0
 

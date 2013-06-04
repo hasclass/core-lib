@@ -14,6 +14,7 @@ appFiles  = [
   'corelib/coerce'
   'corelib/object'
 
+  'lite/coerce'
   'lite/num'
   'lite/itr'
   'lite/arr'
