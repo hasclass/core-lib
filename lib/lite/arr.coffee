@@ -119,17 +119,6 @@ class ArrayMethods extends EnumerableMethods
     arr.splice(idx, 1)[0]
 
 
-  # flatten: (coll, recursion = -1) ->
-  #   arr = []
-
-  #   _arr.each coll, (element) ->
-  #     el = R(element)
-  #     if recursion != 0 && el?.to_ary?
-  #       el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
-  #     else
-  #       arr.push(element)
-  #   arr
-
   flatten: (arr, recursion = -1) ->
     arr = __arr(arr)
     ary = []
@@ -142,6 +131,7 @@ class ArrayMethods extends EnumerableMethods
         ary.push(el)
 
     ary
+
 
   each: (arr, block) ->
     return _itr.to_enum(arr, 'each') unless block?.call?

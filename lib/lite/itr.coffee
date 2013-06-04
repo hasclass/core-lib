@@ -61,9 +61,9 @@ class EnumerableMethods
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
-      countable = R(block)
+      countable = block
       @each coll, (el) ->
-        counter += 1 if countable['=='](el)
+        counter += 1 if R.is_equal(countable, el)
     counter
 
 
@@ -255,17 +255,10 @@ class EnumerableMethods
       @take(coll, 1)[0]
 
 
-  # FIXME: This a very unfortunate solution just to enable the use of '=='
   include: (coll, other) ->
-    other = R(other)
-
     @catch_break (breaker) ->
       @each coll, (el) ->
-        # TODO: this is special. we're trying to typecast el, so we can
-        # call == on it. This needs to be fixed, most probably with an R.equalss(a, b)
-        # which takes care of non-R objects.
-        el = R(el)
-        breaker.break(true) if el['==']?(other) or other['==']?(el) or el is other
+        breaker.break(true) if __equals(other, el)
       false
 
 

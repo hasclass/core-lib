@@ -9,7 +9,7 @@ describe "Array#include?", ->
     expect( R([1, 2, "a", "b"]).include(o) ).toEqual false
 
     obj = {}
-    obj['=='] = (other) -> other['==']('a')
+    obj['=='] = (other) -> other == 'a'
 
     expect( R([1, 2, obj, "b"]).include('a')).toEqual true
     expect( R([1, 2.0, 3]).include(2) ).toEqual true

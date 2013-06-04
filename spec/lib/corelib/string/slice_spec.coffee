@@ -10,10 +10,10 @@ describe "String#slice with index", ->
     expect( R("").slice(0) ).toEqual null
     expect( R("").slice(-1) ).toEqual null
 
-  it "calls to_int on the given index", ->
+  it "calls valueOf on the given index", ->
     expect( R("hello").slice(0.5) ).toEqual R('h')
 
-    obj = {to_int: -> R(1)}
+    obj = {valueOf: -> 1}
     expect( R("hello").slice(obj) ).toEqual R("e")
 
   it "raises a TypeError if the given index is nil", ->
@@ -97,13 +97,13 @@ describe "String#slice with index and length", ->
     expect( R("hello there").slice(4,-3) ).toEqual null
     expect( R("hello there").slice(-4,-3) ).toEqual null
 
-  it "calls to_int on the given index and the given length", ->
+  it "calls valueOf on the given index and the given length", ->
     expect( R("hello").slice(0.5, 1) ).toEqual R("h")
     expect( R("hello").slice(0.5, 2.5) ).toEqual R("he")
     expect( R("hello").slice(1, 2.5) ).toEqual R("el")
 
     obj =
-      to_int: -> R(2)
+      valueOf: -> 2
 
     expect( R("hello").slice(obj, 1) ).toEqual R("l")
     expect( R("hello").slice(obj, obj) ).toEqual R("ll")
@@ -199,20 +199,20 @@ describe "String#slice with range", ->
     # s.slice(0..4).should be_kind_of(StringSpecs::MyString)
     # s.slice(1..4).should be_kind_of(StringSpecs::MyString)
 
-  it "calls to_int on range arguments", ->
+  it "calls valueOf on range arguments", ->
     from = {
       '<=>': -> 0,
-      to_int: -> R(1)
+      valueOf: -> 1
     }
     to =   {
       '<=>': -> 1,
-      to_int: -> R(-2)
+      valueOf: -> -2
     }
 
     # # So we can construct a range out of them...
     # from.should_receive(:<=>).twice.and_return(0)
-    # from.should_receive(:to_int).twice.and_return(1)
-    # to.should_receive(:to_int).twice.and_return(-2)
+    # from.should_receive(:valueOf).twice.and_return(1)
+    # to.should_receive(:valueOf).twice.and_return(-2)
 
     expect( R("hello there").slice(R.Range.new from, to) ).toEqual R("ello ther")
     expect( R("hello there").slice(R.Range.new from, to, true) ).toEqual R("ello the")
@@ -267,9 +267,9 @@ describe "String#slice with range", ->
 #     # You can't refer to 0 using negative indices
 #     "hello there".slice(/[aeiou](.)\1/, -2).should == nil
 
-#   it "calls to_int on the given index", ->
+#   it "calls valueOf on the given index", ->
 #     obj = mock('2')
-#     obj.should_receive(:to_int).and_return(2)
+#     obj.should_receive(:valueOf).and_return(2)
 
 #     "har".slice(/(.)(.)(.)/, 1.5).should == "h"
 #     "har".slice(/(.)(.)(.)/, obj).should == "a"
@@ -378,17 +378,17 @@ describe "string_slice_string", ->
 #     end
 #   end
 
-#   it "calls to_int on index" do
+#   it "calls valueOf on index" do
 #     "hello").slice!(0.5).should == ?h
 
 #     obj = mock('1')
 #     # MRI calls this twice so we can't use should_receive here.
-#     def obj.to_int() 1 end
+#     def obj.valueOf() 1 end
 #     "hello".slice!(obj).should == ?e
 
 #     obj = mock('1')
-#     def obj.respond_to?(name, *) name == :to_int ? true : super; end
-#     def obj.method_missing(name, *) name == :to_int ? 1 : super; end
+#     def obj.respond_to?(name, *) name == :valueOf ? true : super; end
+#     def obj.method_missing(name, *) name == :valueOf ? 1 : super; end
 #     "hello".slice!(obj).should == ?e
 #   end
 # end
@@ -441,16 +441,16 @@ describe "string_slice_string", ->
 #     end
 #   end
 
-#   it "calls to_int on idx and length" do
+#   it "calls valueOf on idx and length" do
 #     "hello".slice!(0.5, 2.5).should == "he"
 
 #     obj = mock('2')
-#     def obj.to_int() 2 end
+#     def obj.valueOf() 2 end
 #     "hello".slice!(obj, obj).should == "ll"
 
 #     obj = mock('2')
-#     def obj.respond_to?(name, *) name == :to_int; end
-#     def obj.method_missing(name, *) name == :to_int ? 2 : super; end
+#     def obj.respond_to?(name, *) name == :valueOf; end
+#     def obj.method_missing(name, *) name == :valueOf ? 2 : super; end
 #     "hello".slice!(obj, obj).should == "ll"
 #   end
 

@@ -44,16 +44,15 @@ describe "Enumerable#cycle", ->
       # enum.cycle(3) { |x| break if x == 20}
       # enum.times_yielded.should == 2
 
-    # TODO: implement
-    it "tries to convert n to an Integer using #to_int", ->
+    it "tries to convert n to an Integer using #valueOf", ->
       en = EnumerableSpecs.Numerous.new(3, 2, 1)
       expect( en.cycle(2.3).to_a() ).toEqual R.$Array_r([3, 2, 1, 3, 2, 1])
 
       obj =
-        to_int: -> R(2)
+        valueOf: -> 2
       expect( en.cycle(obj).to_a() ).toEqual R.$Array_r([3, 2, 1, 3, 2, 1])
 
-    it "raises a TypeError when the passed n can be coerced to Integer", ->
+    xit "raises a TypeError when the passed n can be coerced to Integer", ->
       en = EnumerableSpecs.Numerous.new()
       expect( -> en.cycle("cat", -> null ) ).toThrow('TypeError')
 

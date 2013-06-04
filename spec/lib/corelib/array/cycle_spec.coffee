@@ -49,9 +49,9 @@ describe "Array#cycle", ->
     @ary.cycle(2.7, @prc)
     expect( @arr ).toEqual [1, 2, 3, 1, 2, 3]
 
-  it "calls #to_int to convert count to an Integer", ->
+  it "calls #valueOf to convert count to an Integer", ->
     count =
-      to_int: -> R(2)
+      valueOf: -> 2
     @ary.cycle(count, @prc)
     expect( @arr ).toEqual [1, 2, 3, 1, 2, 3]
 

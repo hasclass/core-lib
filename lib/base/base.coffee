@@ -161,20 +161,22 @@ class RubyJS.Base
   # Optimized version of calling a.equals(b).
   # Takes care of non rubyjs objects.
   is_equal: (a, b) ->
+    return true if a is b
+
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
       else if a['==']?
         a['=='](b)
       else
-        a is b
+        false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
       else if b['==']?
         b['=='](a)
       else
-        a is b
+        false
     else
       a is b
 
@@ -198,6 +200,33 @@ class RubyJS.Base
   # helper method to get an arguments object
   argify: -> arguments
 
+
+  # LITE: remove '==' methods.
+  equals: -> (a,b) ->
+    return true if a is b
+
+    if typeof a is 'object'
+      if a.equals?
+        a.equals(b)
+      else if a['==']?
+        a['=='](b)
+      else
+        false
+    else if typeof b is 'object'
+      if b.equals?
+        b.equals(a)
+      else if b['==']?
+        b['=='](a)
+      else
+        false
+    else
+      a is b
+
+
 # adds all methods to the global R object
 for own name, method of RubyJS.Base.prototype
   RubyJS[name] = method
+
+
+__equals = R.is_equal
+

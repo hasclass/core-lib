@@ -9,9 +9,9 @@ describe "Enumerable#collect_concat", ->
     numerous = EnumerableSpecs.Numerous.new(1, [], 2)
     expect( numerous.collect_concat((i) -> i) ).toEqual R([1, 2], true)
 
-  it "calls to_ary but not to_a", ->
+  it "calls valueOf but not to_a", ->
     obj =
-      to_ary: -> R(["foo"])
+      valueOf: -> ["foo"]
 
     obj2 =
       to_a: -> throw 'should not receive'

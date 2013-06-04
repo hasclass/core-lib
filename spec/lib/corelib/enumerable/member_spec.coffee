@@ -3,7 +3,7 @@ describe "Enumerable#member?", ->
 
   it "returns true if any element == argument for numbers", ->
     obj =
-      '==': (other) -> other['=='](5)
+      '==': (other) -> other.valueOf() == 5
 
     expect( EnumerableSpecs.Numerous.new(0,1,2,3,4,5).member(5)).toEqual true
     expect( EnumerableSpecs.Numerous.new(0,1,2,3,4,5).member(10)).toEqual false
@@ -11,7 +11,7 @@ describe "Enumerable#member?", ->
 
   it "returns true if any element == argument for other objects", ->
     obj =
-      '==': (other) -> other['=='](R '11')
+      '==': (other) -> other == '11'
 
     # elements = ('0'..'5').to_a + [EnumerableSpecIncludeP11.new]
     expect( EnumerableSpecs.Numerous.new('0', '1', '2', '3', '4', '5', obj).member('5')  ).toEqual true
