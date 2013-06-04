@@ -55,15 +55,13 @@ ObjProto = Object.prototype
 StrProto = String.prototype
 ArrProto = Array.prototype
 
-_toString_ = ObjProto.toString
-_slice_    = ArrProto.slice
-
-str_slice   = StrProto.slice
-str_match   = StrProto.match
-arr_join    = ArrProto.join
-arr_sort    = ArrProto.sort
-arr_slice   = ArrProto.slice
-arr_unshift = ArrProto.unshift
+nativeToString = ObjProto.toString
+nativeStrSlice = StrProto.slice
+nativeStrMatch = StrProto.match
+nativeJoin     = ArrProto.join
+nativeSort     = ArrProto.sort
+nativeSlice    = ArrProto.slice
+nativeUnshift  = ArrProto.unshift
 
 # TODO: create BlockNone class that coerces multiple yield arguments into array.
 
@@ -129,7 +127,7 @@ class BlockMulti
   constructor: (@block, @thisArg) ->
 
   args: (args) ->
-    if args.length > 1 then _slice_.call(args) else args[0]
+    if args.length > 1 then nativeSlice.call(args) else args[0]
 
   # @param args array or arguments
   invoke: (args) ->
@@ -244,7 +242,7 @@ class RubyJS.Kernel
           # Small performance improvement. which probably should be somewhere else.
           object_type = '[object Array]'
         else
-          object_type = _toString_.call(obj)
+          object_type = nativeToString.call(obj)
 
     # check primitives first
     if typeof obj is 'number'
@@ -484,7 +482,7 @@ class RubyJS.Base
   # TODO: TEST
   pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['w', 'fn', '_str', '_arr', '_enum', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['w', 'fn', '_str', '_arr', '_itr', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
@@ -503,7 +501,7 @@ class RubyJS.Base
       _arr:  '_a'
       _num:  '_n'
       _str:  '_s'
-      _enum: '_e'
+      _itr:  '_i'
       _hsh:  '_h'
 
     for k,v of shortcuts
@@ -525,11 +523,27 @@ class RubyJS.Base
 
         if typeof func == 'function'
           if overwrite or proto[new_name] is undefined
-            do (new_name, name, methods) ->
-              proto[new_name] = ->
-                # use this.valueOf() to get the literal back.
-                args = [this.valueOf()].concat(_slice_.call(arguments, 0))
-                methods[name].apply(methods, args)
+
+            do (new_name, func) ->
+              # The following is 100x faster than slicing.
+              proto[new_name] = (a, b, c, d, e, f) ->
+                idx = arguments.length
+                while idx--
+                  break if arguments[idx] isnt undefined
+
+                val = this.valueOf()
+                switch idx + 1
+                  when 0 then func(val)
+                  when 1 then func(val, a)
+                  when 2 then func(val, a, b)
+                  when 3 then func(val, a, b, c)
+                  when 4 then func(val, a, b, c, d)
+                  when 5 then func(val, a, b, c, d, e)
+                  when 6 then func(val, a, b, c, d, e, f)
+                  # Slow fallback when passed more than 6 arguments.
+                  else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
+
+
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
 
@@ -565,7 +579,7 @@ class RubyJS.Base
         else
           fn
     else
-      args = arr_slice.call(arguments, 1)
+      args = nativeSlice.call(arguments, 1)
       # Wrapper block that mangles arguments
       (el) ->
         fn = el[key]
@@ -607,20 +621,22 @@ class RubyJS.Base
   # Optimized version of calling a.equals(b).
   # Takes care of non rubyjs objects.
   is_equal: (a, b) ->
+    return true if a is b
+
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
       else if a['==']?
         a['=='](b)
       else
-        a is b
+        false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
       else if b['==']?
         b['=='](a)
       else
-        a is b
+        false
     else
       a is b
 
@@ -644,9 +660,57 @@ class RubyJS.Base
   # helper method to get an arguments object
   argify: -> arguments
 
+
+  # LITE: remove '==' methods.
+  equals: -> (a,b) ->
+    return true if a is b
+
+    if typeof a is 'object'
+      if a.equals?
+        a.equals(b)
+      else if a['==']?
+        a['=='](b)
+      else
+        false
+    else if typeof b is 'object'
+      if b.equals?
+        b.equals(a)
+      else if b['==']?
+        b['=='](a)
+      else
+        false
+    else
+      a is b
+
+
 # adds all methods to the global R object
 for own name, method of RubyJS.Base.prototype
   RubyJS[name] = method
+
+
+__equals = R.is_equal
+
+
+
+errors = [
+  'ArgumentError'
+  'RegexpError'
+  'TypeError'
+  'KeyError'
+  'IndexError'
+  'FloatDomainError'
+  'RangeError'
+  'StandardError'
+  'ZeroDivisionError'
+  'NotSupportedError'
+  'NotImplementedError'
+]
+
+for error in errors
+  do (error) ->
+    errorClass     = class extends Error
+    errorClass.new = -> new RubyJS[error](error)
+    RubyJS[error]  = errorClass
 
 
 # Singleton class for type coercion inside RubyJS.
@@ -660,152 +724,68 @@ for own name, method of RubyJS.Base.prototype
 #     RCoerce.to_num_native(1)
 #
 # @private
-RCoerce = R._coerce =
-  # TODO: replace class with some more lightweight.
+_coerce =
 
-  # Mimicks rubys single block args behaviour
-  single_block_args: (args, block) ->
-    if block
-      if block.length != 1
-        if args.length > 1 then _slice_.call(args) else args[0]
-      else
-        args[0]
-    else
-      if args.length != 1 then _slice_.call(args) else args[0]
-
-
-  # @example
-  #      __coerce_to__(1, 'to_int')
-  coerce: (obj, to_what, skip_native) ->
-    if skip_native isnt undefined and skip_native is typeof obj
-      obj
-    else
-      if obj is null or obj is undefined
-        throw new R.TypeError.new()
-
-      obj = R(obj)
-
-      unless obj[to_what]?
-        throw R.TypeError.new("TypeError: cant't convert ... into String")
-
-      if skip_native isnt undefined
-        obj[to_what]().to_native()
-      else
-        obj[to_what]()
-
-
-  to_native: (obj) ->
+  native: (obj) ->
     if typeof obj != 'object'
       obj
     else
       obj.valueOf()
 
-  # Coerces element to a Number primitive.
-  #
-  # Throws error if typecasted RubyJS object is not a numeric.
-  to_num_native: (obj) ->
-    # TODO allow custom error types
-    if typeof obj is 'number'
-      obj
-    else
-      obj = R(obj)
-      throw R.TypeError.new() if !obj.is_numeric?
-      obj.to_native()
+
+  str: (obj) ->
+    obj = obj.valueOf() if typeof obj is 'object'
+    # throw new R.TypeError("#{obj} is not a valid string") unless typeof obj is 'string'
+    throw R.TypeError.new() unless typeof obj is 'string'
+    obj
 
 
-  to_int: (obj) ->
-    RCoerce.coerce(obj, 'to_int')
+  num: (obj) ->
+    obj = obj.valueOf() if typeof obj is 'object'
+    # throw new R.TypeError("#{obj} is not a valid num") unless typeof obj is 'number'
+    throw R.TypeError.new() unless typeof obj is 'number'
+    obj
 
 
-  to_int_native: (obj) ->
-    if typeof obj is 'number' && (obj % 1 is 0)
-      obj
-    else
-      RCoerce.coerce(obj, 'to_int').to_native()
+  int: (obj) ->
+    obj = obj.valueOf() if typeof obj is 'object'
+    # throw new R.TypeError("#{obj} is not a valid int") unless typeof obj is 'number'
+    throw R.TypeError.new() unless typeof obj is 'number'
+    Math.floor(obj)
 
 
-  to_str: (obj) ->
-    RCoerce.coerce(obj, 'to_str')
+  isArray: nativeArray.isArray or (obj) ->
+    nativeToString.call(obj) is '[object Array]'
 
 
-  to_str_native: (obj) ->
-    RCoerce.coerce(obj, 'to_str', 'string')
+  is_arr: (obj) ->
+    typeof obj is 'object' && obj != null && _coerce.isArray(obj.valueOf())
 
 
-  to_ary: (obj) ->
-    @coerce(obj, 'to_ary')
-
-  to_ary_native: (obj) ->
-    if RArray.isNativeArray(obj)
-      obj
-    else
-      RCoerce.coerce(obj, 'to_ary').to_native()
+  arr: (obj) ->
+    throw R.TypeError.new() if typeof obj != 'object'
+    obj = obj.valueOf()
+    throw R.TypeError.new() unless _coerce.isArray(obj)
+    obj
 
 
-R.RCoerce = RCoerce
+  split_args: (args, offset) ->
+    arg_len = args.length
 
+    ary = []
+    idx = offset
+    while idx < arg_len
+      el = args[idx]
+      ary.push(el) unless el is undefined
+      idx += 1
 
+    ary
 
-class RubyJS.Object
-  @include: RubyJS.include
-
-  # Adds default aliases to symbol method names.
-  #
-  # @example Aliases used throughout RubyJS
-  #
-  #     <<  append
-  #     ==  equals
-  #     === equal_case
-  #     <=> cmp
-  #     %   modulo
-  #     +   plus
-  #     -   minus
-  #     *   multiply
-  #     **  exp
-  #     /   divide
-  #
-  # @example Useage, at the end of your class:
-  #
-  #     class Foo extends RubyJS.Object
-  #        # ...
-  #        @__add_default_aliases__(@prototype)
-  #
-  @__add_default_aliases__: (proto) ->
-    proto.append     = proto['<<']  if proto['<<']?
-    proto.equals     = proto['==']  if proto['==']?
-    proto.equal_case = proto['==='] if proto['===']?
-    proto.cmp        = proto['<=>'] if proto['<=>']?
-    proto.modulo     = proto['%']   if proto['%']?
-    proto.plus       = proto['+']   if proto['+']?
-    proto.minus      = proto['-']   if proto['-']?
-    proto.multiply   = proto['*']   if proto['*']?
-    proto.exp        = proto['**']  if proto['**']?
-    proto.divide     = proto['/']   if proto['/']?
-
-
-  @include RubyJS.Kernel
-
-
-  send: (method_name, args...) ->
-    @[method_name](args)
-
-
-  respond_to: (method_name) ->
-    this[method_name]?
-    #this[function_name] != undefined
-
-
-  to_enum: (iter = "each", args...) ->
-    new RubyJS.Enumerator(this, iter, args)
-
-
-  tap: (block) ->
-    block(this)
-    this
-
-
-  value: ->
-    @to_native.apply(this, arguments)
+__str = _coerce.str
+__int = _coerce.int
+__num = _coerce.num
+__arr = _coerce.arr
+__isArr = _coerce.is_arr
 
 
 class NumericMethods
@@ -1127,9 +1107,9 @@ class EnumerableMethods
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
-      countable = R(block)
+      countable = block
       @each coll, (el) ->
-        counter += 1 if countable['=='](el)
+        counter += 1 if R.is_equal(countable, el)
     counter
 
 
@@ -1140,7 +1120,7 @@ class EnumerableMethods
         n     = null
 
     if !(n is null or n is undefined)
-      many  = RCoerce.to_int_native(n)
+      many  = __int(n)
       return null if many <= 0
     else
       many = null
@@ -1321,17 +1301,10 @@ class EnumerableMethods
       @take(coll, 1)[0]
 
 
-  # FIXME: This a very unfortunate solution just to enable the use of '=='
   include: (coll, other) ->
-    other = R(other)
-
     @catch_break (breaker) ->
       @each coll, (el) ->
-        # TODO: this is special. we're trying to typecast el, so we can
-        # call == on it. This needs to be fixed, most probably with an R.equalss(a, b)
-        # which takes care of non-R objects.
-        el = R(el)
-        breaker.break(true) if el['==']?(other) or other['==']?(el) or el is other
+        breaker.break(true) if __equals(other, el)
       false
 
 
@@ -1574,7 +1547,7 @@ class EnumerableMethods
     # TODO: throw Error when comparing different values.
     block ||= R.Comparable.cmpstrict
     coll = coll.to_native() if coll.to_native?
-    arr_sort.call(coll, block)
+    nativeSort.call(coll, block)
 
 
   sort_by: (coll, block) ->
@@ -1615,7 +1588,7 @@ class EnumerableMethods
     ary = []
 
     @each coll, ->
-      # args = if arguments.length == 1 then arguments[0] else _slice_.call(arguments)
+      # args = if arguments.length == 1 then arguments[0] else nativeSlice.call(arguments)
       ary.push(BlockMulti.prototype.args(arguments))
       null
 
@@ -1670,7 +1643,7 @@ class MYSortedElement
     @sort_by?['<=>'](other.sort_by)
 
 
-_itr = R._itr = _enum = R._enum = new EnumerableMethods()
+_itr = R._itr = new EnumerableMethods()
 
 
 # Rules:
@@ -1703,11 +1676,12 @@ class ArrayMethods extends EnumerableMethods
 
 
   '&': (other) ->
-    other = RCoerce.to_ary(other)
-    arr   = new R.Array([])
+    arr   = []
     # TODO suboptimal solution.
-    _arr.each (el) -> arr.push(el) if other.include(el)
-    arr.uniq()
+    _arr.each arr, (el) ->
+      arr.push(el) if _arr.include(other, el)
+
+    _arr.uniq(arr)
 
 
   # @private
@@ -1723,9 +1697,11 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
+    num = __int(num)
     len = arr.length
 
-    if num == 0
+
+    if num is 0
       block([])
     else if num == 1
       _arr.each arr, (args...) ->
@@ -1763,10 +1739,12 @@ class ArrayMethods extends EnumerableMethods
 
 
   compact: (arr) ->
+    # one liner: _arr.select arr, (el) -> el?
     ary = []
-    _arr.each arr, (el) ->
+    for el in arr
       ary.push(el) if el?
     ary
+
 
   # @destructive
   delete: (arr, obj, block) ->
@@ -1793,18 +1771,18 @@ class ArrayMethods extends EnumerableMethods
     arr.splice(idx, 1)[0]
 
 
-  flatten: (coll, recursion = -1) ->
-    recursion = RCoerce.to_int_native(recursion)
+  flatten: (arr, recursion = -1) ->
+    arr = __arr(arr)
+    ary = []
 
-    arr = []
-
-    _arr.each coll, (element) ->
-      el = R(element)
-      if recursion != 0 && el?.to_ary?
-        el.to_ary().flatten(recursion - 1).each (e) -> arr.push(e)
+    _arr.each arr, (el) ->
+      if recursion != 0 && __isArr(el)
+        for item in _arr.flatten(el, recursion - 1)
+          ary.push(item)
       else
-        arr.push(element)
-    arr
+        ary.push(el)
+
+    ary
 
 
   each: (arr, block) ->
@@ -1830,9 +1808,9 @@ class ArrayMethods extends EnumerableMethods
 
 
   fetch: (arr, idx, default_or_block) ->
-    len = arr.length
+    len  = arr.length
     orig = idx
-    idx = idx + len if idx < 0
+    idx  = idx + len if idx < 0
 
     if idx < 0 or idx >= len
       return default_or_block(orig) if default_or_block?.call?
@@ -1848,22 +1826,24 @@ class ArrayMethods extends EnumerableMethods
 
 
   # @destructive
-  # TODO: get rid of items...
-  insert: (arr, idx, items...) ->
+  # @param items...
+  insert: (arr, idx) ->
     throw R.ArgumentError.new() if idx is undefined
 
-    return arr if items.length == 0
+    return arr if arguments.length == 2
+    items = _coerce.split_args(arguments, 2)
 
+    len = arr.length
     # Adjust the index for correct insertion
-    idx = idx + arr.length + 1 if idx < 0 # Negatives add AFTER the element
+    idx = idx + len + 1 if idx < 0 # Negatives add AFTER the element
 
     # TODO: add message "#{idx} out of bounds"
     throw R.IndexError.new() if idx < 0
 
     after  = arr.slice(idx)
 
-    if idx > arr.length
-      for i in [(arr.length)...idx]
+    if idx > len
+      for i in [len...idx]
         arr[i] = null
 
     len = 0
@@ -1882,7 +1862,7 @@ class ArrayMethods extends EnumerableMethods
     return '' if arr.length == 0
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    arr_join.call(arr, separator)
+    nativeJoin.call(arr, separator)
 
 
   last: (arr, n) ->
@@ -1899,15 +1879,15 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
-  reverse_each: (coll, block) ->
+  reverse_each: (arr, block) ->
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)
 
-    idx = coll.length
+    idx = arr.length
     while idx--
-      block(coll[idx])
+      block(arr[idx])
 
-    coll
+    arr
 
 
   uniq: (arr) ->
@@ -1918,7 +1898,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   __native_array_with__: (size, obj) ->
-    ary = nativeArray(RCoerce.to_int_native(size))
+    ary = nativeArray(__int(size))
     idx = -1
     while ++idx < size
       ary[idx] = obj
@@ -1932,7 +1912,7 @@ class StringMethods
     return "" if str.length == 0
     b = _str.downcase(str)
     a = _str.upcase(str[0])
-    a + str_slice.call(b, 1)
+    a + nativeStrSlice.call(b, 1)
 
 
   center: (str, length, padString = ' ') ->
@@ -1961,11 +1941,11 @@ class StringMethods
     if sep == null
       if _str.empty(str) then "" else null
     else
-      sep = RCoerce.to_str_native(sep)
+      sep = _coerce.str(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = str_match.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
+        ending = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
         regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
       else
         regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
@@ -1981,14 +1961,16 @@ class StringMethods
       _str.slice str, 0, str.length - 1
 
 
-  count: (str, args...) ->
-    throw R.ArgumentError.new("String.count needs arguments") if args.length == 0
+  count: (str) ->
+    throw R.ArgumentError.new("String.count needs arguments") if arguments.length == 1
+    args = _coerce.split_args(arguments, 1)
 
     _str.__matched__(str, args).length
 
 
-  'delete': (str, args...) ->
-    throw R.ArgumentError.new() if args.length == 0
+  'delete': (str) ->
+    throw R.ArgumentError.new() if arguments.length == 1
+    args  = _coerce.split_args(arguments, 1)
     trash = _str.__matched__(str, args)
     str.replace(new RegExp("[#{trash}]", 'g'), '')
 
@@ -2007,8 +1989,6 @@ class StringMethods
     # unless separator?
     separator ||= R['$/']
 
-    # TODO: Use RCoerce?
-    # throw R.TypeError.new() unless separator.to_str?
     if separator.length is 0
       separator = "\n\n"
 
@@ -2021,7 +2001,7 @@ class StringMethods
       lft = rgt
       block(str)
 
-    remainder = str_slice.call(dup, lft)
+    remainder = nativeStrSlice.call(dup, lft)
     if remainder?
       block(remainder) unless remainder.length == 0
 
@@ -2029,10 +2009,10 @@ class StringMethods
 
 
   downcase: (str) ->
-    return str unless str_match.call(str, /[A-Z]/)
+    return str unless nativeStrMatch.call(str, /[A-Z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
     _arr.map(str.split(''), (c) ->
-      if str_match.call(c, /[A-Z]/) then c.toLowerCase() else c
+      if nativeStrMatch.call(c, /[A-Z]/) then c.toLowerCase() else c
     ).join('')
 
 
@@ -2040,7 +2020,8 @@ class StringMethods
     str.length == 0
 
 
-  end_with: (str, needles...) ->
+  end_with: (str) ->
+    needles = _coerce.split_args(arguments, 1)
     for w in needles
       if str.lastIndexOf(w) + w.length is str.length
         return true
@@ -2132,11 +2113,11 @@ class StringMethods
 
     if offset?
       opts = {string: str, offset: offset}
-      str = str_slice.call(str, offset)
-      matches = str_match.call(str, pattern, offset)
+      str = nativeStrSlice.call(str, offset)
+      matches = nativeStrMatch.call(str, pattern, offset)
     else
       # Firefox breaks if you'd pass str.match(..., undefined)
-      matches = str_match.call(str, pattern)
+      matches = nativeStrMatch.call(str, pattern)
 
     result = if matches
       new R.MatchData(matches, opts)
@@ -2165,7 +2146,7 @@ class StringMethods
       start = idx + pattern.length
       a = _str.slice(str, 0, idx) || ''
       b = pattern
-      c = str_slice.call(str, start)
+      c = nativeStrSlice.call(str, start)
       [a,b,c]
     else
       [str, '', '']
@@ -2223,11 +2204,27 @@ class StringMethods
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
+  rpartition: (str, pattern) ->
+    idx = _str.rindex(str, pattern)
+    unless idx is null
+      start = idx + pattern.length
+      len = str.length -  start
+      a = str.slice(0,idx)
+      b = pattern
+      c = str.slice(start)
+      [a,b,c]
+    else
+      ['', '',str]
+
+
+
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
 
 
-  squeeze: (str, pattern...) ->
+  squeeze: (str) ->
+    pattern = _coerce.split_args(arguments, 1)
+
     trash = _str.__matched__(str, pattern)
     chars = str.split("")
     len   = str.length
@@ -2333,7 +2330,7 @@ class StringMethods
 
         return null if length < 0 or start < 0 or start > size
 
-        return str_slice.call(str, start, start + length)
+        return nativeStrSlice.call(str, start, start + length)
 
     if index.is_regexp?
       throw R.NotImplementedError.new()
@@ -2348,8 +2345,8 @@ class StringMethods
       return if _str.include(str, index) then index else null
 
     else if index.is_range?
-      start   = RCoerce.to_int_native index.begin()
-      length  = RCoerce.to_int_native index.end()
+      start   = __int(index.begin())
+      length  = __int(index.end())
 
       start += size if start < 0
 
@@ -2363,7 +2360,7 @@ class StringMethods
       length = length - start
       length = 0 if length < 0
 
-      return str_slice.call(str, start, start + length)
+      return nativeStrSlice.call(str, start, start + length)
     else
       index += size if index < 0
       return null if index < 0 or index >= size
@@ -2444,7 +2441,7 @@ class StringMethods
   __matched__: (str, args) ->
     for el in args
       rgx = _str.__to_regexp__(el)
-      str = (str_match.call(str, rgx) || []).join('')
+      str = (nativeStrMatch.call(str, rgx) || []).join('')
     str
 
 
@@ -2476,26 +2473,164 @@ class HashMethods extends EnumerableMethods
 
 _hsh = R._hsh = new HashMethods()
 
-errors = [
-  'ArgumentError'
-  'RegexpError'
-  'TypeError'
-  'KeyError'
-  'IndexError'
-  'FloatDomainError'
-  'RangeError'
-  'StandardError'
-  'ZeroDivisionError'
-  'NotSupportedError'
-  'NotImplementedError'
-]
 
-for error in errors
-  do (error) ->
-    errorClass     = class extends Error
-    errorClass.new = -> new RubyJS[error](error)
-    RubyJS[error]  = errorClass
 
+class RubyJS.Object
+  @include: RubyJS.include
+
+  # Adds default aliases to symbol method names.
+  #
+  # @example Aliases used throughout RubyJS
+  #
+  #     <<  append
+  #     ==  equals
+  #     === equal_case
+  #     <=> cmp
+  #     %   modulo
+  #     +   plus
+  #     -   minus
+  #     *   multiply
+  #     **  exp
+  #     /   divide
+  #
+  # @example Useage, at the end of your class:
+  #
+  #     class Foo extends RubyJS.Object
+  #        # ...
+  #        @__add_default_aliases__(@prototype)
+  #
+  @__add_default_aliases__: (proto) ->
+    proto.append     = proto['<<']  if proto['<<']?
+    proto.equals     = proto['==']  if proto['==']?
+    proto.equal_case = proto['==='] if proto['===']?
+    proto.cmp        = proto['<=>'] if proto['<=>']?
+    proto.modulo     = proto['%']   if proto['%']?
+    proto.plus       = proto['+']   if proto['+']?
+    proto.minus      = proto['-']   if proto['-']?
+    proto.multiply   = proto['*']   if proto['*']?
+    proto.exp        = proto['**']  if proto['**']?
+    proto.divide     = proto['/']   if proto['/']?
+
+
+  @include RubyJS.Kernel
+
+
+  send: (method_name, args...) ->
+    @[method_name](args)
+
+
+  respond_to: (method_name) ->
+    this[method_name]?
+    #this[function_name] != undefined
+
+
+  to_enum: (iter = "each", args...) ->
+    new RubyJS.Enumerator(this, iter, args)
+
+
+  tap: (block) ->
+    block(this)
+    this
+
+
+  value: ->
+    @to_native.apply(this, arguments)
+
+
+# Singleton class for type coercion inside RubyJS.
+#
+# to_int(obj) converts obj to R.Fixnum
+#
+# to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
+#
+# There is a shortcut for Coerce.prototype: RCoerce.
+#
+#     RCoerce.to_num_native(1)
+#
+# @private
+RCoerce = R._coerce =
+  # TODO: replace class with some more lightweight.
+
+  # Mimicks rubys single block args behaviour
+  single_block_args: (args, block) ->
+    if block
+      if block.length != 1
+        if args.length > 1 then nativeSlice.call(args) else args[0]
+      else
+        args[0]
+    else
+      if args.length != 1 then nativeSlice.call(args) else args[0]
+
+
+  # @example
+  #      __coerce_to__(1, 'to_int')
+  coerce: (obj, to_what, skip_native) ->
+    if skip_native isnt undefined and skip_native is typeof obj
+      obj
+    else
+      if obj is null or obj is undefined
+        throw new R.TypeError.new()
+
+      obj = R(obj)
+
+      unless obj[to_what]?
+        throw R.TypeError.new("TypeError: cant't convert ... into String")
+
+      if skip_native isnt undefined
+        obj[to_what]().to_native()
+      else
+        obj[to_what]()
+
+
+  to_native: (obj) ->
+    if typeof obj != 'object'
+      obj
+    else
+      obj.valueOf()
+
+  # Coerces element to a Number primitive.
+  #
+  # Throws error if typecasted RubyJS object is not a numeric.
+  to_num_native: (obj) ->
+    # TODO allow custom error types
+    if typeof obj is 'number'
+      obj
+    else
+      obj = R(obj)
+      throw R.TypeError.new() if !obj.is_numeric?
+      obj.to_native()
+
+
+  to_int: (obj) ->
+    RCoerce.coerce(obj, 'to_int')
+
+
+  to_int_native: (obj) ->
+    if typeof obj is 'number' && (obj % 1 is 0)
+      obj
+    else
+      RCoerce.coerce(obj, 'to_int').to_native()
+
+
+  to_str: (obj) ->
+    RCoerce.coerce(obj, 'to_str')
+
+
+  to_str_native: (obj) ->
+    RCoerce.coerce(obj, 'to_str', 'string')
+
+
+  to_ary: (obj) ->
+    @coerce(obj, 'to_ary')
+
+  to_ary_native: (obj) ->
+    if RArray.isNativeArray(obj)
+      obj
+    else
+      RCoerce.coerce(obj, 'to_ary').to_native()
+
+
+R.RCoerce = RCoerce
 
 # The Comparable mixin is used by classes whose objects may be ordered. The
 # class must define the <=> operator, which compares the receiver against
@@ -2598,7 +2733,7 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).all()                          # => false
   #
   all: (block) ->
-    _enum.all(this, block)
+    _itr.all(this, block)
 
 
 
@@ -2613,7 +2748,7 @@ class RubyJS.Enumerable
   #     R([ null, true, 99 ]).any()                          # => true
   #
   any: (block) ->
-    _enum.any(this, block)
+    _itr.any(this, block)
 
 
   # Returns a new array with the concatenated results of running block once
@@ -2628,7 +2763,7 @@ class RubyJS.Enumerable
   #
   collect_concat: (block = null) ->
     return @to_enum('collect_concat') unless block && block.call?
-    new RArray(_enum.collect_concat(this, block))
+    new RArray(_itr.collect_concat(this, block))
 
 
   flat_map: @prototype.collect_concat
@@ -2645,7 +2780,7 @@ class RubyJS.Enumerable
   #     ary.count (x) -> x%2 == 0  #=> 3
   #
   count: (block) ->
-    new R.Fixnum(_enum.count(this, block))
+    new R.Fixnum(_itr.count(this, block))
 
   # this makes my head spin.
   # chunk: (initial_state = null, original_block) ->
@@ -2678,7 +2813,7 @@ class RubyJS.Enumerable
   cycle: (n, block) ->
     throw R.ArgumentError.new() if arguments.length > 2
 
-    _enum.cycle(this, n, block)
+    _itr.cycle(this, n, block)
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -2691,7 +2826,7 @@ class RubyJS.Enumerable
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
-    new RArray(_enum.drop(this, n))
+    new RArray(_itr.drop(this, n))
 
 
   # Drops elements up to, but not including, the first element for which the
@@ -2706,7 +2841,7 @@ class RubyJS.Enumerable
   #
   drop_while: (block) ->
     return @to_enum('drop_while') unless block && block.call?
-    new RArray(_enum.drop_while(this, block))
+    new RArray(_itr.drop_while(this, block))
 
 
   # Iterates the given block for each array of consecutive <n> elements. If no
@@ -2727,7 +2862,7 @@ class RubyJS.Enumerable
     n = RCoerce.to_int_native(args[0])
     throw R.ArgumentError.new() unless n > 0
 
-    _enum.each_cons(this, n, block)
+    _itr.each_cons(this, n, block)
 
   # Calls block once for each element in self, passing that element as a
   # parameter, converting multiple values from yield to an array.
@@ -2738,7 +2873,7 @@ class RubyJS.Enumerable
     throw R.ArgumentError.new() if arguments.length > 1
     return @to_enum('each_entry') unless block && block.call?
 
-    _enum.each_entry(this, block)
+    _itr.each_entry(this, block)
 
   # Iterates the given block for each slice of <n> elements. If no block is
   # given, returns an enumerator.
@@ -2760,7 +2895,7 @@ class RubyJS.Enumerable
 
     return @to_enum('each_slice', n) if block is undefined #each_slice(1) # => enum
 
-    _enum.each_slice(this, n, block)
+    _itr.each_slice(this, n, block)
 
 
   # # TODO: I'm not quite sure wether this is smart or stupid
@@ -2789,7 +2924,7 @@ class RubyJS.Enumerable
   #
   each_with_index: (block) ->
     return @to_enum('each_with_index') unless block && block.call?
-    _enum.each_with_index(this, block)
+    _itr.each_with_index(this, block)
 
 
   # Iterates the given block for each element with an arbitrary object given,
@@ -2803,7 +2938,7 @@ class RubyJS.Enumerable
   #
   each_with_object: (obj, block) ->
     return @to_enum('each_with_object', obj) unless block && block.call?
-    _enum.each_with_object(this, obj, block)
+    _itr.each_with_object(this, obj, block)
 
   # Passes each entry in enum to block. Returns the first for which block is not
   # false. If no object matches, calls ifnone and returns its result when it is
@@ -2818,7 +2953,7 @@ class RubyJS.Enumerable
   # @alias #detect
   #
   find: (ifnone, block = null) ->
-    _enum.find(this, ifnone, block)
+    _itr.find(this, ifnone, block)
 
 
   # @alias #find
@@ -2836,7 +2971,7 @@ class RubyJS.Enumerable
   #
   find_all: (block) ->
     return @to_enum('find_all') unless block && block.call?
-    new RArray(_enum.select(this, block))
+    new RArray(_itr.select(this, block))
 
   select: @prototype.find_all
 
@@ -2853,7 +2988,7 @@ class RubyJS.Enumerable
   #
   find_index: (value) ->
     return @to_enum('find_index') if arguments.length == 0
-    val = _enum.find_index(this, value)
+    val = _itr.find_index(this, value)
     if val != null
       new R.Fixnum(val)
     else
@@ -2871,15 +3006,15 @@ class RubyJS.Enumerable
   #
   first: (n) ->
     if n is null or n is undefined
-      _enum.first(this, null)
+      _itr.first(this, null)
     else
       n = RCoerce.to_int_native(n)
-      new RArray(_enum.first(this, n))
+      new RArray(_itr.first(this, n))
 
 
   # Returns true if any member of enum equals obj. Equality is tested using ==.
   include: (other) ->
-    _enum.include(this, other)
+    _itr.include(this, other)
 
 
   # Combines all elements of enum by applying a binary operation, specified by
@@ -2913,7 +3048,7 @@ class RubyJS.Enumerable
   # @todo implement inject('+')
   #
   inject: (init, sym, block) ->
-    _enum.inject(this, init, sym, block)
+    _itr.inject(this, init, sym, block)
 
 
   # _ruby: returns an object that works with
@@ -2928,7 +3063,7 @@ class RubyJS.Enumerable
   #     R.rng(1, 100).grep R.rng(38,44)   #=> [38, 39, 40, 41, 42, 43, 44]
   #
   grep: (pattern, block) ->
-    new RArray(_enum.grep(this, pattern, block))
+    new RArray(_itr.grep(this, pattern, block))
 
 
   # Returns a hash, which keys are evaluated result from the block, and values
@@ -2942,7 +3077,7 @@ class RubyJS.Enumerable
   #
   group_by: (block) ->
     return @to_enum('group_by') unless block?.call?
-    _enum.group_by(this, block)
+    _itr.group_by(this, block)
 
 
   # Returns a new array with the results of running block once for every
@@ -2994,7 +3129,7 @@ class RubyJS.Enumerable
   #     a.max (a,b) -> R(a.length)['<=>'] b.length }   #=> "albatross"
   #
   max: (block) ->
-    _enum.max(this, block)
+    _itr.max(this, block)
 
 
   # Returns the object in enum that gives the maximum value from the given
@@ -3008,7 +3143,7 @@ class RubyJS.Enumerable
   #
   max_by: (block) ->
     return @to_enum('max_by') unless block?.call?
-    _enum.max_by(this, block)
+    _itr.max_by(this, block)
 
 
   # Returns the object in enum with the minimum value. The first form assumes
@@ -3021,7 +3156,7 @@ class RubyJS.Enumerable
   #     a.min (a,b) -> R(a.length)['<=>'] b.length }   #=> "dog"
   #
   min: (block) ->
-    _enum.min(this, block)
+    _itr.min(this, block)
 
 
   # Returns the object in enum that gives the minimum value from the given
@@ -3035,7 +3170,7 @@ class RubyJS.Enumerable
   #
   min_by: (block) ->
     return @to_enum('min_by') unless block?.call?
-    _enum.min_by(this, block)
+    _itr.min_by(this, block)
 
 
   # Returns two elements array which contains the minimum and the maximum
@@ -3048,12 +3183,12 @@ class RubyJS.Enumerable
   #     a.minmax (a,b) -> a.length <=> b.length }   #=> ["dog", "albatross"]
   #
   minmax: (block) ->
-    new RArray(_enum.minmax(this, block))
+    new RArray(_itr.minmax(this, block))
 
 
   minmax_by: (block) ->
     return @to_enum('minmax_by') unless block?.call?
-    new RArray(_enum.minmax_by(this, block))
+    new RArray(_itr.minmax_by(this, block))
 
   # Passes each element of the collection to the given block. The method returns true if the block never returns true for all elements. If the block is not given, none? will return true only if none of the collection members is true.
   #
@@ -3065,7 +3200,7 @@ class RubyJS.Enumerable
   #     R([nil,false]).none()                                 # => true
   #
   none: (block) ->
-    _enum.none(this, block)
+    _itr.none(this, block)
 
 
   # Passes each element of the collection to the given block. The method
@@ -3081,24 +3216,24 @@ class RubyJS.Enumerable
   #     R([ nil, true, false ]).one()                        # => true
   #
   one: (block) ->
-    _enum.one(this, block)
+    _itr.one(this, block)
 
 
   partition: (block) ->
     return @to_enum('partition') unless block && block.call?
-    ary = _enum.partition(this, block)
+    ary = _itr.partition(this, block)
     new RArray([new RArray(ary[0]), new RArray(ary[1])])
 
   reduce: @prototype.inject
 
   reject: (block) ->
     return @to_enum('reject') unless block && block.call?
-    new RArray(_enum.reject(this, block))
+    new RArray(_itr.reject(this, block))
 
 
   reverse_each: (block) ->
     return @to_enum('reverse_each') unless block && block.call?
-    _enum.reverse_each(this, block)
+    _itr.reverse_each(this, block)
 
 
   slice_before: (args...) ->
@@ -3127,12 +3262,12 @@ class RubyJS.Enumerable
 
   sort: (block) ->
     # TODO: throw Error when comparing different values.
-    new RArray(_enum.sort(this, block))
+    new RArray(_itr.sort(this, block))
 
 
   sort_by: (block) ->
     return @to_enum('sort_by') unless block && block.call?
-    new RArray(_enum.sort_by(this, block))
+    new RArray(_itr.sort_by(this, block))
 
 
   take: (n) ->
@@ -3140,16 +3275,16 @@ class RubyJS.Enumerable
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
-    new RArray(_enum.take(this, n))
+    new RArray(_itr.take(this, n))
 
 
   take_while: (block) ->
     return @to_enum('take_while') unless block && block.call?
-    new RArray(_enum.take_while(this, block))
+    new RArray(_itr.take_while(this, block))
 
 
   to_a: () ->
-    new RArray(_enum.to_a(this))
+    new RArray(_itr.to_a(this))
 
 
   to_enum: (iter = "each", args...) ->
@@ -3475,7 +3610,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # @private
   @isNativeArray: nativeArray.isArray or (obj) ->
-    _toString_.call(obj) is '[object Array]'
+    nativeToString.call(obj) is '[object Array]'
 
 
   # Try to convert obj into an array, using to_ary method. Returns converted
@@ -6083,7 +6218,7 @@ class RubyJS.String extends RubyJS.Object
     return true  if typeof obj == 'string'
     return false if typeof obj != 'object'
     return true  if obj.is_string?
-    _toString_.call(obj) is '[object String]'
+    nativeToString.call(obj) is '[object String]'
 
 
   @try_convert: (obj) ->
@@ -6974,20 +7109,8 @@ class RubyJS.String extends RubyJS.Object
   # @todo does not yet affect R['$~']
   rpartition: (pattern) ->
     # TODO: regexps
-    pattern = RCoerce.to_str(pattern).to_str()
-
-    if idx = @rindex(pattern)
-      start = idx + pattern.length
-      len = @size() -  start
-      a = @slice(0,idx)
-      b = pattern.dup()
-      c = R(@to_native().slice(start))
-
-    a ||= R("")
-    b ||= R("")
-    c ||= this
-
-    return R([a,b,c])
+    pattern = RCoerce.to_str_native(pattern)
+    new RArray(_str.rpartition(@__native__, pattern))
 
 
   # Returns a copy of str with trailing whitespace removed. See also
@@ -7636,7 +7759,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
 
   @isRegexp: (obj) ->
-    obj?.is_regexp? or _toString_.call(obj) is '[object RegExp]'
+    obj?.is_regexp? or nativeToString.call(obj) is '[object RegExp]'
 
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -7767,7 +7890,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #     match(str,pos) → matchdata or nil
   #
   match: (str, offset) ->
-    block   = @__extract_block(_slice_.call(arguments))
+    block   = @__extract_block(nativeSlice.call(arguments))
 
     if str is null
       R['$~'] = null
