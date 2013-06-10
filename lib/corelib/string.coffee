@@ -968,36 +968,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo some untested specs
   #
   scan: (pattern, block = null) ->
-    unless R.Regexp.isRegexp(pattern)
-      pattern = RCoerce.to_str_native(pattern)
-      pattern = R.Regexp.quote(pattern)
-
-    index = 0
-
-    R['$~'] = null
-    match_arr = if block != null then this else []
-
-    # FIXME: different from rubinius implementation
-    while match = @__native__[index..-1].match(pattern)
-      fin  = index + match.index + match[0].length
-      fin += 1 if match[0].length == 0
-
-      R['$~'] = new R.MatchData(match, {offset: index, string: @__native__})
-
-      if match.length > 1
-        val = match[1...match.length]
-      else
-        val = [match[0]]
-
-      if block != null
-        block(val)
-      else
-        val = val[0] if match.length == 1
-        match_arr.push val
-
-      index = fin
-      break if index > this.length
-
+    match_arr = _str.scan(@__native__, pattern, block)
     # return this if block was passed
     if block != null then this else (new RArray(match_arr))
 

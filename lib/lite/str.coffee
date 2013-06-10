@@ -313,6 +313,41 @@ class StringMethods
     str.replace(/[\s\n\t]+$/g, '')
 
 
+  scan: (str, pattern, block = null) ->
+    unless R.Regexp.isRegexp(pattern)
+      pattern = __str(pattern)
+      pattern = R.Regexp.quote(pattern)
+
+    index = 0
+
+    R['$~'] = null
+    match_arr = if block != null then str else []
+
+    # FIXME: different from rubinius implementation
+    while match = str[index..-1].match(pattern)
+      fin  = index + match.index + match[0].length
+      fin += 1 if match[0].length == 0
+
+      R['$~'] = new R.MatchData(match, {offset: index, string: str})
+
+      if match.length > 1
+        val = match[1...match.length]
+      else
+        val = [match[0]]
+
+      if block != null
+        block(val)
+      else
+        val = val[0] if match.length == 1
+        match_arr.push val
+
+      index = fin
+      break if index > str.length
+
+    # return this if block was passed
+    if block != null then str else match_arr
+
+
   squeeze: (str) ->
     pattern = _coerce.split_args(arguments, 1)
 

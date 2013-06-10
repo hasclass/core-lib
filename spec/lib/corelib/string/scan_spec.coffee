@@ -48,9 +48,9 @@ describe "String#scan", ->
     # "one two one two".scan(/\G\w+\s*/).should == ["one ", "two ", "one ", "two"]
     # "one two one two".scan(/\G\s*\w+/).should == ["one", " two", " one", " two"]
 
-  it "tries to convert pattern to a string via to_str", ->
+  it "tries to convert pattern to a string via #valueOf", ->
     obj =
-      to_str: -> R("o")
+      valueOf: -> "o"
     expect( R("o_o").scan(obj).valueOf() ).toEqual ["o", "o"]
 
   it "raises a TypeError if pattern isn't a Regexp and can't be converted to a String", ->
