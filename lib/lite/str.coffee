@@ -555,4 +555,8 @@ class StringMethods
       throw R.ArgumentError.new()
 
 
-_str = R._str = new StringMethods()
+
+_str = R._str = (arr) ->
+  new RString(arr)
+
+R.extend(_str, new StringMethods())

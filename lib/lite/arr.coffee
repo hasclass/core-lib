@@ -309,4 +309,7 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
-_arr = R._arr = new ArrayMethods()
+_arr = R._arr = (arr) ->
+  new RArray(arr)
+
+R.extend(_arr, new ArrayMethods())

@@ -617,6 +617,7 @@ class RubyJS.Hash extends RubyJS.Object
 
   # ---- Aliases --------------------------------------------------------------
 
+RHash = R.Hash
 
 R.hashify = (obj, default_value) ->
   new R.Hash(obj, default_value)
