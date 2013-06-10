@@ -1328,31 +1328,7 @@ class RubyJS.String extends RubyJS.Object
   #       - e.g: R("1012").to_i(2) should return 5, but due to 2 being invalid it retunrs 0 now.
   # @todo #to_i(0) does not auto-detect base
   to_i: (base) ->
-    # TODO
-    base = 10 if base is undefined
-    base = RCoerce.to_int_native(base)
-
-    if base < 0 or base > 36 or base is 1
-      throw R.ArgumentError.new()
-
-    # ignore whitespace
-    lit = @strip().to_native()
-
-    # ([\+\-]?) matches +\- prefixes if any
-    # ([^\+^\-_]+) matches everything after, except '_'.
-    unless lit.match(/^([\+\-]?)([^\+^\-_]+)/)
-      return R(0)
-
-    # replace after check, so that _123 is invalid
-    lit = lit.replace(/_/g, '')
-
-    # if base > 0
-    #   return R(0) unless BASE_IDENTIFIER[lit[0..1]] is base
-    # else if base is 0
-    #   base_str = if lit[0].match(/[\+\-]/) then lit[1..2] else lit[0..1]
-    #   base = R.String.BASE_IDENTIFIER[base_str]
-
-    @$Integer parseInt(lit, base)
+    new R.Fixnum(_str.to_i(@__native__, base))
 
 
   #to_r

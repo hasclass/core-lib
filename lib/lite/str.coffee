@@ -538,6 +538,34 @@ class StringMethods
     chars.join('')
 
 
+  to_i: (str, base) ->
+    base = 10 if base is undefined
+    base = __int(base)
+
+    if base < 0 or base > 36 or base is 1
+      throw R.ArgumentError.new()
+
+    # ignore whitespace
+    lit = _str.strip(str)
+
+    # ([\+\-]?) matches +\- prefixes if any
+    # ([^\+^\-_]+) matches everything after, except '_'.
+    unless lit.match(/^([\+\-]?)([^\+^\-_]+)/)
+      return 0
+
+    # replace after check, so that _123 is invalid
+    lit = lit.replace(/_/g, '')
+
+    # if base > 0
+    #   return R(0) unless BASE_IDENTIFIER[lit[0..1]] is base
+    # else if base is 0
+    #   base_str = if lit[0].match(/[\+\-]/) then lit[1..2] else lit[0..1]
+    #   base = R.String.BASE_IDENTIFIER[base_str]
+
+    parseInt(lit, base)
+
+
+
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase

@@ -90,9 +90,9 @@ describe "String#to_i", ->
     expect( R("0o11").to_i(25) ).toEqual R(15026)
     expect( R("0x11").to_i(34) ).toEqual R(38183)
 
-  it "tries to convert the base to an integer using to_int", ->
+  it "tries to convert the base to an integer using valueOf", ->
     obj =
-      to_int: -> R(8)
+      valueOf: -> 8
 
     expect( R("777").to_i(obj) ).toEqual R(0o777)
 
