@@ -579,6 +579,12 @@ class StringMethods
     parseInt(lit, base)
 
 
+  to_f: (str) ->
+    number_match  = str.match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
+    number_string = number_match?[0] ? "0.0"
+    Number(number_string.replace(/_/g, ''))
+
+
 
   upcase: (str) ->
     return str unless str.match(/[a-z]/)

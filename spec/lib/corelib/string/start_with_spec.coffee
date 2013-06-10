@@ -9,11 +9,11 @@ describe "ruby_version_is '1.8.7'", ->
     it "returns true only if any beginning match", ->
       expect( R("hello").start_with('x', 'y', 'he', 'z') ).toEqual true
 
-    xit "converts its argument using :to_str", ->
+    xit "converts its argument using :valueOf", ->
       s = R "hello"
       find =
-        to_str: ->
-      spy = spyOn(find, 'to_str').andReturn(R "h")
+        valueOf: ->
+      spy = spyOn(find, 'valueOf').andReturn("h")
       expect( R(s).start_with(find) ).toEqual true
       expect( spy ).wasCalled()
 

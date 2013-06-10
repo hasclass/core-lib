@@ -59,12 +59,12 @@ describe "String#squeeze", ->
     # "hello".squeeze("e".taint).tainted?.should == false
     # "hello".squeeze("l".taint).tainted?.should == false
 
-  it "tries to convert each set arg to a string using to_str", ->
+  it "tries to convert each set arg to a string using valueOf", ->
     other_string =
-      to_str: -> R("lo")
+      valueOf: -> "lo"
 
     other_string2 =
-      to_str: -> R("o")
+      valueOf: -> "o"
 
     expect( R("hello room").squeeze(other_string, other_string2) ).toEqual R("hello rom")
 

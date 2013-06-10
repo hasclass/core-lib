@@ -1102,7 +1102,7 @@ class RubyJS.String extends RubyJS.Object
   squeeze: ->
     args = [@__native__]
     for el, i in arguments
-      args.push(RCoerce.to_str_native(el))
+      args.push(__str(el))
     new RString(_str.squeeze.apply(_str, args))
 
 
@@ -1272,11 +1272,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo Some exotic formats not yet fully supported.
   #
   to_f: ->
-    # TODO
-    number_match  = @to_native().match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
-    number_string = number_match?[0] ? "0.0"
-    @$Float Number(number_string.replace(/_/g, ''))
-
+    @$Float( _str.to_f(@__native__) )
 
   # @BASE_IDENTIFIER:
   #   '0b': 2
