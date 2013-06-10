@@ -19,6 +19,7 @@ _coerce =
 
 
   str: (obj) ->
+    throw R.TypeError.new() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid string") unless typeof obj is 'string'
     throw R.TypeError.new() unless typeof obj is 'string'
@@ -26,6 +27,7 @@ _coerce =
 
 
   num: (obj) ->
+    throw R.TypeError.new() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid num") unless typeof obj is 'number'
     throw R.TypeError.new() unless typeof obj is 'number'
@@ -33,6 +35,7 @@ _coerce =
 
 
   int: (obj) ->
+    throw R.TypeError.new() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid int") unless typeof obj is 'number'
     throw R.TypeError.new() unless typeof obj is 'number'
@@ -48,6 +51,7 @@ _coerce =
 
 
   arr: (obj) ->
+    throw R.TypeError.new() if obj == null
     throw R.TypeError.new() if typeof obj != 'object'
     obj = obj.valueOf()
     throw R.TypeError.new() unless _coerce.isArray(obj)
