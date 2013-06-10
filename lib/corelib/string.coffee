@@ -883,8 +883,6 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rjust(20, '1234')   #=> "123412341234123hello"
   #
   rjust: (width, padString = " ") ->
-    width     = RCoerce.to_int_native(width)
-    padString = RCoerce.to_str_native(padString)
     new RString(_str.rjust(@__native__, width, padString))
 
 
@@ -907,7 +905,6 @@ class RubyJS.String extends RubyJS.Object
   # @todo does not yet affect R['$~']
   rpartition: (pattern) ->
     # TODO: regexps
-    pattern = RCoerce.to_str_native(pattern)
     new RArray(_str.rpartition(@__native__, pattern))
 
 
@@ -1414,7 +1411,6 @@ class RubyJS.String extends RubyJS.Object
   # @todo R('a').upto('c').to_a() should return ['a', 'b', 'c'] (include 'c')
   #
   upto: (stop, exclusive, block) ->
-    stop = RCoerce.to_str_native(stop)
     if block is undefined and exclusive?.call?
       block = exclusive
       exclusive = false
@@ -1425,23 +1421,6 @@ class RubyJS.String extends RubyJS.Object
     _str.upto(@__native__, stop, exclusive, block)
 
     this
-
-  # used for the remaining missing test
-  # _rubyjs_ascii_succ: ->
-  #   @$Integer(@to_native().charCodeAt(0)).succ().chr()
-
-
-  #valid_encoding?
-
-
-  # ---- Class methods --------------------------------------------------------
-
-
-  # ---- Private methods ------------------------------------------------------
-
-  # @private
-  __char_natives__: ->
-    @__native__.split('')
 
 
   # ---- Unsupported methods --------------------------------------------------

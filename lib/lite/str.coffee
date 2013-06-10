@@ -300,16 +300,20 @@ class StringMethods
 
 
   rjust: (str, width, pad_str = " ") ->
+    width = __int(width)
     len = str.length
     if len >= width
       str
     else
+      pad_str = __str(pad_str)
       throw R.ArgumentError.new() if pad_str.length == 0
       pad_len = width - len
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
   rpartition: (str, pattern) ->
+    pattern = __str(pattern)
+
     idx = _str.rindex(str, pattern)
     unless idx is null
       start = idx + pattern.length
@@ -595,6 +599,7 @@ class StringMethods
 
 
   upto: (str, stop, exclusive, block) ->
+    stop = __str(stop)
     exclusive ||= false
     if block is undefined and exclusive?.call?
       block = exclusive

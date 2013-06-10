@@ -17,9 +17,9 @@ describe "ruby_version_is '1.8.7'", ->
       expect( R(matched_string).valueOf() ).toEqual R['$~'][0]
 
     describe 'ruby_bug "redmine #1510", "1.9.1"', ->
-      it "converts its argument using :to_str", ->
+      it "converts its argument using :valueOf", ->
         find =
-          to_str: -> R("l")
+          valueOf: -> "l"
         expect( R("hello").rpartition(find).valueOf() ).toEqual ["hel","l","o"]
 
     it "raises error if not convertible to string", ->
