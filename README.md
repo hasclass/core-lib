@@ -42,7 +42,7 @@ R.puts("hello");
 
 ## Contribute/Develop
 
-RubyJS is currently implemented in CoffeeScript 1.3.3. CoffeeScript 1.4.0 doesn't work as of now. It's on the roadmap to move away from CoffeeScript to plain JS.
+RubyJS is currently implemented in CoffeeScript 1.6.3. It's on the roadmap to move away from CoffeeScript to plain JS.
 
 - Clone repository
 - Run the coffee console loading the rubyjs files:
@@ -61,7 +61,7 @@ coffee> R('hello world').capitalize().toNative()
 $ bundle install
 $ cake build_tests            # compiles all test files
 $ bundle exec guard           # automatically compile coffeescript
-$ rake jasmine                # starts jasmine server
+$ bundle exec rake jasmine                # starts jasmine server
 $ open http://localhost:8888  # pray
 ```
 
