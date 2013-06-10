@@ -432,20 +432,13 @@ class RubyJS.String extends RubyJS.Object
   # notation and all special characters escaped.
   #
   dump: ->
-    escaped =  @to_native().replace(/[\f]/g, '\\f')
-      .replace(/["]/g, "\\\"")
-      .replace(/[\n]/g, '\\n')
-      .replace(/[\r]/g, '\\r')
-      .replace(/[\t]/g, '\\t')
-      # .replace(/[\s]/g, '\\ ') # do not
-    R("\"#{escaped}\"")
+    new RString(_str.dump(@__native__))
 
 
   dup: ->
     dup = @clone()
     dup.initialize_copy(this)
     dup
-
 
 
   #each_byte
@@ -668,8 +661,6 @@ class RubyJS.String extends RubyJS.Object
   # @todo #index(regexp)
   #
   index: (needle, offset) ->
-    needle = RCoerce.to_str_native(needle)
-    offset = RCoerce.to_int_native(offset) if offset?
     val = _str.index(@__native__, needle, offset)
     if val is null then null else new R.Fixnum(val)
 

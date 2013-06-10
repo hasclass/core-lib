@@ -107,6 +107,17 @@ class StringMethods
     ).join('')
 
 
+
+  dump: (str) ->
+    escaped =  str.replace(/[\f]/g, '\\f')
+      .replace(/["]/g, "\\\"")
+      .replace(/[\n]/g, '\\n')
+      .replace(/[\r]/g, '\\r')
+      .replace(/[\t]/g, '\\t')
+      # .replace(/[\s]/g, '\\ ') # do not
+    "\"#{escaped}\""
+
+
   empty: (str) ->
     str.length == 0
 
@@ -134,13 +145,16 @@ class StringMethods
 
     str.replace(pattern, replacement)
 
-  include: (str, other) ->
 
+  include: (str, other) ->
     str.indexOf(other) >= 0
 
 
   index: (str, needle, offset) ->
+    needle = __str(needle)
+
     if offset?
+      offset = __int(offset)
       offset = str.length + offset if offset < 0
 
     # unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?

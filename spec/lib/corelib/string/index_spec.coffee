@@ -9,9 +9,9 @@ describe "String#index with object", ->
     obj = {}
     expect( -> R("hello").index(obj) ).toThrow('TypeError')
 
-  it "tries to convert obj to a string via to_str", ->
+  it "tries to convert obj to a string via valueOf", ->
     obj =
-      to_str: -> R("lo")
+      valueOf: -> "lo"
     expect( R("hello").index(obj) ).toEqual R("hello").index("lo")
 
 describe "String#index with String", ->
@@ -111,9 +111,9 @@ describe "String#index with String", ->
     expect( R("hello").index("he", 1)  ).toEqual null
     expect( R("hello").index("he", 2)  ).toEqual null
 
-  it "converts start_offset to an integer via to_int", ->
+  it "converts start_offset to an integer via valueOf", ->
     obj =
-      to_int: -> R(1)
+      valueOf: -> 1
     expect( R("RWOARW").index("RW", obj) ).toEqual R(4)
 
 # describe "String#index with Regexp", ->
