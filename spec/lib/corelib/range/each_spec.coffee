@@ -2,19 +2,19 @@ describe "Range#each", ->
   it "passes each element to the given block by using #succ", ->
     a = R []
     RubyJS.Range.new(-5, 5).each (i) -> a.push(i)
-    expect( a.unbox(true) ).toEqual  [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+    expect( a.valueOf() ).toEqual  [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
 
     a = R []
     RubyJS.Range.new('A', 'D').each (i) -> a.push(i)
-    expect( a.unbox(true) ).toEqual  ['A','B','C','D']
+    expect( a.valueOf() ).toEqual  ['A','B','C','D']
 
     a = R []
     RubyJS.Range.new('A', 'D', true).each (i) -> a.push(i)
-    expect( a.unbox(true) ).toEqual  ['A','B','C']
+    expect( a.valueOf() ).toEqual  ['A','B','C']
 
     a = R []
     RubyJS.Range.new(0xfffd, 0xffff, true).each (i) -> a.push(i)
-    expect( a.unbox(true) ).toEqual  [0xfffd, 0xfffe]
+    expect( a.valueOf() ).toEqual  [0xfffd, 0xfffe]
 
 #   xit "", ->
 #     y = mock('y')
@@ -27,7 +27,7 @@ describe "Range#each", ->
 
 #     a = R []
 #     RubyJS.Range.new(x, y).each (i) -> a.push(i)
-#     expect( a.unbox(true) ).toEqual  [x, y]
+#     expect( a.valueOf() ).toEqual  [x, y]
 
   it "raises a TypeError if the first element does not respond to #succ", ->
     expect( -> RubyJS.Range.new(0.5, 2.4).each (i) -> i ).toThrow("TypeError")
@@ -48,7 +48,7 @@ describe "Range#each", ->
     it "returns an enumerator when no block given", ->
       en = RubyJS.Range.new(1, 3).each()
       expect( en ).toBeInstanceOf(RubyJS.Enumerator)
-      expect( en.to_a().unbox(true) ).toEqual [1, 2, 3]
+      expect( en.to_a().valueOf() ).toEqual [1, 2, 3]
 
   # TODO: test when Time is implemented
   # describe "ruby_version_is '1.9'", ->

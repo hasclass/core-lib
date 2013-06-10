@@ -103,7 +103,7 @@ describe "String#lines", ->
 
   describe "ruby_version_is '1.9'", ->
     it "accept string separator", ->
-      expect( R("hello world").lines('o').to_a().unbox(true) ).toEqual ["hello", " wo", "rld"]
+      expect( R("hello world").lines('o').to_a().valueOf() ).toEqual ["hello", " wo", "rld"]
 
     xit "raises a TypeError when the separator is a symbol", ->
       # lambda { "hello world".lines(:o).to_a }.should raise_error(TypeError)
@@ -112,7 +112,7 @@ describe "String#lines", ->
     it "returns an enumerator when no block given", ->
       en = R("hello world").lines(' ')
       expect( en ).toBeInstanceOf(R.Enumerator)
-      expect( en.to_a().unbox(true) ).toEqual ["hello ", "world"]
+      expect( en.to_a().valueOf() ).toEqual ["hello ", "world"]
 
   # ruby_version_is ''...'1.9' do
   #   it "raises a RuntimeError if the string is modified while substituting", ->

@@ -1,9 +1,9 @@
 describe "Range#to_a", ->
   it "converts self to an array", ->
-    expect( RubyJS.Range.new(-5,5).to_a().unbox(true)    ).toEqual  [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
-    expect( RubyJS.Range.new('A','D').to_a().unbox(true) ).toEqual  ['A','B','C','D']
-    expect( RubyJS.Range.new('A','D', true).to_a().unbox(true) ).toEqual  ['A','B','C']
-    expect( RubyJS.Range.new(0xfffd,0xffff, true).to_a().unbox(true) ).toEqual  [0xfffd,0xfffe]
+    expect( RubyJS.Range.new(-5,5).to_a().valueOf()    ).toEqual  [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+    expect( RubyJS.Range.new('A','D').to_a().valueOf() ).toEqual  ['A','B','C','D']
+    expect( RubyJS.Range.new('A','D', true).to_a().valueOf() ).toEqual  ['A','B','C']
+    expect( RubyJS.Range.new(0xfffd,0xffff, true).to_a().valueOf() ).toEqual  [0xfffd,0xfffe]
     expect( -> RubyJS.Range.new(0.5, 2.4).to_a()      ).toThrow("TypeError")
 
   it "returns empty array for descending-ordered", ->

@@ -1,23 +1,28 @@
 
 describe "Enumerable#sort", ->
   it "sorts by the natural order as defined by <=> ", ->
-    expect(new EnumerableSpecs.Numerous().to_a().unbox(true)).toEqual [2,5,3,6,1,4]
+    expect(new EnumerableSpecs.NumerousLiteral().to_a().valueOf()).toEqual [2,5,3,6,1,4]
     expect(
-      new EnumerableSpecs.Numerous().sort().unbox(true)
+      new EnumerableSpecs.NumerousLiteral().sort().valueOf()
+    ).toEqual [1, 2, 3, 4, 5, 6]
+
+    expect(new EnumerableSpecs.Numerous().to_a().valueOf(true)).toEqual [2,5,3,6,1,4]
+    expect(
+      new EnumerableSpecs.Numerous().sort().valueOf(true)
     ).toEqual [1, 2, 3, 4, 5, 6]
 
     s = EnumerableSpecs.ComparesByVowelCount.wrap("a", "aa", "aaaa", "aaaa", "aaaaa")
     s = s.valueOf() # unbox so we can access elements with []
     expect(
-      new EnumerableSpecs.Numerous(s[2],s[0],s[1],s[3],s[4]).sort().unbox(true)
+      new EnumerableSpecs.Numerous(s[2],s[0],s[1],s[3],s[4]).sort().valueOf(true)
     ).toEqual ["a", "aa", "aaaa", "aaaa", "aaaaa"]
 
   it "yields elements to the provided block", ->
     expect(
-      new EnumerableSpecs.Numerous().sort((a,b) -> b['<=>'](a) ).unbox(true)
+      new EnumerableSpecs.Numerous().sort((a,b) -> b['<=>'](a) ).valueOf(true)
     ).toEqual [6, 5, 4, 3, 2, 1]
     expect(
-      new EnumerableSpecs.Numerous(2,0,1,3,4).sort((n, m) -> -(n['<=>'] m)).unbox(true)
+      new EnumerableSpecs.Numerous(2,0,1,3,4).sort((n, m) -> -(n['<=>'] m)).valueOf(true)
     ).toEqual [4,3,2,1,0]
 
   # ruby_version_is ""..."1.9", ->
@@ -43,7 +48,7 @@ describe "Enumerable#sort", ->
 
   it "compare values returned by block with 0", ->
     expect(
-      new EnumerableSpecs.Numerous().sort((n, m) -> -(n + +m) * (n['<=>'] m) ).unbox(true)
+      new EnumerableSpecs.Numerous().sort((n, m) -> -(n + +m) * (n['<=>'] m) ).valueOf(true)
     ).toEqual [6, 5, 4, 3, 2, 1]
 
     # EnumerableSpecs::Numerous.new.sort { |n, m|

@@ -80,10 +80,10 @@ describe "Array.new with (size, object=nil)", ->
     expect( -> R.Array.new(obj, 'a') ).toThrow('TypeError')
 
   it "yields the index of the element and sets the element to the value of the block", ->
-    expect( R.Array.new(3, (i) -> i.to_s()       ).unbox(true) ).toEqual ['0', '1', '2']
+    expect( R.Array.new(3, (i) -> i + ""       ).valueOf() ).toEqual ['0', '1', '2']
 
   it "uses the block value instead of using the default value", ->
-    expect( R.Array.new(3, "obj", (i) -> i.to_s()).unbox(true) ).toEqual ['0', '1', '2']
+    expect( R.Array.new(3, "obj", (i) -> i + "").valueOf() ).toEqual ['0', '1', '2']
 
   it "returns the value passed to break", ->
     # a = R.Array.new(3) do |i|

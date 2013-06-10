@@ -4,12 +4,12 @@ describe "Enumerable#find_all", ->
     #ScratchPad.record []
     #@elements = (1..10).to_a
     @elements = [1,2,3,4,5,6,7,8,9,10]
-    @numerous = EnumerableSpecs.Numerous.new(1,2,3,4,5,6,7,8,9,10)
+    @numerous = EnumerableSpecs.NumerousLiteral.new(1,2,3,4,5,6,7,8,9,10)
 
   it "returns all elements for which the block is not false", ->
-    expect( @numerous.find_all( (i) -> i % 3 == 0 ).unbox(true)).toEqual [3, 6, 9]
-    expect( @numerous.find_all( (i) -> true ).unbox(true)      ).toEqual @elements
-    expect( @numerous.find_all( (i) -> false ).unbox(true)     ).toEqual []
+    expect( @numerous.find_all( (i) -> i % 3 == 0 ).valueOf()).toEqual [3, 6, 9]
+    expect( @numerous.find_all( (i) -> true ).valueOf()      ).toEqual @elements
+    expect( @numerous.find_all( (i) -> false ).valueOf()     ).toEqual []
 
 #   ruby_version_is ""..."1.8.7" do
 #     it "raises a LocalJumpError if no block given" do

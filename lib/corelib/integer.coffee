@@ -115,7 +115,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     @__ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    new R.Array([@gcd(other), @lcm(other)])
+    new R.Array([@gcd(other).valueOf(), @lcm(other).valueOf()])
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #

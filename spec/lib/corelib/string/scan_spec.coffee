@@ -6,28 +6,28 @@ describe "String#scan", ->
   #   $KCODE = @kcode
 
   it "returns an array containing all matches", ->
-    expect( R("cruel world").scan(/\w+/).unbox(true)  ).toEqual ["cruel", "world"]
-    expect( R("cruel world").scan(/.../).unbox(true)  ).toEqual ["cru", "el ", "wor"]
+    expect( R("cruel world").scan(/\w+/).valueOf()  ).toEqual ["cruel", "world"]
+    expect( R("cruel world").scan(/.../).valueOf()  ).toEqual ["cru", "el ", "wor"]
 
     # Edge case
-    expect( R("hello").scan(//).unbox(true) ).toEqual ["", "", "", "", "", ""]
-    expect( R("").scan(//).unbox(true) ).toEqual [""]
+    expect( R("hello").scan(//).valueOf() ).toEqual ["", "", "", "", "", ""]
+    expect( R("").scan(//).valueOf() ).toEqual [""]
 
   it "respects $KCODE when the pattern collapses to nothing", ->
     str = "こにちわ"
     reg = //
     # $KCODE = "utf-8"
-    expect( R(str).scan(reg).unbox(true) ).toEqual ["", "", "", "", ""]
+    expect( R(str).scan(reg).valueOf() ).toEqual ["", "", "", "", ""]
 
   it "stores groups as arrays in the returned arrays", ->
-    expect( R("hello").scan(/()/).unbox(true)             ).toEqual [[""],[""],[""],[""],[""],[""]]
-    expect( R("hello").scan(/()()/).unbox(true)           ).toEqual [["", ""],["", ""],["", ""],["", ""],["", ""],["", ""]]
-    expect( R("cruel world").scan(/(...)/).unbox(true)    ).toEqual [["cru"], ["el "], ["wor"]]
-    expect( R("cruel world").scan(/(..)(..)/).unbox(true) ).toEqual [["cr", "ue"], ["l ", "wo"]]
+    expect( R("hello").scan(/()/).valueOf()             ).toEqual [[""],[""],[""],[""],[""],[""]]
+    expect( R("hello").scan(/()()/).valueOf()           ).toEqual [["", ""],["", ""],["", ""],["", ""],["", ""],["", ""]]
+    expect( R("cruel world").scan(/(...)/).valueOf()    ).toEqual [["cru"], ["el "], ["wor"]]
+    expect( R("cruel world").scan(/(..)(..)/).valueOf() ).toEqual [["cr", "ue"], ["l ", "wo"]]
 
   it "scans for occurrences of the string if pattern is a string", ->
-    expect( R("one two one two").scan('one').unbox(true) ).toEqual ["one", "one"]
-    expect( R("hello.").scan('.').unbox(true)            ).toEqual ['.']
+    expect( R("one two one two").scan('one').valueOf() ).toEqual ["one", "one"]
+    expect( R("hello.").scan('.').valueOf()            ).toEqual ['.']
 
   it "sets $~ to MatchData of last match and nil when there's none", ->
     R('hello.').scan(/.(.)/)
@@ -51,7 +51,7 @@ describe "String#scan", ->
   it "tries to convert pattern to a string via to_str", ->
     obj =
       to_str: -> R("o")
-    expect( R("o_o").scan(obj).unbox(true) ).toEqual ["o", "o"]
+    expect( R("o_o").scan(obj).valueOf() ).toEqual ["o", "o"]
 
   it "raises a TypeError if pattern isn't a Regexp and can't be converted to a String", ->
     expect( -> R("cruel world").scan(5)   ).toThrow('TypeError')
@@ -81,12 +81,12 @@ describe "String#scan with pattern and block", ->
   it "passes each match to the block as one argument: an array", ->
     a = R([])
     R("cruel world").scan(/\w+/, (w) -> a.push(w) )
-    expect( a.unbox(true) ).toEqual [["cruel"], ["world"]]
+    expect( a.valueOf() ).toEqual [["cruel"], ["world"]]
 
   it "passes groups to the block as one argument: an array", ->
     a = R([])
     R("cruel world").scan(/(..)(..)/, (w) -> a.push(w) )
-    expect( a.unbox(true) ).toEqual [["cr", "ue"], ["l ", "wo"]]
+    expect( a.valueOf() ).toEqual [["cr", "ue"], ["l ", "wo"]]
 
   # TODO
   xit "sets $~ for access from the block", ->

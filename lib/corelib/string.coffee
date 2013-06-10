@@ -484,6 +484,7 @@ class RubyJS.String extends RubyJS.Object
   #    # "world"
   #
   each_line: (args...) ->
+    # TODO
     block = @__extract_block(args)
 
     return @to_enum('lines', args[0]) unless block && block.call?
@@ -506,10 +507,10 @@ class RubyJS.String extends RubyJS.Object
       rgt = rgt.succ()
       str = dup.slice(lft, rgt.minus(lft))
       lft = rgt
-      block(str)
+      block(str.valueOf())
 
-    if remainder = R(dup.to_native().slice(lft.to_native()))
-      block(remainder) unless remainder.empty()
+    if remainder = dup.to_native().slice(lft.to_native())
+      block(remainder) unless remainder.length == 0
 
     this
 
@@ -984,21 +985,21 @@ class RubyJS.String extends RubyJS.Object
       R['$~'] = new R.MatchData(match, {offset: index, string: @__native__})
 
       if match.length > 1
-        val = new R.Array(new R.String(m) for m in match[1...match.length])
+        val = match[1...match.length]
       else
-        val = new R.Array([new R.String(match[0])])
+        val = [match[0]]
 
       if block != null
         block(val)
       else
-        val = val.first() if match.length == 1
+        val = val[0] if match.length == 1
         match_arr.push val
 
       index = fin
       break if index > this.length
 
     # return this if block was passed
-    if block != null then this else (new R.Array(match_arr))
+    if block != null then this else (new RArray(match_arr))
 
   #setbyte
 

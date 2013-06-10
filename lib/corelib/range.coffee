@@ -127,7 +127,8 @@ class RubyJS.Range extends RubyJS.Object
     iterator = @__start__.dup()
 
     while iterator[@comparison](@__end__)
-      block(iterator)
+      # OPTIMIZE
+      block(iterator.valueOf())
       iterator = iterator.succ()
 
     this
@@ -178,7 +179,7 @@ class RubyJS.Range extends RubyJS.Object
     b = @begin()
     e = @end()
     return null if e['<'](b) || (@exclusive && e.equals(b))
-    return b if b.is_float?
+    return b.valueOf() if b.is_float?
     R.Enumerable.prototype.min.call(this)
 
 
@@ -194,7 +195,7 @@ class RubyJS.Range extends RubyJS.Object
     b = @begin()
     e = @end()
     return null if e['<'](b) || (@exclusive && e.equals(b))
-    return e if e.is_float? || (e.is_float? && !@exclusive)
+    return e.valueOf() if e.is_float? || (e.is_float? && !@exclusive)
     R.Enumerable.prototype.max.call(this)
 
 
@@ -245,17 +246,17 @@ class RubyJS.Range extends RubyJS.Object
     if first.is_float?
       # TODO: add float math error check
       while cnt[cmp](last)
-        block(cnt)
+        block(cnt.valueOf())
         cnt = cnt.plus(step_size)
     else if first.is_fixnum?
       while cnt[cmp](last)
-        block(cnt)
+        block(cnt.valueOf())
         cnt = cnt.plus(step_size)
     else
       # no numeric, typically a string
       cnt = 0
       @each (o) ->
-        block(R(o)) if cnt % step_size is 0
+        block(o) if cnt % step_size is 0
         cnt += 1
 
     this

@@ -21,4 +21,4 @@ describe "Numeric#divmod", ->
       # @obj.should_receive(:/).twice.with(10).and_return(R(13 - 0.00001), R(13 - 0.00001))
       # @obj.should_receive(:-).with(120).and_return(3)
 
-      expect( @obj.divmod(10) ).toEqual R.$Array_r([12, 3])
+      expect( @obj.divmod(10).valueOf() ).toEqual [12, 3]

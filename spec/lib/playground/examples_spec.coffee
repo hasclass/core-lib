@@ -10,29 +10,3 @@ describe "Examples", ->
 
     expect( str ).toEqual "hello world\n-----------"
 
-  it "should scan words", ->
-    scanned = R("foo bar").scan(/\w+/)
-
-    # recursively unbox RubyJS.Array and RubyJS.Strings to native types
-    # Makes tests more concise.
-    expect( scanned.unbox(true)                   ).toEqual ["foo", "bar"]
-
-    # map to capitalize
-    expect( scanned.map((w) -> w.capitalize() ).unbox(true) ).toEqual ["Foo", "Bar"]
-
-    # use string to proc
-    # expect( scanned.map("capitalize").inspect()           ).toEqual R('["Foo", "Bar"]')
-
-    # Works with CoffeeScript iterators using .iterator().
-    # scanned.iterator() returns a for .. in .. compatible object. Currently
-    # a native array.
-    native_arr_of__r_strings = (w.capitalize() for w in scanned.iterator())
-    # for .. in .. however returns a native array again, and we have to box it
-    # if we need RubyJS.Array methods.
-    expect( native_arr_of__r_strings.each ).toBeUndefined
-    expect( R(native_arr_of__r_strings).unbox(true) ).toEqual ["Foo", "Bar"]
-
-    # _bang methods alter the RubyJS.Strings directly
-    scanned.each (w) -> w.capitalize_bang()
-    expect( scanned.unbox(true)         ).toEqual ["Foo", "Bar"]
-

@@ -126,10 +126,11 @@ class RubyJS.Numeric extends RubyJS.Object
 
 
   divmod: (other) ->
+    # TODO: CLEANUP
     quotient = @div(other).floor()
     modulus  = @minus(quotient.multiply(other))
 
-    new R.Array([quotient, modulus])
+    new RArray([quotient.valueOf(), modulus.valueOf()])
 
 
   # Returns true if num and numeric are the same type and have equal values.

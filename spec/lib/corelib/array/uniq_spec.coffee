@@ -11,7 +11,7 @@ describe "Array#uniq", ->
   #     array.uniq.should == [1, 'two', 3.0, array]
 
   xit "uses eql? semantics", ->
-    expect( R([R.$Float(1.0), 1]).uniq().unbox(true) ).toEqual [1.0, 1]
+    expect( R([R.$Float(1.0), 1]).uniq().valueOf() ).toEqual [1.0, 1]
 
   xit "compares elements first with hash", ->
     # Can't use should_receive because it uses hash internally

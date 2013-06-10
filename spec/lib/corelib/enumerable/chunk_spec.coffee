@@ -21,7 +21,7 @@ xdescribe "Enumerable#chunk", ->
 
   it "sets the last element of each sub-Array to the consecutive values for which the block returned the first element", ->
     ret = EnumerableSpecs.Numerous.new(5,5,2,3,4,5,7,1,9).chunk((e) -> e >= 5 ).to_a()
-    ret = ret.unbox(true)
+    ret = ret.valueOf()
     expect( ret[0][1] ).toEqual [5, 5]
     expect( ret[1][1] ).toEqual [2, 3, 4]
     expect( ret[2][1] ).toEqual [5, 7]

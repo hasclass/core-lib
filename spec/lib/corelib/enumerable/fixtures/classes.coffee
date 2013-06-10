@@ -26,6 +26,28 @@ class EnumerableSpecs.Numerous extends RubyJS.Object
 
 class EnumerableSpecs.NumerousLiteral extends RubyJS.Object
   @include RubyJS.Enumerable
+
+  @new: (list...) -> new EnumerableSpecs.Numerous(list...)
+
+  constructor: (list...) ->
+    if list.length != 0
+      @list = R(list)
+    else
+      @list = R([2, 5, 3, 6, 1, 4])
+
+  each: (func) ->
+    func.single_mode_block_arg = true if func
+
+    if func && func.call?
+      @list.each( (i) -> func(i) )
+    else
+      @list.valueOf() # @to_enum('each')
+
+  to_native: ->
+    @list.__native__
+
+class EnumerableSpecs.NumerousLiteral extends RubyJS.Object
+  @include RubyJS.Enumerable
   @new: (list...) -> new EnumerableSpecs.NumerousLiteral(list...)
   constructor: (list...) ->
     if list.length != 0

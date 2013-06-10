@@ -117,8 +117,8 @@ describe "Enumerable block args", ->
     @enobj.reverse_each((a, b) -> expect(b).toEqual('o'))
 
   it "#zip", ->
-    @en.zip((a, b) -> expect( a ).toEqual(R(['a'])))
-    @enobj.zip((a, b) -> expect( a ).toEqual(R(['a'])))
+    @en.zip((a, b) -> expect( a ).toEqual(['a'])   )
+    @enobj.zip((a, b) -> expect( a ).toEqual(['a']))
 
 
 describe "Integer block args", ->

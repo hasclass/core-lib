@@ -129,4 +129,4 @@ describe "Enumerable with block arity 1", ->
     @en.to_a((a) -> expect( a ).toEqual('a'))
 
   it "#zip", ->
-    @en.zip((a) -> expect( a ).toEqual(R(['a'])))
+    @en.zip((a) -> expect( a ).toEqual(['a']))

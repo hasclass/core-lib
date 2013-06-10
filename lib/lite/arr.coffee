@@ -231,6 +231,34 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
+  product: (arr, args...) ->
+    # TODO
+    # block = R.__extract_block(args)
+    # args = args.reverse()
+    # for a in args
+    #   throw R.TypeError.new() unless __isArr(a)
+
+    # ary = []
+    # args.push(arr)
+
+    # # Implementation notes: We build a block that will generate all the
+    # # combinations by building it up successively using "inject" and starting
+    # # with one responsible to append the values.
+    # outer = _arr.inject arr, ary.push, (trigger, values) ->
+    #   (partial) ->
+    #     for val in values
+    #       trigger.call(ary, partial.concat(val))
+
+    # outer( [] )
+    # if block
+    #   block_result = arr
+    #   for v in ary
+    #     block_result.push(block(v))
+    #   block_result
+    # else
+    #   ary
+
+
   reverse_each: (arr, block) ->
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)
@@ -241,6 +269,30 @@ class ArrayMethods extends EnumerableMethods
 
     arr
 
+
+  transpose: (arr) ->
+    return [] if arr.length == 0
+
+    out = []
+    max = null
+
+    # TODO: dogfood
+    for ary in arr
+      ary = _coerce.arr(ary)
+      max ||= ary.length
+
+      # Catches too-large as well as too-small (for which #fetch would suffice)
+      # throw R.IndexError.new("All arrays must be same length") if ary.size != max
+      throw R.IndexError.new() unless ary.length == max
+
+      idx = -1
+      len = ary.length
+      while ++idx < len
+        out.push([]) unless out[idx]
+        entry = out[idx]
+        entry.push(ary[idx])
+
+    out
 
   uniq: (arr) ->
     ary = []

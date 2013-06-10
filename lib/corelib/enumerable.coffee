@@ -507,7 +507,7 @@ class RubyJS.Enumerable
   partition: (block) ->
     return @to_enum('partition') unless block && block.call?
     ary = _itr.partition(this, block)
-    new RArray([new RArray(ary[0]), new RArray(ary[1])])
+    new RArray([ary[0], ary[1]])
 
   reduce: @prototype.inject
 
@@ -600,24 +600,25 @@ class RubyJS.Enumerable
     # TODO: fix specs
     block = @__extract_block(others)
 
-    others = R(others).map (other) ->
-      o = R(other)
-      if o.to_ary? then o.to_ary() else o.to_enum('each')
+    others = for o in others
+      if __isArr(o) then o.valueOf() else o
 
-    results = new R.Array([])
+    results = []
     idx     = 0
     @each (el) ->
-      inner = R([el])
-      others.each (other) ->
-        el = if other.is_array? then other.at(idx) else other.next()
+      inner = [el]
+      for other in others
+        el = if __isArr(other) then other[idx] else other
         el = null if el is undefined
-        inner.append(el)
+        inner.push(el)
 
       block( inner ) if block
-      results.append( inner )
+      results.push( inner )
       idx += 1
 
-    if block then null else results
+    if block then null else new RArray(results)
+
+
 
   # --- Aliases ---------------------------------------------------------------
 

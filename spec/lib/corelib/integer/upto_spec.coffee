@@ -33,4 +33,4 @@ describe "Integer#upto [stop] when self and stop are Fixnums", ->
       result = R []
       en = R(2).upto(5)
       en.each (i) -> result.push(i)
-      expect( result.unbox(true) ).toEqual [2, 3, 4, 5]
+      expect( result.valueOf() ).toEqual [2, 3, 4, 5]

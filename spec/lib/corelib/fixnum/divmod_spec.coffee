@@ -1,15 +1,15 @@
 describe "Fixnum#divmod", ->
   it "returns an Array containing quotient and modulus obtained from dividing self by the given argument", ->
-    expect( R(13).divmod(4).unbox(true)   ).toEqual [3, 1]
-    expect( R(4).divmod(13).unbox(true)   ).toEqual [0, 4]
+    expect( R(13).divmod(4).valueOf()   ).toEqual [3, 1]
+    expect( R(4).divmod(13).valueOf()   ).toEqual [0, 4]
 
-    expect( R(13).divmod(4.0).unbox(true) ).toEqual [3, 1]
-    expect( R(4).divmod(13.0).unbox(true) ).toEqual [0, 4]
+    expect( R(13).divmod(4.0).valueOf() ).toEqual [3, 1]
+    expect( R(4).divmod(13.0).valueOf() ).toEqual [0, 4]
 
-    expect( R(1).divmod(2.0).unbox(true)  ).toEqual [0, 1.0]
+    expect( R(1).divmod(2.0).valueOf()  ).toEqual [0, 1.0]
 
   xit "bignum", ->
-    expect( R(200).divmod(bignum_value).unbox(true)).toEqual [0, 200]
+    expect( R(200).divmod(bignum_value).valueOf()).toEqual [0, 200]
 
   it "raises a ZeroDivisionError when the given argument is 0", ->
     expect( -> R( 13).divmod(0)    ).toThrow("ZeroDivisionError")

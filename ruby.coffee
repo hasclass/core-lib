@@ -1879,6 +1879,34 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
+  product: (arr, args...) ->
+    # TODO
+    # block = R.__extract_block(args)
+    # args = args.reverse()
+    # for a in args
+    #   throw R.TypeError.new() unless __isArr(a)
+
+    # ary = []
+    # args.push(arr)
+
+    # # Implementation notes: We build a block that will generate all the
+    # # combinations by building it up successively using "inject" and starting
+    # # with one responsible to append the values.
+    # outer = _arr.inject arr, ary.push, (trigger, values) ->
+    #   (partial) ->
+    #     for val in values
+    #       trigger.call(ary, partial.concat(val))
+
+    # outer( [] )
+    # if block
+    #   block_result = arr
+    #   for v in ary
+    #     block_result.push(block(v))
+    #   block_result
+    # else
+    #   ary
+
+
   reverse_each: (arr, block) ->
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)
@@ -1889,6 +1917,30 @@ class ArrayMethods extends EnumerableMethods
 
     arr
 
+
+  transpose: (arr) ->
+    return [] if arr.length == 0
+
+    out = []
+    max = null
+
+    # TODO: dogfood
+    for ary in arr
+      ary = _coerce.arr(ary)
+      max ||= ary.length
+
+      # Catches too-large as well as too-small (for which #fetch would suffice)
+      # throw R.IndexError.new("All arrays must be same length") if ary.size != max
+      throw R.IndexError.new() unless ary.length == max
+
+      idx = -1
+      len = ary.length
+      while ++idx < len
+        out.push([]) unless out[idx]
+        entry = out[idx]
+        entry.push(ary[idx])
+
+    out
 
   uniq: (arr) ->
     ary = []
@@ -3222,7 +3274,7 @@ class RubyJS.Enumerable
   partition: (block) ->
     return @to_enum('partition') unless block && block.call?
     ary = _itr.partition(this, block)
-    new RArray([new RArray(ary[0]), new RArray(ary[1])])
+    new RArray([ary[0], ary[1]])
 
   reduce: @prototype.inject
 
@@ -3315,24 +3367,25 @@ class RubyJS.Enumerable
     # TODO: fix specs
     block = @__extract_block(others)
 
-    others = R(others).map (other) ->
-      o = R(other)
-      if o.to_ary? then o.to_ary() else o.to_enum('each')
+    others = for o in others
+      if __isArr(o) then o.valueOf() else o
 
-    results = new R.Array([])
+    results = []
     idx     = 0
     @each (el) ->
-      inner = R([el])
-      others.each (other) ->
-        el = if other.is_array? then other.at(idx) else other.next()
+      inner = [el]
+      for other in others
+        el = if __isArr(other) then other[idx] else other
         el = null if el is undefined
-        inner.append(el)
+        inner.push(el)
 
       block( inner ) if block
-      results.append( inner )
+      results.push( inner )
       idx += 1
 
-    if block then null else results
+    if block then null else new RArray(results)
+
+
 
   # --- Aliases ---------------------------------------------------------------
 
@@ -3479,8 +3532,6 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
     @proc( new RubyJS.Enumerator.Yielder( enclosed_yield ) )
 
 
-
-
 # Array wraps a javascript array.
 #
 # @todo No proper support for handling recursive arrays. (e.g. a = [], a.push(a)).
@@ -3601,7 +3652,7 @@ class RubyJS.Array extends RubyJS.Object
     ary = []
     idx = -1
     while ++idx < size
-      ary[idx] = if block then block(R(idx)) else obj
+      ary[idx] = if block then block(idx) else obj
     return new R.Array(ary)
 
   # @private
@@ -3639,8 +3690,11 @@ class RubyJS.Array extends RubyJS.Object
   # Returns native array.
   #
   # @return Array
-  valueOf: ->
-    @__native__
+  valueOf: (recursive) ->
+    if recursive
+      @to_native(true)
+    else
+      @__native__
 
 
   # Returns native array.
@@ -4399,29 +4453,32 @@ class RubyJS.Array extends RubyJS.Object
   # @todo does not check if the result size will fit in an Array.
   #
   product: (args...) ->
+    result = []
     block = @__extract_block(args)
-    args = R.$Array_r(args).reverse()
-    throw R.TypeError.new() unless args.all (a) -> a.to_ary?
-    args.map_bang (a) -> a.to_ary()
-    result = new R.Array([])
-    args.push(this)
+
+    args = for a in args
+      RCoerce.to_ary_native(a)
+
+    args = args.reverse()
+    args.push(@__native__)
 
     # Implementation notes: We build a block that will generate all the
     # combinations by building it up successively using "inject" and starting
     # with one responsible to append the values.
-    outer = args.inject result.push, (trigger, values) ->
+    outer = _arr.inject args, result.push, (trigger, values) ->
       (partial) ->
-        values.each (val) ->
-          trigger.call(result, partial.dup().append(val))
+        for val in values
+          trigger.call(result, partial.concat(val))
 
-    outer( new R.Array([]) )
+    outer( [] )
     if block
       block_result = this
-      result.each (v) ->
+      for v in result
         block_result.append block(v)
       block_result
     else
-      result
+      new RArray(result)
+
 
   # Append—Pushes the given object(s) on to the end of this array. This
   # expression returns the array itself, so several appends may be chained
@@ -4862,27 +4919,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.transpose()   # => [[1, 3, 5], [2, 4, 6]]
   #
   transpose: ->
-    return new R.Array([]) if @empty()
+    new RArray(_arr.transpose(@__native__))
 
-    out = new R.Array([])
-    max = null
-
-    # TODO: dogfood
-    @each (ary) ->
-      ary = RCoerce.to_ary(ary)
-      max ||= ary.size()
-
-      # Catches too-large as well as too-small (for which #fetch would suffice)
-      # throw R.IndexError.new("All arrays must be same length") if ary.size != max
-      throw R.IndexError.new() unless ary.size().equals(max)
-
-      idx = -1
-      len = ary.__size__()
-      while ++idx < len
-        out.append(new R.Array([])) unless out.at(idx)
-        entry = out.at(idx)
-        entry.append ary.at(idx)
-    out
 
   # Returns a new array by removing duplicate values in self.
   #
@@ -5784,7 +5822,8 @@ class RubyJS.Range extends RubyJS.Object
     iterator = @__start__.dup()
 
     while iterator[@comparison](@__end__)
-      block(iterator)
+      # OPTIMIZE
+      block(iterator.valueOf())
       iterator = iterator.succ()
 
     this
@@ -5835,7 +5874,7 @@ class RubyJS.Range extends RubyJS.Object
     b = @begin()
     e = @end()
     return null if e['<'](b) || (@exclusive && e.equals(b))
-    return b if b.is_float?
+    return b.valueOf() if b.is_float?
     R.Enumerable.prototype.min.call(this)
 
 
@@ -5851,7 +5890,7 @@ class RubyJS.Range extends RubyJS.Object
     b = @begin()
     e = @end()
     return null if e['<'](b) || (@exclusive && e.equals(b))
-    return e if e.is_float? || (e.is_float? && !@exclusive)
+    return e.valueOf() if e.is_float? || (e.is_float? && !@exclusive)
     R.Enumerable.prototype.max.call(this)
 
 
@@ -5902,17 +5941,17 @@ class RubyJS.Range extends RubyJS.Object
     if first.is_float?
       # TODO: add float math error check
       while cnt[cmp](last)
-        block(cnt)
+        block(cnt.valueOf())
         cnt = cnt.plus(step_size)
     else if first.is_fixnum?
       while cnt[cmp](last)
-        block(cnt)
+        block(cnt.valueOf())
         cnt = cnt.plus(step_size)
     else
       # no numeric, typically a string
       cnt = 0
       @each (o) ->
-        block(R(o)) if cnt % step_size is 0
+        block(o) if cnt % step_size is 0
         cnt += 1
 
     this
@@ -6678,6 +6717,7 @@ class RubyJS.String extends RubyJS.Object
   #    # "world"
   #
   each_line: (args...) ->
+    # TODO
     block = @__extract_block(args)
 
     return @to_enum('lines', args[0]) unless block && block.call?
@@ -6700,10 +6740,10 @@ class RubyJS.String extends RubyJS.Object
       rgt = rgt.succ()
       str = dup.slice(lft, rgt.minus(lft))
       lft = rgt
-      block(str)
+      block(str.valueOf())
 
-    if remainder = R(dup.to_native().slice(lft.to_native()))
-      block(remainder) unless remainder.empty()
+    if remainder = dup.to_native().slice(lft.to_native())
+      block(remainder) unless remainder.length == 0
 
     this
 
@@ -7178,21 +7218,21 @@ class RubyJS.String extends RubyJS.Object
       R['$~'] = new R.MatchData(match, {offset: index, string: @__native__})
 
       if match.length > 1
-        val = new R.Array(new R.String(m) for m in match[1...match.length])
+        val = match[1...match.length]
       else
-        val = new R.Array([new R.String(match[0])])
+        val = [match[0]]
 
       if block != null
         block(val)
       else
-        val = val.first() if match.length == 1
+        val = val[0] if match.length == 1
         match_arr.push val
 
       index = fin
       break if index > this.length
 
     # return this if block was passed
-    if block != null then this else (new R.Array(match_arr))
+    if block != null then this else (new RArray(match_arr))
 
   #setbyte
 
@@ -8228,10 +8268,11 @@ class RubyJS.Numeric extends RubyJS.Object
 
 
   divmod: (other) ->
+    # TODO: CLEANUP
     quotient = @div(other).floor()
     modulus  = @minus(quotient.multiply(other))
 
-    new R.Array([quotient, modulus])
+    new RArray([quotient.valueOf(), modulus.valueOf()])
 
 
   # Returns true if num and numeric are the same type and have equal values.
@@ -8519,7 +8560,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     @__ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    new R.Array([@gcd(other), @lcm(other)])
+    new R.Array([@gcd(other).valueOf(), @lcm(other).valueOf()])
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #

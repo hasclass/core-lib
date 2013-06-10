@@ -9,7 +9,7 @@ describe "String#split with String", ->
   # end
 
   it "returns an array of substrings based on splitting on the given string", ->
-    expect( R("mellow yellow").split("ello").unbox(true) ).toEqual ["m", "w y", "w"]
+    expect( R("mellow yellow").split("ello").valueOf() ).toEqual ["m", "w y", "w"]
 
   it "suppresses trailing empty fields when limit isn't given or 0", ->
     expect( R("1,2,,3,4,,").split(',').valueOf() ).toEqual ["1", "2", "", "3", "4"]
@@ -26,26 +26,26 @@ describe "String#split with String", ->
     expect( R("hi!").split("", 1).valueOf() ).toEqual ["hi!"]
 
   xit "returns at most limit fields when limit > 1", ->
-    expect( R("hai").split("hai", 2).unbox(true) ).toEqual ["", ""]
+    expect( R("hai").split("hai", 2).valueOf() ).toEqual ["", ""]
 
-    expect( R("1,2,,3,4,,").split(',', 2).unbox(true) ).toEqual ["1", "2,,3,4,,"]
-    expect( R("1,2,,3,4,,").split(',', 3).unbox(true) ).toEqual ["1", "2", ",3,4,,"]
-    expect( R("1,2,,3,4,,").split(',', 4).unbox(true) ).toEqual ["1", "2", "", "3,4,,"]
-    expect( R("1,2,,3,4,,").split(',', 5).unbox(true) ).toEqual ["1", "2", "", "3", "4,,"]
-    expect( R("1,2,,3,4,,").split(',', 6).unbox(true) ).toEqual ["1", "2", "", "3", "4", ","]
+    expect( R("1,2,,3,4,,").split(',', 2).valueOf() ).toEqual ["1", "2,,3,4,,"]
+    expect( R("1,2,,3,4,,").split(',', 3).valueOf() ).toEqual ["1", "2", ",3,4,,"]
+    expect( R("1,2,,3,4,,").split(',', 4).valueOf() ).toEqual ["1", "2", "", "3,4,,"]
+    expect( R("1,2,,3,4,,").split(',', 5).valueOf() ).toEqual ["1", "2", "", "3", "4,,"]
+    expect( R("1,2,,3,4,,").split(',', 6).valueOf() ).toEqual ["1", "2", "", "3", "4", ","]
 
-    expect( R("x").split('x', 2).unbox(true) ).toEqual ["", ""]
-    expect( R("xx").split('x', 2).unbox(true) ).toEqual ["", "x"]
-    expect( R("xx").split('x', 3).unbox(true) ).toEqual ["", "", ""]
-    expect( R("xxx").split('x', 2).unbox(true) ).toEqual ["", "xx"]
-    expect( R("xxx").split('x', 3).unbox(true) ).toEqual ["", "", "x"]
-    expect( R("xxx").split('x', 4).unbox(true) ).toEqual ["", "", "", ""]
+    expect( R("x").split('x', 2).valueOf() ).toEqual ["", ""]
+    expect( R("xx").split('x', 2).valueOf() ).toEqual ["", "x"]
+    expect( R("xx").split('x', 3).valueOf() ).toEqual ["", "", ""]
+    expect( R("xxx").split('x', 2).valueOf() ).toEqual ["", "xx"]
+    expect( R("xxx").split('x', 3).valueOf() ).toEqual ["", "", "x"]
+    expect( R("xxx").split('x', 4).valueOf() ).toEqual ["", "", "", ""]
 
   xit "doesn't suppress or limit fields when limit is negative", ->
-    expect( R("1,2,,3,4,,").split(',', -1).unbox(true) ).toEqual ["1", "2", "", "3", "4", "", ""]
-    expect( R("1,2,,3,4,,").split(',', -5).unbox(true) ).toEqual ["1", "2", "", "3", "4", "", ""]
-    expect( R("  a  b  c\nd  ").split("  ", -1).unbox(true) ).toEqual ["", "a", "b", "c\nd", ""]
-    expect( R(",").split(",", -1).unbox(true) ).toEqual ["", ""]
+    expect( R("1,2,,3,4,,").split(',', -1).valueOf() ).toEqual ["1", "2", "", "3", "4", "", ""]
+    expect( R("1,2,,3,4,,").split(',', -5).valueOf() ).toEqual ["1", "2", "", "3", "4", "", ""]
+    expect( R("  a  b  c\nd  ").split("  ", -1).valueOf() ).toEqual ["", "a", "b", "c\nd", ""]
+    expect( R(",").split(",", -1).valueOf() ).toEqual ["", ""]
 
 #   it "defaults to $; when string isn't given or nil", ->
 #     begin
@@ -67,17 +67,17 @@ describe "String#split with String", ->
 #       $; = old_fs
 
   it "ignores leading and continuous whitespace when string is a single space", ->
-    expect( R(" now's  the time  ").split(' ').unbox(true)     ).toEqual ["now's", "the", "time"]
+    expect( R(" now's  the time  ").split(' ').valueOf()     ).toEqual ["now's", "the", "time"]
 
   xit "ignores leading and continuous whitespace when string is a single space with limit", ->
-    # expect( R(" now's  the time  ").split(' ', -1).unbox(true) ).toEqual ["now's", "the", "time", ""]
-    # expect( R(" now's  the time  ").split(' ', 3).unbox(true)  ).toEqual ["now's", "the", "time  "]
+    # expect( R(" now's  the time  ").split(' ', -1).valueOf() ).toEqual ["now's", "the", "time", ""]
+    # expect( R(" now's  the time  ").split(' ', 3).valueOf()  ).toEqual ["now's", "the", "time  "]
 
 #     "\t\n a\t\tb \n\r\r\nc\v\vd\v ".split(' ').should == ["a", "b", "c", "d"]
 #     "a\x00a b".split(' ').should == ["a\x00a", "b"]
 
   it "splits between characters when its argument is an empty string", ->
-    expect( R("hi!").split("").unbox(true) ).toEqual ["h", "i", "!"]
+    expect( R("hi!").split("").valueOf() ).toEqual ["h", "i", "!"]
 
   xit "splits between characters when its argument is an empty string", ->
     # "hi!".split("", -1).should == ["h", "i", "!", ""]
@@ -87,7 +87,7 @@ describe "String#split with String", ->
     obj =
       to_str: -> R("::")
 
-    expect( R("hello::world").split(obj).unbox(true) ).toEqual ["hello", "world"]
+    expect( R("hello::world").split(obj).valueOf() ).toEqual ["hello", "world"]
 
   xit "tries converting limit to an integer via to_int", ->
     # obj = mock('2')
@@ -133,21 +133,21 @@ describe "String#split with String", ->
 
 describe "String#split with Regexp", ->
   it "divides self on regexp matches", ->
-    expect( R(" now's  the time").split(/\ /).unbox(true) ).toEqual ["", "now's", "", "the", "time"]
-    expect( R(" x\ny ").split(/\ /).unbox(true)           ).toEqual ["", "x\ny"]
-    expect( R("1, 2.34,56, 7").split(/,\s*/).unbox(true) ).toEqual ["1", "2.34", "56", "7"]
-    expect( R("1x2X3").split(/x/i).unbox(true)           ).toEqual ["1", "2", "3"]
+    expect( R(" now's  the time").split(/\ /).valueOf() ).toEqual ["", "now's", "", "the", "time"]
+    expect( R(" x\ny ").split(/\ /).valueOf()           ).toEqual ["", "x\ny"]
+    expect( R("1, 2.34,56, 7").split(/,\s*/).valueOf() ).toEqual ["1", "2.34", "56", "7"]
+    expect( R("1x2X3").split(/x/i).valueOf()           ).toEqual ["1", "2", "3"]
 
   xit "treats negative limits as no limit", ->
     # "".split(%r!/+!, -1).should == []
 
   it "suppresses trailing empty fields when limit isn't given or 0", ->
-    expect( R("1,2,,3,4,,").split(/,/).unbox(true)       ).toEqual ["1", "2", "", "3", "4"]
-    expect( R("1,2,,3,4,,").split(/,/, 0).unbox(true)    ).toEqual ["1", "2", "", "3", "4"]
-    expect( R("  a  b  c\nd  ").split(/\s+/).unbox(true) ).toEqual ["", "a", "b", "c", "d"]
-    expect( R("hai").split(/hai/).unbox(true)            ).toEqual []
-    expect( R(",").split(/,/).unbox(true)                ).toEqual []
-    expect( R(",").split(/,/, 0).unbox(true)             ).toEqual []
+    expect( R("1,2,,3,4,,").split(/,/).valueOf()       ).toEqual ["1", "2", "", "3", "4"]
+    expect( R("1,2,,3,4,,").split(/,/, 0).valueOf()    ).toEqual ["1", "2", "", "3", "4"]
+    expect( R("  a  b  c\nd  ").split(/\s+/).valueOf() ).toEqual ["", "a", "b", "c", "d"]
+    expect( R("hai").split(/hai/).valueOf()            ).toEqual []
+    expect( R(",").split(/,/).valueOf()                ).toEqual []
+    expect( R(",").split(/,/, 0).valueOf()             ).toEqual []
 
 #   it "returns an array with one entry if limit is 1: the original string", ->
 #     "hai".split(/hai/, 1).should == ["hai"]
@@ -197,12 +197,12 @@ describe "String#split with Regexp", ->
 #       $; = old_fs
 
   it "splits between characters when regexp matches a zero-length string", ->
-    expect( R("hello").split(//).unbox(true)         ).toEqual ["h", "e", "l", "l", "o"]
-    expect( R("AABCCBAA").split(/(?=B)/).unbox(true) ).toEqual ["AA", "BCC", "BAA"]
-    expect( R("hi mom").split(/\s*/).unbox(true)     ).toEqual ["h", "i", "m", "o", "m"]
+    expect( R("hello").split(//).valueOf()         ).toEqual ["h", "e", "l", "l", "o"]
+    expect( R("AABCCBAA").split(/(?=B)/).valueOf() ).toEqual ["AA", "BCC", "BAA"]
+    expect( R("hi mom").split(/\s*/).valueOf()     ).toEqual ["h", "i", "m", "o", "m"]
   xit "splits between characters when regexp matches a zero-length string", ->
-    # expect( R("hello").split(//, -1).unbox(true) ).toEqual ["h", "e", "l", "l", "o", ""]
-    # expect( R("hello").split(//, 2).unbox(true) ).toEqual ["h", "ello"]
+    # expect( R("hello").split(//, -1).valueOf() ).toEqual ["h", "e", "l", "l", "o", ""]
+    # expect( R("hello").split(//, 2).valueOf() ).toEqual ["h", "ello"]
     # "AABCCBAA".split(/(?=B)/, -1).should == ["AA", "BCC", "BAA"]
     # "AABCCBAA".split(/(?=B)/, 2).should == ["AA", "BCCBAA"]
 
@@ -225,15 +225,15 @@ describe "String#split with Regexp", ->
 #     ary.should == ["\303\202"]
 
   it "includes all captures in the result array", ->
-    expect( R("hello").split(/(el)/).unbox(true)     ).toEqual ["h", "el", "lo"]
-    expect( R("hi!").split(/()/).unbox(true)         ).toEqual ["h", "", "i", "", "!"]
-    # expect( R("hi!").split(/()/, -1).unbox(true)     ).toEqual ["h", "", "i", "", "!", "", ""]
-    expect( R("hello").split(/((el))()/).unbox(true) ).toEqual ["h", "el", "el", "", "lo"]
-    expect( R("AabB").split(/([a-z])+/).unbox(true)  ).toEqual ["A", "b", "B"]
+    expect( R("hello").split(/(el)/).valueOf()     ).toEqual ["h", "el", "lo"]
+    expect( R("hi!").split(/()/).valueOf()         ).toEqual ["h", "", "i", "", "!"]
+    # expect( R("hi!").split(/()/, -1).valueOf()     ).toEqual ["h", "", "i", "", "!", "", ""]
+    expect( R("hello").split(/((el))()/).valueOf() ).toEqual ["h", "el", "el", "", "lo"]
+    expect( R("AabB").split(/([a-z])+/).valueOf()  ).toEqual ["A", "b", "B"]
 
   # TODO:
   xit "does not include non-matching captures in the result array", ->
-    expect( R("hello").split(/(el)|(xx)/).unbox(true) ).toEqual ["h", "el", "lo"]
+    expect( R("hello").split(/(el)|(xx)/).valueOf() ).toEqual ["h", "el", "lo"]
 
 #   it "tries converting limit to an integer via to_int", ->
 #     obj = mock('2')
@@ -251,7 +251,7 @@ describe "String#split with Regexp", ->
 #     $~.should == nil
 
   it "returns the original string if no matches are found", ->
-    expect( R("foo").split("\n").unbox(true) ).toEqual ["foo"]
+    expect( R("foo").split("\n").valueOf() ).toEqual ["foo"]
 
 #   xit "returns subclass instances based on self", ->
 #     # ["", "x:y:z:", "  x  y  "].each do |str|

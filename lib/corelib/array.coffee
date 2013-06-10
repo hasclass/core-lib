@@ -1,5 +1,3 @@
-
-
 # Array wraps a javascript array.
 #
 # @todo No proper support for handling recursive arrays. (e.g. a = [], a.push(a)).
@@ -120,7 +118,7 @@ class RubyJS.Array extends RubyJS.Object
     ary = []
     idx = -1
     while ++idx < size
-      ary[idx] = if block then block(R(idx)) else obj
+      ary[idx] = if block then block(idx) else obj
     return new R.Array(ary)
 
   # @private
@@ -158,8 +156,11 @@ class RubyJS.Array extends RubyJS.Object
   # Returns native array.
   #
   # @return Array
-  valueOf: ->
-    @__native__
+  valueOf: (recursive) ->
+    if recursive
+      @to_native(true)
+    else
+      @__native__
 
 
   # Returns native array.
@@ -918,29 +919,32 @@ class RubyJS.Array extends RubyJS.Object
   # @todo does not check if the result size will fit in an Array.
   #
   product: (args...) ->
+    result = []
     block = @__extract_block(args)
-    args = R.$Array_r(args).reverse()
-    throw R.TypeError.new() unless args.all (a) -> a.to_ary?
-    args.map_bang (a) -> a.to_ary()
-    result = new R.Array([])
-    args.push(this)
+
+    args = for a in args
+      RCoerce.to_ary_native(a)
+
+    args = args.reverse()
+    args.push(@__native__)
 
     # Implementation notes: We build a block that will generate all the
     # combinations by building it up successively using "inject" and starting
     # with one responsible to append the values.
-    outer = args.inject result.push, (trigger, values) ->
+    outer = _arr.inject args, result.push, (trigger, values) ->
       (partial) ->
-        values.each (val) ->
-          trigger.call(result, partial.dup().append(val))
+        for val in values
+          trigger.call(result, partial.concat(val))
 
-    outer( new R.Array([]) )
+    outer( [] )
     if block
       block_result = this
-      result.each (v) ->
+      for v in result
         block_result.append block(v)
       block_result
     else
-      result
+      new RArray(result)
+
 
   # Append—Pushes the given object(s) on to the end of this array. This
   # expression returns the array itself, so several appends may be chained
@@ -1381,27 +1385,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.transpose()   # => [[1, 3, 5], [2, 4, 6]]
   #
   transpose: ->
-    return new R.Array([]) if @empty()
+    new RArray(_arr.transpose(@__native__))
 
-    out = new R.Array([])
-    max = null
-
-    # TODO: dogfood
-    @each (ary) ->
-      ary = RCoerce.to_ary(ary)
-      max ||= ary.size()
-
-      # Catches too-large as well as too-small (for which #fetch would suffice)
-      # throw R.IndexError.new("All arrays must be same length") if ary.size != max
-      throw R.IndexError.new() unless ary.size().equals(max)
-
-      idx = -1
-      len = ary.__size__()
-      while ++idx < len
-        out.append(new R.Array([])) unless out.at(idx)
-        entry = out.at(idx)
-        entry.append ary.at(idx)
-    out
 
   # Returns a new array by removing duplicate values in self.
   #

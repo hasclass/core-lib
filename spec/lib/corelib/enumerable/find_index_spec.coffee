@@ -2,14 +2,14 @@ describe 'ruby_version_is "1.8.7"', ->
   describe "Enumerable#find_index", ->
     beforeEach ->
       @elements = [2, 4, 6, 8, 10]
-      @numerous = EnumerableSpecs.Numerous.new(2, 4, 6, 8, 10)
+      @numerous = EnumerableSpecs.NumerousLiteral.new(2, 4, 6, 8, 10)
 
     it "passes each entry in enum to block while block when block is false", ->
       visited_elements = R []
       @numerous.find_index (element) ->
         visited_elements.append element
         false
-      expect( visited_elements.unbox(true) ).toEqual @elements
+      expect( visited_elements.valueOf() ).toEqual @elements
 
     it "returns nil when the block is false", ->
       expect( @numerous.find_index -> false ).toEqual null
@@ -17,7 +17,7 @@ describe 'ruby_version_is "1.8.7"', ->
     it "returns the first index for which the block is not false", ->
       numerous = @numerous
       R(@elements).each_with_index (element, index) ->
-        expect( numerous.find_index((e) -> e.gt(element - 1) )).toEqual R(index)
+        expect( numerous.find_index((e) -> e > element - 1 )).toEqual R(index)
 
     it "returns the first index found", ->
       repeated = R [10, 11, 11, 13, 11, 13, 10, 10, 13, 11]

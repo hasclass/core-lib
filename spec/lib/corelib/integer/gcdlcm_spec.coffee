@@ -1,8 +1,8 @@
 describe "Integer#gcdlcm", ->
   describe 'ruby_version_is "1.9"', ->
     it "returns [self, self] if self is equal to the argument", ->
-      expect( R(1).gcdlcm(1).unbox(true) ).toEqual [1, 1]
-      expect( R(398).gcdlcm(398).unbox(true) ).toEqual [398, 398]
+      expect( R(1).gcdlcm(1).valueOf() ).toEqual [1, 1]
+      expect( R(398).gcdlcm(398).valueOf() ).toEqual [398, 398]
 
     it "returns an Array", ->
       expect( R(36).gcdlcm(6) ).toBeInstanceOf(R.Array)
@@ -13,12 +13,12 @@ describe "Integer#gcdlcm", ->
       expect( R(29).gcdlcm(17).size() ).toEqual R(2)
 
     it "returns the greatest common divisor of self and argument as the first element", ->
-      expect( R(10).gcdlcm(5).at(0) ).toEqual R(10).gcd(5)
-      expect( R(200).gcdlcm(20).at(0) ).toEqual R(200).gcd(20)
+      expect( R(10).gcdlcm(5).get(0) ).toEqual R(10).gcd(5).valueOf()
+      expect( R(200).gcdlcm(20).get(0) ).toEqual R(200).gcd(20).valueOf()
 
     it "returns the least common multiple of self and argument as the last element", ->
-      expect( R(10).gcdlcm(5).at(1)   ).toEqual R(10).lcm(5)
-      expect( R(200).gcdlcm(20).at(1) ).toEqual R(200).lcm(20)
+      expect( R(10).gcdlcm(5).get(1)   ).toEqual R(10).lcm(5).valueOf()
+      expect( R(200).gcdlcm(20).get(1) ).toEqual R(200).lcm(20).valueOf()
 
     xit "accepts a Bignum argument", ->
       # bignum = 91999**99

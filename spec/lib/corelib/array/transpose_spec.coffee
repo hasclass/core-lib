@@ -1,17 +1,17 @@
 describe "Array#transpose", ->
   it "assumes an array of arrays and returns the result of transposing rows and columns", ->
-    expect( R.$Array_r( [[1, 'a'], [2, 'b'], [3, 'c']] ).transpose().unbox(true) ).toEqual [[1, 2, 3], ["a", "b", "c"]]
-    expect( R.$Array_r( [[1, 2, 3], ["a", "b", "c"]]   ).transpose().unbox(true) ).toEqual [[1, 'a'], [2, 'b'], [3, 'c']]
-    expect( R.$Array_r( []                             ).transpose().unbox(true) ).toEqual []
-    expect( R.$Array_r( [[]]                           ).transpose().unbox(true) ).toEqual []
-    expect( R.$Array_r( [[], []]                       ).transpose().unbox(true) ).toEqual []
-    expect( R.$Array_r( [[0]]                          ).transpose().unbox(true) ).toEqual [[0]]
-    expect( R.$Array_r( [[0], [1]]                     ).transpose().unbox(true) ).toEqual [[0, 1]]
+    expect( R( [[1, 'a'], [2, 'b'], [3, 'c']] ).transpose().valueOf() ).toEqual [[1, 2, 3], ["a", "b", "c"]]
+    expect( R( [[1, 2, 3], ["a", "b", "c"]]   ).transpose().valueOf() ).toEqual [[1, 'a'], [2, 'b'], [3, 'c']]
+    expect( R( []                             ).transpose().valueOf() ).toEqual []
+    expect( R( [[]]                           ).transpose().valueOf() ).toEqual []
+    expect( R( [[], []]                       ).transpose().valueOf() ).toEqual []
+    expect( R( [[0]]                          ).transpose().valueOf() ).toEqual [[0]]
+    expect( R( [[0], [1]]                     ).transpose().valueOf() ).toEqual [[0, 1]]
 
-  it "tries to convert the passed argument to an Array using #to_ary", ->
+  it "tries to convert the passed argument to an Array using #valueOf", ->
     obj =
-      to_ary: -> R([1, 2])
-    expect( R( [obj, ['a', 'b']] ).transpose().unbox(true) ).toEqual [[1, 'a'], [2, 'b']]
+      valueOf: -> [1, 2]
+    expect( R( [obj, ['a', 'b']] ).transpose().valueOf() ).toEqual [[1, 'a'], [2, 'b']]
 
   # it "properly handles recursive arrays", ->
   #   empty = ArraySpecs.empty_recursive_array

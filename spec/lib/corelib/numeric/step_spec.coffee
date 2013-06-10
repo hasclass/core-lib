@@ -2,7 +2,7 @@ class ScratchPadKlass
   append: (obj) -> @arr.push(obj)
   record: (@arr = []) ->
     @arr = R(@arr)
-  recorded: () -> @arr.unbox(true)
+  recorded: () -> @arr.valueOf()
 
 ScratchPad = new ScratchPadKlass
 

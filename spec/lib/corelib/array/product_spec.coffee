@@ -7,15 +7,15 @@ describe "Array#product", ->
     # ar.called.should == :to_ary
 
   it "returns the expected result", ->
-    expect( R([1,2]).product([3,4,5],[6,8]).unbox(true)).toEqual [
+    expect( R([1,2]).product([3,4,5],[6,8]).valueOf()).toEqual [
       [1, 3, 6], [1, 3, 8], [1, 4, 6], [1, 4, 8], [1, 5, 6], [1, 5, 8],
       [2, 3, 6], [2, 3, 8], [2, 4, 6], [2, 4, 8], [2, 5, 6], [2, 5, 8]]
 
   it "has no required argument", ->
-    expect( R([1,2]).product().unbox(true) ).toEqual [[1],[2]]
+    expect( R([1,2]).product().valueOf() ).toEqual [[1],[2]]
 
   it "returns an empty array when the argument is an empty array", ->
-    expect( R([1, 2]).product([]).unbox(true) ).toEqual []
+    expect( R([1, 2]).product([]).valueOf() ).toEqual []
 
   xit "does not attempt to produce an unreasonable number of products", ->
   #   a = (0..100).to_a
@@ -27,13 +27,13 @@ describe "Array#product", ->
     it "yields all combinations in turn", ->
       acc = R []
       R([1,2]).product([3,4,5],[6,8], (ary) -> acc.push ary)
-      expect( acc.unbox(true) ).toEqual [
+      expect( acc.valueOf() ).toEqual [
         [1, 3, 6], [1, 3, 8], [1, 4, 6], [1, 4, 8], [1, 5, 6], [1, 5, 8],
         [2, 3, 6], [2, 3, 8], [2, 4, 6], [2, 4, 8], [2, 5, 6], [2, 5, 8]]
 
       acc = R []
       R([1,2]).product([3,4,5],[],[6,8], (ary) -> acc.push ary)
-      expect( acc.unbox(true) ).toEqual []
+      expect( acc.valueOf() ).toEqual []
 
     it "will ignore unreasonable numbers of products and yield anyway", ->
       # a = (0..100).to_a

@@ -71,7 +71,7 @@ describe "Array#fill with (filler, index, length)", ->
   it "replaces length elements beginning with the index with the value of block", ->
     arr = R([true, false, true, false, true, false, true])
     expect( arr.fill(1, 4, (i) ->
-      i + 3 ).unbox(true) ).toEqual([true, 4, 5, 6, 7, false, true])
+      i + 3 ).valueOf() ).toEqual([true, 4, 5, 6, 7, false, true])
 
   it "replaces all elements after the index if given an index and no length ", ->
     ary = R [1, 2, 3]

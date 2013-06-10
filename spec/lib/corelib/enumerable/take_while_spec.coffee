@@ -1,7 +1,7 @@
 describe "Enumerable#take_while", ->
   describe "ruby_version_is '1.8.7'", ->
     beforeEach ->
-      @en = EnumerableSpecs.Numerous.new(3, 2, 1, "go")
+      @en = EnumerableSpecs.NumerousLiteral.new(3, 2, 1, "go")
 
     it "returns an Enumerator if no block given", ->
       expect( @en.take_while() ).toBeInstanceOf R.Enumerator
@@ -16,8 +16,8 @@ describe "Enumerable#take_while", ->
 
     it "passes elements to the block until the first false", ->
       a = R []
-      expect( @en.take_while((obj) -> a.push(obj).size().lt(3) ) ).toEqual R.$Array_r([3, 2])
-      expect( a.unbox(true) ).toEqual [3, 2, 1]
+      expect( @en.take_while((obj) -> a.push(obj).size().lt(3) ) ).toEqual R([3, 2])
+      expect( a.valueOf() ).toEqual [3, 2, 1]
 
     xit "will only go through what's needed", ->
       # en = EnumerableSpecs.EachCounter.new(4, 3, 2, 1, :stop)

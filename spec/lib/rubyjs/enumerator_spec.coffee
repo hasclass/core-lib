@@ -45,7 +45,7 @@ describe "Enumerator", ->
     expect( en.to_a().valueOf() ).toEqual [1, 3]
 
     out.push([i,el]) for el, i in en.iterator()
-    expect( out.unbox(true)).toEqual [[0,1], [1,3]]
+    expect( out.valueOf()).toEqual [[0,1], [1,3]]
 
   it "Enumerator.new(arr, 'each_with_index').to_a", ->
     arr = R [1,7,3]
