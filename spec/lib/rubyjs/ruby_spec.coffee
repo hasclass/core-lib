@@ -18,4 +18,3 @@ describe 'RubyJS', ->
     expect( _arr.map([R('foo')], R.proc('size')) ).toEqual [R(3)]
 
     expect( _arr.map([R('foo')], R.proc('multiply', 2)) ).toEqual [R('foofoo')]
-

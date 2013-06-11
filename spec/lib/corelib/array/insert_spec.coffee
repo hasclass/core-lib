@@ -46,9 +46,9 @@ describe "Array#insert", ->
     expect( R([]).insert(10) ).toEqual R([])
     expect( R([]).insert(-2) ).toEqual R([])
 
-  it "tries to convert the passed position argument to an Integer using #to_int", ->
+  it "tries to convert the passed position argument to an Integer using #valueOf", ->
     obj =
-      to_int: -> R(2)
+      valueOf: -> 2
     expect( R([]).insert(obj, 'x') ).toEqual R([null, null, 'x'])
 
   it "raises an ArgumentError if no argument passed", ->

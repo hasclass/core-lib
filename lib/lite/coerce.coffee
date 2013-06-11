@@ -75,9 +75,26 @@ _coerce =
 
     ary
 
+
+  call_with: (func, thisArg, args) ->
+    a = args
+    switch args.length
+      when 0 then func(thisArg)
+      when 1 then func(thisArg, a[0])
+      when 2 then func(thisArg, a[0], a[1])
+      when 3 then func(thisArg, a[0], a[1], a[2])
+      when 4 then func(thisArg, a[0], a[1], a[2], a[3])
+      when 5 then func(thisArg, a[0], a[1], a[2], a[3], a[4])
+      when 6 then func(thisArg, a[0], a[1], a[2], a[3], a[4], a[5])
+      # Slow fallback when passed more than 6 arguments.
+      else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
+
+
+R.coerce = _coerce
 __str = _coerce.str
 __int = _coerce.int
 __num = _coerce.num
 __arr = _coerce.arr
 __isArr = _coerce.is_arr
 __isStr = _coerce.is_str
+__call = _coerce.call_with

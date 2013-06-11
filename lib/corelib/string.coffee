@@ -371,10 +371,8 @@ class RubyJS.String extends RubyJS.Object
   # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
   #
   count: ->
-    args = [@__native__]
-    for el, i in arguments
-      args.push(RCoerce.to_str_native(el))
-    new R.Fixnum(_str.count.apply(_str, args))
+    num = __call(_str.count, @__native__, arguments)
+    new R.Fixnum(num)
 
 
   #crypt
@@ -404,6 +402,7 @@ class RubyJS.String extends RubyJS.Object
     for el, i in arguments
       args[i + 1] = RCoerce.to_str_native(el)
 
+    # str = __call(_str.delete, @__native__, arguments)
     str = _str.delete.apply(null, args)
     if @__native__ is str then null else @replace(str)
 
@@ -418,6 +417,7 @@ class RubyJS.String extends RubyJS.Object
   #
   downcase: () ->
     new RString(_str.downcase(@__native__))
+
 
   # Downcases the contents of str, returning nil if no changes were made.
   #

@@ -620,13 +620,10 @@ class RubyJS.Array extends RubyJS.Object
   #     a.insert(2, 99)         #=> ["a", "b", 99, "c", "d"]
   #     a.insert(-2, 1, 2, 3)   #=> ["a", "b", 99, "c", 1, 2, 3, "d"]
   #
-  insert: (idx, items...) ->
+  insert: (idx) ->
     throw R.ArgumentError.new() if idx is undefined
-    return this if items.length == 0
-    # Adjust the index for correct insertion
-    idx = RCoerce.to_int_native(idx)
-
-    ary = _arr.insert.apply(_arr, [@__native__, idx].concat(items))
+    return this if arguments.length == 0
+    ary = __call(_arr.insert, @__native__, arguments)
     this
 
 
@@ -837,8 +834,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @todo does not check if the result size will fit in an Array.
   #
-  product: (args...) ->
-    ary = _arr.product.apply(_arr, [@__native__].concat(args))
+  product: ->
+    ary = __call(_arr.product, @__native__, arguments)
     if ary == @__native__ then this else new RArray(ary)
 
 
@@ -867,6 +864,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   rassoc: (obj) ->
     _arr.rassoc(@__native__, obj)
+
 
   # Returns the index of the last object in self == to obj. If a block is
   # given instead of an argument, returns index of first object for which
@@ -1290,22 +1288,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo not working with ranges
   #
   values_at: (args...) ->
-    new RArray(@call_with(_arr.values_at, args))
-
-
-  call_with: (func, args) ->
-    thisArg = @__native__
-    a = args
-    switch args.length
-      when 0 then func(thisArg)
-      when 1 then func(thisArg, a[0])
-      when 2 then func(thisArg, a[0], a[1])
-      when 3 then func(thisArg, a[0], a[1], a[2])
-      when 4 then func(thisArg, a[0], a[1], a[2], a[3])
-      when 5 then func(thisArg, a[0], a[1], a[2], a[3], a[4])
-      when 6 then func(thisArg, a[0], a[1], a[2], a[3], a[4], a[5])
-      # Slow fallback when passed more than 6 arguments.
-      else func.apply(null, [thisArg].concat(nativeSlice.call(arguments, 0)))
+    new RArray(__call(_arr.values_at, @__native__, args))
 
 
   # ---- Aliases --------------------------------------------------------------
