@@ -19,3 +19,7 @@ describe "_arr", ->
       _arr.reverse_each([1,[1,2],2], (a,b) -> arr.push(b) )
       expect( arr ).toEqual [undefined,2,undefined]
 
+  describe "find_index", ->
+    it "splats block arguments", ->
+      expect( _arr.find_index([1,[1,2],2], (a,b) -> b == 2) ).toEqual 1
+

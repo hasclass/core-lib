@@ -252,9 +252,9 @@ class EnumerableMethods
   first: (coll, n = null) ->
     if n != null
       throw new R.ArgumentError('ArgumentError') if n < 0
-      @take(coll, n)
+      _itr.take(coll, n)
     else
-      @take(coll, 1)[0]
+      _itr.take(coll, 1)[0]
 
 
   include: (coll, other) ->
@@ -520,8 +520,8 @@ class EnumerableMethods
   take: (coll, n) ->
     throw R.ArgumentError.new() if n < 0
     ary = []
-    @catch_break (breaker) ->
-      @each coll, ->
+    R.catch_break (breaker) ->
+      _itr.each coll, ->
         breaker.break() if ary.length is n
         ary.push(BlockMulti.prototype.args(arguments))
 

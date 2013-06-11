@@ -129,10 +129,12 @@ class ArrayMethods extends EnumerableMethods
     arr = __arr(arr)
     ary = []
 
-    _arr.each arr, (el) ->
+    len = arr.length
+    idx = -1
+    while (++idx < len)
+      el = arr[idx]
       if recursion != 0 && __isArr(el)
-        for item in _arr.flatten(el, recursion - 1)
-          ary.push(item)
+        nativePush.apply(ary, _arr.flatten(el, recursion - 1))
       else
         ary.push(el)
 
@@ -550,9 +552,14 @@ class ArrayMethods extends EnumerableMethods
 
 
   uniq: (arr) ->
+    idx = -1
+    len = arr.length
     ary = []
-    _arr.each arr, (el) ->
+
+    while (++idx < len)
+      el = arr[idx]
       ary.push(el) if ary.indexOf(el) < 0
+
     ary
 
 
@@ -578,6 +585,41 @@ class ArrayMethods extends EnumerableMethods
       ary[idx - 1] = _arr.at(arr, __int(arguments[idx])) || null
       idx += 1
     ary
+
+
+
+  # ---- Enumerable implementations ------------------------
+
+
+  find_index: (arr, value) ->
+    len = arr.length
+    idx = -1
+
+    if typeof value is 'function' or (typeof value is 'object' && value.call?)
+      block = Block.splat_arguments(value)
+    else if value != null && typeof value is 'object'
+      block = (el) -> R.is_equal(value, el)
+    else
+      while ++idx < len
+        return idx if arr[idx] == value
+      return null
+
+    while ++idx < len
+      return idx if block(arr[idx])
+
+    null
+
+
+  first: (arr, n) ->
+    if n?
+      throw new R.ArgumentError('ArgumentError') if n < 0
+      arr.slice(0,n)
+    else
+      arr[0]
+
+
+  take: @prototype.first
+
 
 
   __native_array_with__: (size, obj) ->
