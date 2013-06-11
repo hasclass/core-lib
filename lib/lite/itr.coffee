@@ -500,7 +500,7 @@ class EnumerableMethods
 
     ary = []
     _itr.each coll, (value) ->
-      ary.push new MYSortedElement(value, callback.invoke(arguments))
+      ary.push new SortedElement(value, callback.invoke(arguments))
 
     ary = _arr.sort(ary, R.Comparable.cmpstrict)
     _arr.map(ary, (se) -> se.value)
@@ -581,7 +581,7 @@ class EnumerableMethods
 # `value` is the original element and `sort_by` the one to be sorted by
 #
 # @private
-class MYSortedElement
+class SortedElement
   constructor: (@value, @sort_by) ->
 
   '<=>': (other) ->
