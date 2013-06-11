@@ -451,14 +451,10 @@ class RubyJS.Array extends RubyJS.Object
   #     # out: 0 -- 1 -- 2 --
   #
   each_index: (block) ->
-    if block && block.call?
-      idx = -1
-      len = @__native__.length
-      while ++idx < len
-        block(idx)
-      this
-    else
-      @to_enum('each_index')
+    return @to_enum('each_index') unless block?
+    _arr.each_index(@__native__, block)
+    this
+
 
 
   # Calls block once for each element in self, passing that element as a
@@ -477,8 +473,6 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum() unless block?.call?
     _arr.each(@__native__, block)
     this
-
-
 
 
   # Alias for R.Array#[] R.Array#slice
@@ -584,57 +578,18 @@ class RubyJS.Array extends RubyJS.Object
   #
   fill: (args...) ->
     throw R.ArgumentError.new() if args.length == 0
-
+    # OPTIMIZE arguments
     block = @__extract_block(args)
 
     if block
       throw R.ArgumentError.new() if args.length >= 3
       one = args[0]; two = args[1]
+      _arr.fill(@__native__, one, two, block)
     else
       throw R.ArgumentError.new() if args.length > 3
       obj = args[0]; one = args[1]; two = args[2]
+      _arr.fill(@__native__, obj, one, two)
 
-    size = @__size__()
-
-    if one?.is_range?
-      # TODO: implement fill with range
-      throw R.NotImplementedError.new()
-
-    else if one isnt undefined && one isnt null
-      left = RCoerce.to_int_native(one)
-      left = left + size    if left < 0
-      left = 0              if left < 0
-
-      if two isnt undefined && two isnt null
-        try
-          right = RCoerce.to_int_native(two)
-        catch e
-          throw R.ArgumentError.new("second argument must be a Fixnum")
-        return this if right is 0
-        right = right + left
-      else
-        right = size
-    else
-      left  = 0
-      right = size
-
-    total = right
-
-    if right > size # pad with nul if length is greater than array
-      fill = @__native_array_with__(right - size, null)
-      @concat( fill )
-      total = right
-
-    i = left
-    if block
-      while total > i
-        v = block.call(this, i)
-        @__native__[i] = if v is undefined then null else v
-        i += 1
-    else
-      while total > i
-        @__native__[i] = obj
-        i += 1
     this
 
 

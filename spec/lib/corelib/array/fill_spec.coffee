@@ -167,11 +167,11 @@ describe "Array#fill with (filler, index, length)", ->
     expect( -> [1, 2, 3, 4].fill(3, -5, @never_passed) ) #}.should_not raise_error(ArgumentError)
     expect( -> [1, 2, 3, 4].fill(3, -10000, @never_passed) ) #}.should_not raise_error(ArgumentError)
 
-  it "tries to convert the second and third arguments to Integers using #to_int", ->
+  it "tries to convert the second and third arguments to Integers using #valueOf", ->
     obj =
-      to_int: -> R(2)
+      valueOf: -> 2
     filler =
-      to_int: -> throw 'ExpectationNotMetError'
+      valueOf: -> throw 'ExpectationNotMetError'
     expect( R([1, 2, 3, 4, 5]).fill(filler, obj, obj)).toEqual R([1, 2, filler, filler, 5])
 
   it "raises a TypeError if the index is not numeric", ->

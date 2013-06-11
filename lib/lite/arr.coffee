@@ -49,7 +49,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
-    return _arr.to_enum('combination', arr, num) unless block?.call?
+    return _arr.to_enum('combination', arr, num) unless block?
 
     num = __int(num)
     len = arr.length
@@ -140,7 +140,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
-    return _arr.to_enum('each', [arr]) unless block?.call?
+    return _arr.to_enum('each', [arr]) unless block?
 
     if block.length > 0 # 'if' needed for to_a
       block = Block.supportMultipleArgs(block)
@@ -154,11 +154,14 @@ class ArrayMethods extends EnumerableMethods
 
 
   to_enum: (name, args) ->
-    new R.Enumerator(_arr, name, args)
+    # new R.Enumerator(_arr, name, args)
+    ary = []
+    _arr[name].apply(_arr, args.concat((args) -> ary.push(args)))
+    ary
 
 
   each_index: (arr, block) ->
-    return _arr.to_enum('each_index', [arr]) unless block?.call?
+    return _arr.to_enum('each_index', [arr]) unless block?
 
     idx = -1
     len = arr.length
@@ -190,8 +193,60 @@ class ArrayMethods extends EnumerableMethods
     arr[idx]
 
 
-  fill: ->
-    # TODO
+  fill: (arr, args...) ->
+    throw R.ArgumentError.new() if args.length == 0
+    block = R.__extract_block(args)
+
+    if block
+      throw R.ArgumentError.new() if args.length >= 3
+      one = args[0]; two = args[1]
+    else
+      throw R.ArgumentError.new() if args.length > 3
+      obj = args[0]; one = args[1]; two = args[2]
+
+    size = arr.length
+
+    if one?.is_range?
+      # TODO: implement fill with range
+      throw R.NotImplementedError.new()
+
+    else if one isnt undefined && one isnt null
+      left = __int(one)
+      left = left + size    if left < 0
+      left = 0              if left < 0
+
+      if two isnt undefined && two isnt null
+        try
+          right = __int(two)
+        catch e
+          throw R.ArgumentError.new("second argument must be a Fixnum")
+        return arr if right is 0
+        right = right + left
+      else
+        right = size
+    else
+      left  = 0
+      right = size
+
+    total = right
+
+    if right > size # pad with nul if length is greater than array
+      fill = _arr.__native_array_with__(right - size, null)
+      arr.push.apply(arr, fill)
+      total = right
+
+    i = left
+    if block
+      while total > i
+        v = block(i)
+        arr[i] = if v is undefined then null else v
+        i += 1
+    else
+      while total > i
+        arr[i] = obj
+        i += 1
+
+    arr
 
 
   # @destructive
@@ -277,6 +332,8 @@ class ArrayMethods extends EnumerableMethods
 
 
   reverse_each: (arr, block) ->
+    return _arr.to_enum('reverse_each', [arr]) unless block?
+
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)
 
