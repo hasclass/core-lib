@@ -8,7 +8,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RString, StrProto, StringMethods, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __equals, __int, __isArr, __num, __str, _arr, _blockify, _coerce, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RHash, RString, StrProto, StringMethods, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __call, __equals, __int, __isArr, __isStr, __num, __str, _arr, _blockify, _coerce, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice;
@@ -784,6 +784,9 @@ http://www.rubyjs.org/LICENSE.txt
       }
     },
     str: function(obj) {
+      if (obj === null) {
+        throw R.TypeError["new"]();
+      }
       if (typeof obj === 'object') {
         obj = obj.valueOf();
       }
@@ -793,6 +796,9 @@ http://www.rubyjs.org/LICENSE.txt
       return obj;
     },
     num: function(obj) {
+      if (obj === null) {
+        throw R.TypeError["new"]();
+      }
       if (typeof obj === 'object') {
         obj = obj.valueOf();
       }
@@ -802,6 +808,9 @@ http://www.rubyjs.org/LICENSE.txt
       return obj;
     },
     int: function(obj) {
+      if (obj === null) {
+        throw R.TypeError["new"]();
+      }
       if (typeof obj === 'object') {
         obj = obj.valueOf();
       }
@@ -816,7 +825,16 @@ http://www.rubyjs.org/LICENSE.txt
     is_arr: function(obj) {
       return typeof obj === 'object' && obj !== null && _coerce.isArray(obj.valueOf());
     },
+    is_str: function(obj) {
+      if (typeof obj === 'string') {
+        return true;
+      }
+      return typeof obj === 'object' && obj !== null && typeof obj.valueOf() === 'string';
+    },
     arr: function(obj) {
+      if (obj === null) {
+        throw R.TypeError["new"]();
+      }
       if (typeof obj !== 'object') {
         throw R.TypeError["new"]();
       }
@@ -839,8 +857,32 @@ http://www.rubyjs.org/LICENSE.txt
         idx += 1;
       }
       return ary;
+    },
+    call_with: function(func, thisArg, args) {
+      var a;
+      a = args;
+      switch (args.length) {
+        case 0:
+          return func(thisArg);
+        case 1:
+          return func(thisArg, a[0]);
+        case 2:
+          return func(thisArg, a[0], a[1]);
+        case 3:
+          return func(thisArg, a[0], a[1], a[2]);
+        case 4:
+          return func(thisArg, a[0], a[1], a[2], a[3]);
+        case 5:
+          return func(thisArg, a[0], a[1], a[2], a[3], a[4]);
+        case 6:
+          return func(thisArg, a[0], a[1], a[2], a[3], a[4], a[5]);
+        default:
+          return func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)));
+      }
     }
   };
+
+  R.coerce = _coerce;
 
   __str = _coerce.str;
 
@@ -851,6 +893,10 @@ http://www.rubyjs.org/LICENSE.txt
   __arr = _coerce.arr;
 
   __isArr = _coerce.is_arr;
+
+  __isStr = _coerce.is_str;
+
+  __call = _coerce.call_with;
 
   NumericMethods = (function() {
     function NumericMethods() {}
@@ -1327,6 +1373,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.each_with_index = function(coll, block) {
       var callback, idx;
+      if ((block != null ? block.call : void 0) == null) {
+        return new R.Enumerator(_itr, 'each_with_index', [coll]);
+      }
       callback = _blockify(block, coll);
       idx = 0;
       this.each(coll, function() {
@@ -1875,6 +1924,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     ArrayMethods.prototype.combination = function(arr, num, block) {
       var chosen, done, i, len, lev, stack;
+      if (block == null) {
+        return _arr.to_enum('combination', arr, num);
+      }
       num = __int(num);
       len = arr.length;
       if (num === 0) {
@@ -1997,8 +2049,8 @@ http://www.rubyjs.org/LICENSE.txt
 
     ArrayMethods.prototype.each = function(arr, block) {
       var idx, len;
-      if ((block != null ? block.call : void 0) == null) {
-        return _itr.to_enum(arr, 'each');
+      if (block == null) {
+        return _arr.to_enum('each', [arr]);
       }
       if (block.length > 0) {
         block = Block.supportMultipleArgs(block);
@@ -2011,6 +2063,28 @@ http://www.rubyjs.org/LICENSE.txt
       return arr;
     };
 
+    ArrayMethods.prototype.to_enum = function(name, args) {
+      var ary;
+      ary = [];
+      _arr[name].apply(_arr, args.concat(function(args) {
+        return ary.push(args);
+      }));
+      return ary;
+    };
+
+    ArrayMethods.prototype.each_index = function(arr, block) {
+      var idx, len;
+      if (block == null) {
+        return _arr.to_enum('each_index', [arr]);
+      }
+      idx = -1;
+      len = arr.length;
+      while (++idx < len) {
+        block(idx);
+      }
+      return this;
+    };
+
     ArrayMethods.prototype.get = function(a, b) {
       return _arr.slice(a, b);
     };
@@ -2021,6 +2095,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     ArrayMethods.prototype.fetch = function(arr, idx, default_or_block) {
       var len, orig;
+      idx = __int(idx);
       len = arr.length;
       orig = idx;
       if (idx < 0) {
@@ -2038,7 +2113,77 @@ http://www.rubyjs.org/LICENSE.txt
       return arr[idx];
     };
 
-    ArrayMethods.prototype.fill = function() {};
+    ArrayMethods.prototype.fill = function() {
+      var args, arr, block, e, fill, i, left, obj, one, right, size, total, two, v;
+      arr = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      if (args.length === 0) {
+        throw R.ArgumentError["new"]();
+      }
+      block = R.__extract_block(args);
+      if (block) {
+        if (args.length >= 3) {
+          throw R.ArgumentError["new"]();
+        }
+        one = args[0];
+        two = args[1];
+      } else {
+        if (args.length > 3) {
+          throw R.ArgumentError["new"]();
+        }
+        obj = args[0];
+        one = args[1];
+        two = args[2];
+      }
+      size = arr.length;
+      if ((one != null ? one.is_range : void 0) != null) {
+        throw R.NotImplementedError["new"]();
+      } else if (one !== void 0 && one !== null) {
+        left = __int(one);
+        if (left < 0) {
+          left = left + size;
+        }
+        if (left < 0) {
+          left = 0;
+        }
+        if (two !== void 0 && two !== null) {
+          try {
+            right = __int(two);
+          } catch (_error) {
+            e = _error;
+            throw R.ArgumentError["new"]("second argument must be a Fixnum");
+          }
+          if (right === 0) {
+            return arr;
+          }
+          right = right + left;
+        } else {
+          right = size;
+        }
+      } else {
+        left = 0;
+        right = size;
+      }
+      total = right;
+      if (right > size) {
+        fill = _arr.__native_array_with__(right - size, null);
+        arr.push.apply(arr, fill);
+        total = right;
+      }
+      i = left;
+      if (block) {
+        while (total > i) {
+          v = block(i);
+          arr[i] = v === void 0 ? null : v;
+          i += 1;
+        }
+      } else {
+        while (total > i) {
+          arr[i] = obj;
+          i += 1;
+        }
+      }
+      return arr;
+    };
 
     ArrayMethods.prototype.insert = function(arr, idx) {
       var after, el, i, items, len, _j, _k, _l, _len1, _len2;
@@ -2090,6 +2235,23 @@ http://www.rubyjs.org/LICENSE.txt
       return nativeJoin.call(arr, separator);
     };
 
+    ArrayMethods.prototype.keep_if = function(arr, block) {
+      var ary, el, idx, len;
+      if (block == null) {
+        return _arr.to_enum('keep_if', [arr]);
+      }
+      ary = [];
+      idx = -1;
+      len = arr.length;
+      while (++idx < len) {
+        el = arr[idx];
+        if (!R.falsey(block(el))) {
+          ary.push(el);
+        }
+      }
+      return ary;
+    };
+
     ArrayMethods.prototype.last = function(arr, n) {
       var len;
       len = arr.length;
@@ -2108,13 +2270,133 @@ http://www.rubyjs.org/LICENSE.txt
       return arr.slice(-n);
     };
 
+    ArrayMethods.prototype.minus = function(arr, other) {
+      var ary, el, idx, len;
+      other = __arr(other);
+      ary = [];
+      idx = -1;
+      len = arr.length;
+      while (++idx < len) {
+        el = arr[idx];
+        if (!_arr.include(other, el)) {
+          ary.push(el);
+        }
+      }
+      return ary;
+    };
+
+    ArrayMethods.prototype.multiply = function(arr, multiplier) {
+      var ary, idx, total;
+      if (multiplier === null) {
+        throw R.TypeError["new"]();
+      }
+      if (__isStr(multiplier)) {
+        return _arr.join(arr, __str(multiplier));
+      } else {
+        multiplier = __int(multiplier);
+        if (multiplier < 0) {
+          throw R.ArgumentError["new"]("count cannot be negative");
+        }
+        total = arr.length;
+        if (total === 0) {
+          return [];
+        } else if (total === 1) {
+          return arr.slice(0);
+        }
+        ary = [];
+        idx = -1;
+        while (++idx < multiplier) {
+          ary = ary.concat(arr);
+        }
+        return ary;
+      }
+    };
+
+    ArrayMethods.prototype.pop = function(arr, many) {
+      var ary, len;
+      if (many === void 0) {
+        return arr.pop();
+      } else {
+        many = __int(many);
+        if (many < 0) {
+          throw R.ArgumentError["new"]("negative array size");
+        }
+        ary = [];
+        len = arr.length;
+        if (many > len) {
+          many = len;
+        }
+        while (many--) {
+          ary[many] = arr.pop();
+        }
+        return ary;
+      }
+    };
+
     ArrayMethods.prototype.product = function() {
-      var args, arr;
+      var a, args, arr, block, block_result, outer, result, v, _j, _len1;
       arr = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      result = [];
+      block = R.__extract_block(args);
+      args = (function() {
+        var _j, _len1, _results;
+        _results = [];
+        for (_j = 0, _len1 = args.length; _j < _len1; _j++) {
+          a = args[_j];
+          _results.push(__arr(a));
+        }
+        return _results;
+      })();
+      args = args.reverse();
+      args.push(arr);
+      outer = _arr.inject(args, result.push, function(trigger, values) {
+        return function(partial) {
+          var val, _j, _len1, _results;
+          _results = [];
+          for (_j = 0, _len1 = values.length; _j < _len1; _j++) {
+            val = values[_j];
+            _results.push(trigger.call(result, partial.concat(val)));
+          }
+          return _results;
+        };
+      });
+      outer([]);
+      if (block) {
+        block_result = arr;
+        for (_j = 0, _len1 = result.length; _j < _len1; _j++) {
+          v = result[_j];
+          block_result.push(block(v));
+        }
+        return block_result;
+      } else {
+        return result;
+      }
+    };
+
+    ArrayMethods.prototype.rassoc = function(arr, obj) {
+      var e, el, elem, idx, len;
+      len = arr.length;
+      idx = -1;
+      while (++idx < len) {
+        elem = arr[idx];
+        try {
+          el = __arr(elem);
+          if (R.is_equal(el[1], obj)) {
+            return elem;
+          }
+        } catch (_error) {
+          e = _error;
+          null;
+        }
+      }
+      return null;
     };
 
     ArrayMethods.prototype.reverse_each = function(arr, block) {
       var idx;
+      if (block == null) {
+        return _arr.to_enum('reverse_each', [arr]);
+      }
       if (block.length > 0) {
         block = Block.supportMultipleArgs(block);
       }
@@ -2123,6 +2405,136 @@ http://www.rubyjs.org/LICENSE.txt
         block(arr[idx]);
       }
       return arr;
+    };
+
+    ArrayMethods.prototype.rindex = function(arr, other) {
+      var block, el, len, ridx;
+      if (other === void 0) {
+        return _arr.to_enum('rindex', [arr, other]);
+      }
+      len = arr.length;
+      ridx = arr.length;
+      if (other.call != null) {
+        block = other;
+        while (ridx--) {
+          el = arr[ridx];
+          if (!R.falsey(block(el))) {
+            return ridx;
+          }
+        }
+      } else {
+        while (ridx--) {
+          el = arr[ridx];
+          if (R.is_equal(el, other)) {
+            return ridx;
+          }
+        }
+      }
+      return null;
+    };
+
+    ArrayMethods.prototype.rotate = function(arr, cnt) {
+      var idx, len, sliced;
+      if (cnt === void 0) {
+        cnt = 1;
+      } else {
+        cnt = __int(cnt);
+      }
+      len = arr.length;
+      if (len === 1) {
+        return arr;
+      }
+      if (len === 0) {
+        return [];
+      }
+      idx = cnt % len;
+      sliced = arr.slice(0, idx);
+      return arr.slice(idx).concat(sliced);
+    };
+
+    ArrayMethods.prototype.sample = function(arr, n, range) {
+      var ary, idx, len, ridx, tmp;
+      if (range == null) {
+        range = void 0;
+      }
+      len = arr.length;
+      if (n === void 0) {
+        return arr[R.rand(len)];
+      }
+      n = __int(n);
+      if (n < 0) {
+        throw R.ArgumentError["new"]();
+      }
+      if (n > len) {
+        n = len;
+      }
+      ary = arr.slice(0);
+      idx = -1;
+      while (++idx < n) {
+        ridx = idx + R.rand(len - idx);
+        tmp = ary[idx];
+        ary[idx] = ary[ridx];
+        ary[ridx] = tmp;
+      }
+      return ary.slice(0, n);
+    };
+
+    ArrayMethods.prototype.shuffle = function(arr) {
+      var ary, idx, len, rnd, tmp;
+      len = arr.length;
+      ary = new Array(len);
+      idx = -1;
+      while (++idx < len) {
+        rnd = idx + R.rand(len - idx);
+        tmp = arr[idx];
+        ary[idx] = arr[rnd];
+        ary[rnd] = tmp;
+      }
+      return ary;
+    };
+
+    ArrayMethods.prototype.slice = function(arr, idx, length) {
+      var range, range_end, range_lenth, range_start, size;
+      if (idx === null) {
+        throw new R.TypeError["new"]();
+      }
+      size = arr.length;
+      if ((idx != null ? idx.is_range : void 0) != null) {
+        range = idx;
+        range_start = __int(range.begin());
+        range_end = __int(range.end());
+        if (range_start < 0) {
+          range_start = range_start + size;
+        }
+        if (range_end < 0) {
+          range_end = range_end + size;
+        }
+        if (!range.exclude_end()) {
+          range_end = range_end + 1;
+        }
+        range_lenth = range_end - range_start;
+        if (range_start > size || range_start < 0) {
+          return null;
+        }
+        return arr.slice(range_start, range_end);
+      } else {
+        idx = __int(idx);
+      }
+      if (idx < 0) {
+        idx = size + idx;
+      }
+      if (length === void 0) {
+        if (idx < 0 || idx >= size) {
+          return null;
+        }
+        return arr[idx];
+      } else {
+        length = __int(length);
+        if (idx < 0 || idx > size || length < 0) {
+          return null;
+        }
+        return arr.slice(idx, length + idx);
+      }
     };
 
     ArrayMethods.prototype.transpose = function(arr) {
@@ -2163,6 +2575,28 @@ http://www.rubyjs.org/LICENSE.txt
       return ary;
     };
 
+    ArrayMethods.prototype.unshift = function() {
+      var args, arr;
+      arr = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      return args.concat(arr);
+    };
+
+    ArrayMethods.prototype.union = function(arr, other) {
+      return _arr.uniq(arr.concat(__arr(other)));
+    };
+
+    ArrayMethods.prototype.values_at = function(arr) {
+      var ary, idx, len;
+      len = arguments.length;
+      ary = new Array(len - 1);
+      idx = 1;
+      while (idx < len) {
+        ary[idx - 1] = _arr.at(arr, __int(arguments[idx])) || null;
+        idx += 1;
+      }
+      return ary;
+    };
+
     ArrayMethods.prototype.__native_array_with__ = function(size, obj) {
       var ary, idx;
       ary = nativeArray(__int(size));
@@ -2177,7 +2611,11 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(EnumerableMethods);
 
-  _arr = R._arr = new ArrayMethods();
+  _arr = R._arr = function(arr) {
+    return new RArray(arr);
+  };
+
+  R.extend(_arr, new ArrayMethods());
 
   StringMethods = (function() {
     function StringMethods() {}
@@ -2324,6 +2762,12 @@ http://www.rubyjs.org/LICENSE.txt
       }).join('');
     };
 
+    StringMethods.prototype.dump = function(str) {
+      var escaped;
+      escaped = str.replace(/[\f]/g, '\\f').replace(/["]/g, "\\\"").replace(/[\n]/g, '\\n').replace(/[\r]/g, '\\r').replace(/[\t]/g, '\\t');
+      return "\"" + escaped + "\"";
+    };
+
     StringMethods.prototype.empty = function(str) {
       return str.length === 0;
     };
@@ -2364,7 +2808,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.index = function(str, needle, offset) {
       var idx;
+      needle = __str(needle);
       if (offset != null) {
+        offset = __int(offset);
         if (offset < 0) {
           offset = str.length + offset;
         }
@@ -2540,10 +2986,12 @@ http://www.rubyjs.org/LICENSE.txt
       if (pad_str == null) {
         pad_str = " ";
       }
+      width = __int(width);
       len = str.length;
       if (len >= width) {
         return str;
       } else {
+        pad_str = __str(pad_str);
         if (pad_str.length === 0) {
           throw R.ArgumentError["new"]();
         }
@@ -2554,6 +3002,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.rpartition = function(str, pattern) {
       var a, b, c, idx, len, start;
+      pattern = __str(pattern);
       idx = _str.rindex(str, pattern);
       if (idx !== null) {
         start = idx + pattern.length;
@@ -2569,6 +3018,52 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.rstrip = function(str) {
       return str.replace(/[\s\n\t]+$/g, '');
+    };
+
+    StringMethods.prototype.scan = function(str, pattern, block) {
+      var fin, index, match, match_arr, val;
+      if (block == null) {
+        block = null;
+      }
+      if (!R.Regexp.isRegexp(pattern)) {
+        pattern = __str(pattern);
+        pattern = R.Regexp.quote(pattern);
+      }
+      index = 0;
+      R['$~'] = null;
+      match_arr = block !== null ? str : [];
+      while (match = str.slice(index).match(pattern)) {
+        fin = index + match.index + match[0].length;
+        if (match[0].length === 0) {
+          fin += 1;
+        }
+        R['$~'] = new R.MatchData(match, {
+          offset: index,
+          string: str
+        });
+        if (match.length > 1) {
+          val = match.slice(1, match.length);
+        } else {
+          val = [match[0]];
+        }
+        if (block !== null) {
+          block(val);
+        } else {
+          if (match.length === 1) {
+            val = val[0];
+          }
+          match_arr.push(val);
+        }
+        index = fin;
+        if (index > str.length) {
+          break;
+        }
+      }
+      if (block !== null) {
+        return str;
+      } else {
+        return match_arr;
+      }
     };
 
     StringMethods.prototype.squeeze = function(str) {
@@ -2807,6 +3302,30 @@ http://www.rubyjs.org/LICENSE.txt
       return chars.join('');
     };
 
+    StringMethods.prototype.to_i = function(str, base) {
+      var lit;
+      if (base === void 0) {
+        base = 10;
+      }
+      base = __int(base);
+      if (base < 0 || base > 36 || base === 1) {
+        throw R.ArgumentError["new"]();
+      }
+      lit = _str.strip(str);
+      if (!lit.match(/^([\+\-]?)([^\+^\-_]+)/)) {
+        return 0;
+      }
+      lit = lit.replace(/_/g, '');
+      return parseInt(lit, base);
+    };
+
+    StringMethods.prototype.to_f = function(str) {
+      var number_match, number_string, _ref2;
+      number_match = str.match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/);
+      number_string = (_ref2 = number_match != null ? number_match[0] : void 0) != null ? _ref2 : "0.0";
+      return Number(number_string.replace(/_/g, ''));
+    };
+
     StringMethods.prototype.upcase = function(str) {
       if (!str.match(/[a-z]/)) {
         return str;
@@ -2822,6 +3341,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     StringMethods.prototype.upto = function(str, stop, exclusive, block) {
       var orig, stop_size;
+      stop = __str(stop);
       exclusive || (exclusive = false);
       if (block === void 0 && ((exclusive != null ? exclusive.call : void 0) != null)) {
         block = exclusive;
@@ -2872,7 +3392,11 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  _str = R._str = new StringMethods();
+  _str = R._str = function(arr) {
+    return new RString(arr);
+  };
+
+  R.extend(_str, new StringMethods());
 
   HashMethods = (function(_super) {
     __extends(HashMethods, _super);
@@ -2886,7 +3410,11 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(EnumerableMethods);
 
-  _hsh = R._hsh = new HashMethods();
+  _hsh = R._hsh = function(arr) {
+    return new RHash(arr);
+  };
+
+  R.extend(_hsh, new HashMethods());
 
   RubyJS.Object = (function() {
     function Object() {}
@@ -3639,18 +4167,18 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Enumerator.prototype.iterator = function() {
-      return this.to_a().to_native();
-    };
-
-    Enumerator.prototype.native_array = function() {
-      return this.arr || (this.arr = this.iterator());
+      return this.valueOf();
     };
 
     Enumerator.prototype.next = function() {
       var idx;
       idx = this.idx;
       this.idx += 1;
-      return this.native_array()[idx];
+      return this.valueOf()[idx];
+    };
+
+    Enumerator.prototype.to_a = function() {
+      return new RArray(this.valueOf());
     };
 
     Enumerator.prototype.to_enum = function() {
@@ -3663,7 +4191,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Enumerator.prototype.valueOf = function() {
-      return this.to_a().valueOf();
+      return _itr.to_a(this);
     };
 
     Enumerator.prototype.eachWithIndex = Enumerator.prototype.each_with_index;
@@ -3922,12 +4450,8 @@ http://www.rubyjs.org/LICENSE.txt
       return this.replace(_arr.collect(this.__native__, block));
     };
 
-    Array.prototype.combination = function() {
-      var args, block, num;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      block = this.__extract_block(args);
-      num = RCoerce.to_int_native(args[0]);
-      if ((block != null ? block.call : void 0) == null) {
+    Array.prototype.combination = function(num, block) {
+      if (block == null) {
         return this.to_enum('combination', num);
       }
       _arr.combination(this.__native__, num, block);
@@ -4002,17 +4526,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.each_index = function(block) {
-      var idx, len;
-      if (block && (block.call != null)) {
-        idx = -1;
-        len = this.__native__.length;
-        while (++idx < len) {
-          block(idx);
-        }
-        return this;
-      } else {
+      if (block == null) {
         return this.to_enum('each_index');
       }
+      _arr.each_index(this.__native__, block);
+      return this;
     };
 
     Array.prototype.each = function(block) {
@@ -4052,12 +4570,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.fetch = function(idx, default_or_block) {
-      idx = RCoerce.to_int_native(idx);
       return _arr.fetch(this.__native__, idx, default_or_block);
     };
 
     Array.prototype.fill = function() {
-      var args, block, e, fill, i, left, obj, one, right, size, total, two, v;
+      var args, block;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       if (args.length === 0) {
         throw R.ArgumentError["new"]();
@@ -4067,63 +4584,12 @@ http://www.rubyjs.org/LICENSE.txt
         if (args.length >= 3) {
           throw R.ArgumentError["new"]();
         }
-        one = args[0];
-        two = args[1];
+        _arr.fill(this.__native__, args[0], args[1], block);
       } else {
         if (args.length > 3) {
           throw R.ArgumentError["new"]();
         }
-        obj = args[0];
-        one = args[1];
-        two = args[2];
-      }
-      size = this.__size__();
-      if ((one != null ? one.is_range : void 0) != null) {
-        throw R.NotImplementedError["new"]();
-      } else if (one !== void 0 && one !== null) {
-        left = RCoerce.to_int_native(one);
-        if (left < 0) {
-          left = left + size;
-        }
-        if (left < 0) {
-          left = 0;
-        }
-        if (two !== void 0 && two !== null) {
-          try {
-            right = RCoerce.to_int_native(two);
-          } catch (_error) {
-            e = _error;
-            throw R.ArgumentError["new"]("second argument must be a Fixnum");
-          }
-          if (right === 0) {
-            return this;
-          }
-          right = right + left;
-        } else {
-          right = size;
-        }
-      } else {
-        left = 0;
-        right = size;
-      }
-      total = right;
-      if (right > size) {
-        fill = this.__native_array_with__(right - size, null);
-        this.concat(fill);
-        total = right;
-      }
-      i = left;
-      if (block) {
-        while (total > i) {
-          v = block.call(this, i);
-          this.__native__[i] = v === void 0 ? null : v;
-          i += 1;
-        }
-      } else {
-        while (total > i) {
-          this.__native__[i] = obj;
-          i += 1;
-        }
+        _arr.fill(this.__native__, args[0], args[1], args[2]);
       }
       return this;
     };
@@ -4135,17 +4601,15 @@ http://www.rubyjs.org/LICENSE.txt
       return new RArray(_arr.flatten(this.__native__, recursion));
     };
 
-    Array.prototype.insert = function() {
-      var ary, idx, items;
-      idx = arguments[0], items = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    Array.prototype.insert = function(idx) {
+      var ary;
       if (idx === void 0) {
         throw R.ArgumentError["new"]();
       }
-      if (items.length === 0) {
+      if (arguments.length === 0) {
         return this;
       }
-      idx = RCoerce.to_int_native(idx);
-      ary = _arr.insert.apply(_arr, [this.__native__, idx].concat(items));
+      ary = __call(_arr.insert, this.__native__, arguments);
       return this;
     };
 
@@ -4167,13 +4631,8 @@ http://www.rubyjs.org/LICENSE.txt
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('keep_if');
       }
-      ary = [];
-      this.each(function(el) {
-        if (!R.falsey(block(el))) {
-          return ary.push(el);
-        }
-      });
-      if (this.__size__() === ary.length) {
+      ary = _arr.keep_if(this.__native__, block);
+      if (this.__native__.length === ary.length) {
         return this;
       } else {
         return this.replace(ary);
@@ -4181,45 +4640,12 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.minus = function(other) {
-      var ary;
-      other = RCoerce.to_ary(other);
-      ary = [];
-      this.each(function(el) {
-        if (!other.include(el)) {
-          return ary.push(el);
-        }
-      });
-      return new R.Array(ary);
+      return new RArray(_arr.minus(this.__native__, other));
     };
 
     Array.prototype.multiply = function(multiplier) {
-      var arr, ary, idx, total;
-      this.__ensure_args_length(arguments, 1);
-      if (multiplier === null) {
-        throw R.TypeError["new"]();
-      }
-      multiplier = R(multiplier);
-      if (multiplier.to_str != null) {
-        return this.join(multiplier);
-      } else {
-        multiplier = RCoerce.to_int_native(multiplier);
-        if (multiplier < 0) {
-          throw R.ArgumentError["new"]("count cannot be negative");
-        }
-        total = this.__size__();
-        if (total === 0) {
-          return new R.Array([]);
-        } else if (total === 1) {
-          return this.dup();
-        }
-        ary = [];
-        arr = this.__native__;
-        idx = -1;
-        while (++idx < multiplier) {
-          ary = ary.concat(arr);
-        }
-        return new R.Array(ary);
-      }
+      R.__ensure_args_length(arguments, 1);
+      return R(_arr.multiply(this.__native__, multiplier));
     };
 
     Array.prototype.last = function(n) {
@@ -4247,62 +4673,23 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.pop = function(many) {
-      var first;
       if (arguments.length > 1) {
         throw R.ArgumentError["new"]();
       }
       if (many === void 0) {
-        return this.__native__.pop();
+        return _arr.pop(this.__native__);
       } else {
-        many = RCoerce.to_int_native(many);
-        if (many < 0) {
-          throw R.ArgumentError["new"]("negative array size");
-        }
-        first = this.__size__() - many;
-        if (first < 0) {
-          first = 0;
-        }
-        return this.slice_bang(first, many);
+        return new RArray(_arr.pop(this.__native__, many));
       }
     };
 
     Array.prototype.product = function() {
-      var a, args, block, block_result, outer, result, v, _j, _len1;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      result = [];
-      block = this.__extract_block(args);
-      args = (function() {
-        var _j, _len1, _results;
-        _results = [];
-        for (_j = 0, _len1 = args.length; _j < _len1; _j++) {
-          a = args[_j];
-          _results.push(RCoerce.to_ary_native(a));
-        }
-        return _results;
-      })();
-      args = args.reverse();
-      args.push(this.__native__);
-      outer = _arr.inject(args, result.push, function(trigger, values) {
-        return function(partial) {
-          var val, _j, _len1, _results;
-          _results = [];
-          for (_j = 0, _len1 = values.length; _j < _len1; _j++) {
-            val = values[_j];
-            _results.push(trigger.call(result, partial.concat(val)));
-          }
-          return _results;
-        };
-      });
-      outer([]);
-      if (block) {
-        block_result = this;
-        for (_j = 0, _len1 = result.length; _j < _len1; _j++) {
-          v = result[_j];
-          block_result.append(block(v));
-        }
-        return block_result;
+      var ary;
+      ary = __call(_arr.product, this.__native__, arguments);
+      if (ary === this.__native__) {
+        return this;
       } else {
-        return new RArray(result);
+        return new RArray(ary);
       }
     };
 
@@ -4312,82 +4699,33 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.rassoc = function(obj) {
-      obj = R(obj);
-      return this.catch_break(function(breaker) {
-        this.each(function(elem) {
-          var _ref3;
-          if ((elem.is_array != null) && ((_ref3 = R(elem.at(1))) != null ? _ref3['=='](obj) : void 0)) {
-            return breaker["break"](elem);
-          }
-        });
-        return null;
-      });
+      return _arr.rassoc(this.__native__, obj);
     };
 
     Array.prototype.rindex = function(other) {
-      var block, len, ridx;
+      var ridx;
       if (other === void 0) {
         return this.to_enum('rindex');
       }
-      if (other.call != null) {
-        block = other;
-        len = this.__size__();
-        ridx = this.catch_break(function(breaker) {
-          var idx;
-          idx = -1;
-          this.reverse_each(function(el) {
-            idx += 1;
-            if (!R.falsey(block(el))) {
-              return breaker["break"](idx);
-            }
-          });
-          return null;
-        });
-      } else {
-        ridx = this.catch_break(function(breaker) {
-          var idx;
-          idx = -1;
-          this.reverse_each(function(el) {
-            idx += 1;
-            if (R(el)['=='](other)) {
-              return breaker["break"](idx);
-            }
-          });
-          return null;
-        });
-      }
+      ridx = _arr.rindex(this.__native__, other);
       if (ridx === null) {
         return null;
       } else {
-        return R(this.__size__() - ridx - 1);
+        return new R.Fixnum(ridx);
       }
     };
 
     Array.prototype.sample = function(n, range) {
-      var ary, idx, ridx, size, tmp;
+      var val;
       if (range == null) {
         range = void 0;
       }
+      val = _arr.sample(this.__native__, n, range);
       if (n === void 0) {
-        return this.at(this.rand(this.size()));
+        return val;
+      } else {
+        return new RArray(val);
       }
-      n = RCoerce.to_int_native(n);
-      if (n < 0) {
-        throw R.ArgumentError["new"]();
-      }
-      size = this.__size__();
-      if (n > size) {
-        n = size;
-      }
-      ary = this.to_native_clone();
-      idx = -1;
-      while (++idx < n) {
-        ridx = idx + R.rand(size - idx);
-        tmp = ary[idx];
-        ary[idx] = ary[ridx];
-        ary[ridx] = tmp;
-      }
-      return new R.Array(ary).slice(0, n);
     };
 
     Array.prototype.reject_bang = function(block) {
@@ -4429,34 +4767,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.rotate = function(cnt) {
-      var ary, idx, sliced;
-      if (cnt === void 0) {
-        cnt = 1;
-      }
-      cnt = RCoerce.to_int_native(cnt);
-      ary = this.dup();
-      if (this.__size__() === 1) {
-        return ary;
-      }
-      if (this.empty()) {
-        return new R.Array([]);
-      }
-      idx = cnt % ary.__size__();
-      sliced = ary.slice(R.rng(0, idx, true));
-      return ary.slice(R.rng(idx, -1)).concat(sliced);
+      return new RArray(_arr.rotate(this.__native__, cnt));
     };
 
     Array.prototype.rotate_bang = function(cnt) {
-      if (cnt === void 0) {
-        cnt = 1;
-        return this.replace(this.rotate(cnt));
-      } else {
-        cnt = RCoerce.to_int_native(cnt);
-        if (cnt === 0 || cnt === 1) {
-          return this;
-        }
-        return this.replace(this.rotate(cnt));
+      if (cnt === 0 || cnt === 1) {
+        return this;
       }
+      return this.replace(_arr.rotate(this.__native__, cnt));
     };
 
     Array.prototype.select_bang = function(block) {
@@ -4499,17 +4817,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.shuffle_bang = function() {
-      var arr, idx, rnd, size, tmp;
-      size = this.__size__();
-      arr = this.__native__;
-      idx = -1;
-      while (++idx < size) {
-        rnd = idx + R.rand(size - idx);
-        tmp = arr[idx];
-        arr[idx] = arr[rnd];
-        arr[rnd] = tmp;
-      }
-      return this;
+      return this.replace(_arr.shuffle(this.__native__));
     };
 
     Array.prototype.size = function() {
@@ -4521,46 +4829,19 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.slice = function(idx, length) {
-      var range, range_end, range_lenth, range_start, size;
+      var val;
       if (idx === null) {
         throw new R.TypeError["new"]();
       }
-      size = this.__size__();
-      if ((idx != null ? idx.is_range : void 0) != null) {
-        range = idx;
-        range_start = RCoerce.to_int_native(range.begin());
-        range_end = RCoerce.to_int_native(range.end());
-        if (range_start < 0) {
-          range_start = range_start + size;
-        }
-        if (range_end < 0) {
-          range_end = range_end + size;
-        }
-        if (!range.exclude_end()) {
-          range_end = range_end + 1;
-        }
-        range_lenth = range_end - range_start;
-        if (range_start > size || range_start < 0) {
-          return null;
-        }
-        return new R.Array(this.__native__.slice(range_start, range_end));
+      val = _arr.slice(this.__native__, idx, length);
+      if (val === null) {
+        return null;
+      } else if ((idx != null ? idx.is_range : void 0) != null) {
+        return new RArray(val);
+      } else if (length === void 0) {
+        return val;
       } else {
-        idx = RCoerce.to_int_native(idx);
-      }
-      if (idx < 0) {
-        idx = size + idx;
-      }
-      if (length === void 0) {
-        if (idx < 0 || idx >= size) {
-          return null;
-        }
-        return this.at(idx);
-      } else {
-        length = RCoerce.to_int_native(length);
-        if (idx < 0 || idx > size || length < 0) {
-          return null;
-        }
-        return new R.Array(this.__native__.slice(idx, length + idx));
+        return new RArray(val);
       }
     };
 
@@ -4662,13 +4943,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.unshift = function() {
-      var args;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this.replace(args.concat(this.__native__));
+      return this.replace(__call(_arr.unshift, this.__native__, arguments));
     };
 
     Array.prototype.union = function(other) {
-      return this.plus(other).uniq();
+      return new RArray(_arr.union(this.__native__, other));
     };
 
     Array.prototype.to_a = function() {
@@ -4689,18 +4968,9 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype.values_at = function() {
-      var args, ary, idx;
+      var args;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      ary = (function() {
-        var _j, _len1, _results;
-        _results = [];
-        for (_j = 0, _len1 = args.length; _j < _len1; _j++) {
-          idx = args[_j];
-          _results.push(this.at(RCoerce.to_int_native(idx)) || null);
-        }
-        return _results;
-      }).call(this);
-      return new R.Array(ary);
+      return new RArray(__call(_arr.values_at, this.__native__, args));
     };
 
     Array.__add_default_aliases__(Array.prototype);
@@ -4749,23 +5019,11 @@ http://www.rubyjs.org/LICENSE.txt
 
     Array.prototype.valuesAt = Array.prototype.values_at;
 
-    Array.prototype.__native_array_with__ = function(size, obj) {
-      var ary, idx;
-      ary = nativeArray(RCoerce.to_int_native(size));
-      idx = -1;
-      while (++idx < size) {
-        ary[idx] = obj;
-      }
-      return ary;
-    };
-
     return Array;
 
   })(RubyJS.Object);
 
   RArray = R.Array = RubyJS.Array;
-
-  R._arr = _arr;
 
   RubyJS.Hash = (function(_super) {
     __extends(Hash, _super);
@@ -5308,6 +5566,8 @@ http://www.rubyjs.org/LICENSE.txt
     return Hash;
 
   })(RubyJS.Object);
+
+  RHash = R.Hash;
 
   R.hashify = function(obj, default_value) {
     return new R.Hash(obj, default_value);
@@ -5910,13 +6170,9 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.count = function() {
-      var args, el, i, _j, _len1;
-      args = [this.__native__];
-      for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
-        el = arguments[i];
-        args.push(RCoerce.to_str_native(el));
-      }
-      return new R.Fixnum(_str.count.apply(_str, args));
+      var num;
+      num = __call(_str.count, this.__native__, arguments);
+      return new R.Fixnum(num);
     };
 
     String.prototype["delete"] = function() {
@@ -5954,9 +6210,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.dump = function() {
-      var escaped;
-      escaped = this.to_native().replace(/[\f]/g, '\\f').replace(/["]/g, "\\\"").replace(/[\n]/g, '\\n').replace(/[\r]/g, '\\r').replace(/[\t]/g, '\\t');
-      return R("\"" + escaped + "\"");
+      return new RString(_str.dump(this.__native__));
     };
 
     String.prototype.dup = function() {
@@ -6068,10 +6322,6 @@ http://www.rubyjs.org/LICENSE.txt
 
     String.prototype.index = function(needle, offset) {
       var val;
-      needle = RCoerce.to_str_native(needle);
-      if (offset != null) {
-        offset = RCoerce.to_int_native(offset);
-      }
       val = _str.index(this.__native__, needle, offset);
       if (val === null) {
         return null;
@@ -6174,13 +6424,10 @@ http://www.rubyjs.org/LICENSE.txt
       if (padString == null) {
         padString = " ";
       }
-      width = RCoerce.to_int_native(width);
-      padString = RCoerce.to_str_native(padString);
       return new RString(_str.rjust(this.__native__, width, padString));
     };
 
     String.prototype.rpartition = function(pattern) {
-      pattern = RCoerce.to_str_native(pattern);
       return new RArray(_str.rpartition(this.__native__, pattern));
     };
 
@@ -6198,44 +6445,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.scan = function(pattern, block) {
-      var fin, index, match, match_arr, val;
+      var match_arr;
       if (block == null) {
         block = null;
       }
-      if (!R.Regexp.isRegexp(pattern)) {
-        pattern = RCoerce.to_str_native(pattern);
-        pattern = R.Regexp.quote(pattern);
-      }
-      index = 0;
-      R['$~'] = null;
-      match_arr = block !== null ? this : [];
-      while (match = this.__native__.slice(index).match(pattern)) {
-        fin = index + match.index + match[0].length;
-        if (match[0].length === 0) {
-          fin += 1;
-        }
-        R['$~'] = new R.MatchData(match, {
-          offset: index,
-          string: this.__native__
-        });
-        if (match.length > 1) {
-          val = match.slice(1, match.length);
-        } else {
-          val = [match[0]];
-        }
-        if (block !== null) {
-          block(val);
-        } else {
-          if (match.length === 1) {
-            val = val[0];
-          }
-          match_arr.push(val);
-        }
-        index = fin;
-        if (index > this.length) {
-          break;
-        }
-      }
+      match_arr = _str.scan(this.__native__, pattern, block);
       if (block !== null) {
         return this;
       } else {
@@ -6303,7 +6517,7 @@ http://www.rubyjs.org/LICENSE.txt
       args = [this.__native__];
       for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
         el = arguments[i];
-        args.push(RCoerce.to_str_native(el));
+        args.push(__str(el));
       }
       return new RString(_str.squeeze.apply(_str, args));
     };
@@ -6383,27 +6597,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.to_f = function() {
-      var number_match, number_string, _ref3;
-      number_match = this.to_native().match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/);
-      number_string = (_ref3 = number_match != null ? number_match[0] : void 0) != null ? _ref3 : "0.0";
-      return this.$Float(Number(number_string.replace(/_/g, '')));
+      return this.$Float(_str.to_f(this.__native__));
     };
 
     String.prototype.to_i = function(base) {
-      var lit;
-      if (base === void 0) {
-        base = 10;
-      }
-      base = RCoerce.to_int_native(base);
-      if (base < 0 || base > 36 || base === 1) {
-        throw R.ArgumentError["new"]();
-      }
-      lit = this.strip().to_native();
-      if (!lit.match(/^([\+\-]?)([^\+^\-_]+)/)) {
-        return R(0);
-      }
-      lit = lit.replace(/_/g, '');
-      return this.$Integer(parseInt(lit, base));
+      return new R.Fixnum(_str.to_i(this.__native__, base));
     };
 
     String.prototype.to_s = function() {
@@ -6438,7 +6636,6 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.upto = function(stop, exclusive, block) {
-      stop = RCoerce.to_str_native(stop);
       if (block === void 0 && ((exclusive != null ? exclusive.call : void 0) != null)) {
         block = exclusive;
         exclusive = false;
@@ -6448,10 +6645,6 @@ http://www.rubyjs.org/LICENSE.txt
       }
       _str.upto(this.__native__, stop, exclusive, block);
       return this;
-    };
-
-    String.prototype.__char_natives__ = function() {
-      return this.__native__.split('');
     };
 
     String.__add_default_aliases__(String.prototype);

@@ -734,6 +734,7 @@ _coerce =
 
 
   str: (obj) ->
+    throw R.TypeError.new() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid string") unless typeof obj is 'string'
     throw R.TypeError.new() unless typeof obj is 'string'
@@ -741,6 +742,7 @@ _coerce =
 
 
   num: (obj) ->
+    throw R.TypeError.new() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid num") unless typeof obj is 'number'
     throw R.TypeError.new() unless typeof obj is 'number'
@@ -748,6 +750,7 @@ _coerce =
 
 
   int: (obj) ->
+    throw R.TypeError.new() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid int") unless typeof obj is 'number'
     throw R.TypeError.new() unless typeof obj is 'number'
@@ -762,7 +765,13 @@ _coerce =
     typeof obj is 'object' && obj != null && _coerce.isArray(obj.valueOf())
 
 
+  is_str: (obj) ->
+    return true if typeof obj is 'string'
+    typeof obj is 'object' && obj != null && typeof obj.valueOf() is 'string'
+
+
   arr: (obj) ->
+    throw R.TypeError.new() if obj == null
     throw R.TypeError.new() if typeof obj != 'object'
     obj = obj.valueOf()
     throw R.TypeError.new() unless _coerce.isArray(obj)
@@ -781,12 +790,29 @@ _coerce =
 
     ary
 
+
+  call_with: (func, thisArg, args) ->
+    a = args
+    switch args.length
+      when 0 then func(thisArg)
+      when 1 then func(thisArg, a[0])
+      when 2 then func(thisArg, a[0], a[1])
+      when 3 then func(thisArg, a[0], a[1], a[2])
+      when 4 then func(thisArg, a[0], a[1], a[2], a[3])
+      when 5 then func(thisArg, a[0], a[1], a[2], a[3], a[4])
+      when 6 then func(thisArg, a[0], a[1], a[2], a[3], a[4], a[5])
+      # Slow fallback when passed more than 6 arguments.
+      else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
+
+
+R.coerce = _coerce
 __str = _coerce.str
 __int = _coerce.int
 __num = _coerce.num
 __arr = _coerce.arr
 __isArr = _coerce.is_arr
-
+__isStr = _coerce.is_str
+__call = _coerce.call_with
 
 class NumericMethods
   cmp: (num, other) ->
@@ -1232,6 +1258,8 @@ class EnumerableMethods
 
 
   each_with_index: (coll, block) ->
+    return new R.Enumerator(_itr, 'each_with_index', [coll]) unless block?.call?
+
     callback = _blockify(block, coll)
 
     idx = 0
@@ -1697,6 +1725,8 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
+    return _arr.to_enum('combination', arr, num) unless block?
+
     num = __int(num)
     len = arr.length
 
@@ -1786,7 +1816,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
-    return _itr.to_enum(arr, 'each') unless block?.call?
+    return _arr.to_enum('each', [arr]) unless block?
 
     if block.length > 0 # 'if' needed for to_a
       block = Block.supportMultipleArgs(block)
@@ -1799,6 +1829,23 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  to_enum: (name, args) ->
+    # new R.Enumerator(_arr, name, args)
+    ary = []
+    _arr[name].apply(_arr, args.concat((args) -> ary.push(args)))
+    ary
+
+
+  each_index: (arr, block) ->
+    return _arr.to_enum('each_index', [arr]) unless block?
+
+    idx = -1
+    len = arr.length
+    while ++idx < len
+      block(idx)
+    this
+
+
   get: (a, b) ->
     _arr.slice(a,b)
 
@@ -1808,6 +1855,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   fetch: (arr, idx, default_or_block) ->
+    idx  = __int(idx)
     len  = arr.length
     orig = idx
     idx  = idx + len if idx < 0
@@ -1821,8 +1869,61 @@ class ArrayMethods extends EnumerableMethods
     arr[idx]
 
 
-  fill: ->
-    # TODO
+  # @destructive
+  fill: (arr, args...) ->
+    throw R.ArgumentError.new() if args.length == 0
+    block = R.__extract_block(args)
+
+    if block
+      throw R.ArgumentError.new() if args.length >= 3
+      one = args[0]; two = args[1]
+    else
+      throw R.ArgumentError.new() if args.length > 3
+      obj = args[0]; one = args[1]; two = args[2]
+
+    size = arr.length
+
+    if one?.is_range?
+      # TODO: implement fill with range
+      throw R.NotImplementedError.new()
+
+    else if one isnt undefined && one isnt null
+      left = __int(one)
+      left = left + size    if left < 0
+      left = 0              if left < 0
+
+      if two isnt undefined && two isnt null
+        try
+          right = __int(two)
+        catch e
+          throw R.ArgumentError.new("second argument must be a Fixnum")
+        return arr if right is 0
+        right = right + left
+      else
+        right = size
+    else
+      left  = 0
+      right = size
+
+    total = right
+
+    if right > size # pad with nul if length is greater than array
+      fill = _arr.__native_array_with__(right - size, null)
+      arr.push.apply(arr, fill)
+      total = right
+
+    i = left
+    if block
+      while total > i
+        v = block(i)
+        arr[i] = if v is undefined then null else v
+        i += 1
+    else
+      while total > i
+        arr[i] = obj
+        i += 1
+
+    arr
 
 
   # @destructive
@@ -1865,6 +1966,19 @@ class ArrayMethods extends EnumerableMethods
     nativeJoin.call(arr, separator)
 
 
+  keep_if: (arr, block) ->
+    return _arr.to_enum('keep_if', [arr]) unless block?
+
+    ary = []
+    idx = -1
+    len = arr.length
+    while ++idx < len
+      el = arr[idx]
+      ary.push(el) unless R.falsey(block(el))
+
+    ary
+
+
   last: (arr, n) ->
     len = arr.length
     if n is undefined
@@ -1879,35 +1993,101 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
+  minus: (arr, other) ->
+    other = __arr(other)
+
+    ary = []
+    idx = -1
+    len = arr.length
+    while ++idx < len
+      el = arr[idx]
+      ary.push(el) unless _arr.include(other, el)
+
+    ary
+
+
+  multiply: (arr, multiplier) ->
+    throw R.TypeError.new() if multiplier is null
+
+    if __isStr(multiplier)
+      return _arr.join(arr, __str(multiplier))
+    else
+      multiplier = __int(multiplier)
+
+      throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
+
+      total = arr.length
+      if total is 0
+        return []
+      else if total is 1
+        return arr.slice(0)
+
+      ary = []
+      idx = -1
+      while ++idx < multiplier
+        ary = ary.concat(arr)
+
+      ary
+
+
+  pop: (arr, many) ->
+    if many is undefined
+      arr.pop()
+    else
+      many = __int(many)
+      throw R.ArgumentError.new("negative array size") if many < 0
+      ary = []
+      len = arr.length
+      many = len if many > len
+      while many--
+        ary[many] = arr.pop()
+      ary
+
+
   product: (arr, args...) ->
-    # TODO
-    # block = R.__extract_block(args)
-    # args = args.reverse()
-    # for a in args
-    #   throw R.TypeError.new() unless __isArr(a)
+    result = []
+    block = R.__extract_block(args)
 
-    # ary = []
-    # args.push(arr)
+    args = for a in args
+      __arr(a)
+    args = args.reverse()
+    args.push(arr)
 
-    # # Implementation notes: We build a block that will generate all the
-    # # combinations by building it up successively using "inject" and starting
-    # # with one responsible to append the values.
-    # outer = _arr.inject arr, ary.push, (trigger, values) ->
-    #   (partial) ->
-    #     for val in values
-    #       trigger.call(ary, partial.concat(val))
+    # Implementation notes: We build a block that will generate all the
+    # combinations by building it up successively using "inject" and starting
+    # with one responsible to append the values.
+    outer = _arr.inject args, result.push, (trigger, values) ->
+      (partial) ->
+        for val in values
+          trigger.call(result, partial.concat(val))
 
-    # outer( [] )
-    # if block
-    #   block_result = arr
-    #   for v in ary
-    #     block_result.push(block(v))
-    #   block_result
-    # else
-    #   ary
+    outer( [] )
+    if block
+      block_result = arr
+      for v in result
+        block_result.push(block(v))
+      block_result
+    else
+      result
+
+
+  rassoc: (arr, obj) ->
+    len = arr.length
+    idx = -1
+    while ++idx < len
+      elem = arr[idx]
+      try
+        el = __arr(elem)
+        if R.is_equal(el[1], obj)
+          return elem
+      catch e
+        null
+    null
 
 
   reverse_each: (arr, block) ->
+    return _arr.to_enum('reverse_each', [arr]) unless block?
+
     if block.length > 0 # if needed for to_a
       block = Block.supportMultipleArgs(block)
 
@@ -1916,6 +2096,108 @@ class ArrayMethods extends EnumerableMethods
       block(arr[idx])
 
     arr
+
+
+  rindex: (arr, other) ->
+    return _arr.to_enum('rindex', [arr, other]) if other is undefined
+
+    len = arr.length
+    ridx = arr.length
+    if other.call?
+      block = other
+      while ridx--
+        el = arr[ridx]
+        unless R.falsey(block(el))
+          return ridx
+
+    else
+      # TODO: 2012-11-06 use a while loop with idx counting down
+      while ridx--
+        el = arr[ridx]
+        if R.is_equal(el, other)
+          return ridx
+
+    null
+
+
+  rotate: (arr, cnt) ->
+    if cnt is undefined
+      cnt = 1
+    else
+      cnt = __int(cnt)
+
+    len = arr.length
+    return arr  if len is 1
+    return []   if len is 0
+
+    idx = cnt % len
+
+    # TODO: optimize
+    sliced = arr.slice(0, idx)
+    arr.slice(idx).concat(sliced)
+
+
+  sample: (arr, n, range = undefined) ->
+    len = arr.length
+    return arr[R.rand(len)] if n is undefined
+    n = __int(n)
+    throw R.ArgumentError.new() if n < 0
+
+    n    = len if n > len
+
+    ary = arr.slice(0)
+    idx = -1
+    while ++idx < n
+      ridx = idx + R.rand(len - idx) # Random idx
+      tmp  = ary[idx]
+      ary[idx]  = ary[ridx]
+      ary[ridx] = tmp
+
+    ary.slice(0, n)
+
+
+  shuffle: (arr) ->
+    len = arr.length
+    ary = new Array(len)
+    idx = -1
+    while ++idx < len
+      rnd = idx + R.rand(len - idx)
+      tmp = arr[idx]
+      ary[idx] = arr[rnd]
+      ary[rnd] = tmp
+    ary
+
+
+  slice: (arr, idx, length) ->
+    throw new R.TypeError.new() if idx is null
+    size = arr.length
+
+    if idx?.is_range?
+      range = idx
+      range_start = __int(range.begin())
+      range_end   = __int(range.end()  )
+      range_start = range_start + size if range_start < 0
+
+      if range_end < 0
+        range_end = range_end + size
+
+      range_end   = range_end + 1 unless range.exclude_end()
+      range_lenth = range_end - range_start
+      return null if range_start > size  or range_start < 0
+      return arr.slice(range_start, range_end)
+    else
+      idx = __int(idx)
+
+    idx = size + idx if idx < 0
+    # return @$String('') if is_range and idx.lteq(size) and idx.gt(length)
+
+    if length is undefined
+      return null if idx < 0 or idx >= size
+      arr[idx]
+    else
+      length = __int(length)
+      return null if idx < 0 or idx > size or length < 0
+      arr.slice(idx, length + idx)
 
 
   transpose: (arr) ->
@@ -1942,10 +2224,35 @@ class ArrayMethods extends EnumerableMethods
 
     out
 
+
   uniq: (arr) ->
     ary = []
     _arr.each arr, (el) ->
       ary.push(el) if ary.indexOf(el) < 0
+    ary
+
+
+  unshift: (arr, args...) ->
+    args.concat(arr)
+
+
+  # values_at2: (arr, args...) ->
+  #   for idx in args
+  #     _arr.at(arr, __int(idx)) || null
+
+
+  union: (arr, other) ->
+    _arr.uniq(arr.concat(__arr(other)))
+
+
+
+  values_at: (arr) ->
+    len = arguments.length
+    ary = new Array(len - 1)
+    idx = 1
+    while idx < len
+      ary[idx - 1] = _arr.at(arr, __int(arguments[idx])) || null
+      idx += 1
     ary
 
 
@@ -1957,7 +2264,10 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
-_arr = R._arr = new ArrayMethods()
+_arr = R._arr = (arr) ->
+  new RArray(arr)
+
+R.extend(_arr, new ArrayMethods())
 
 class StringMethods
   capitalize: (str) ->
@@ -2068,6 +2378,17 @@ class StringMethods
     ).join('')
 
 
+
+  dump: (str) ->
+    escaped =  str.replace(/[\f]/g, '\\f')
+      .replace(/["]/g, "\\\"")
+      .replace(/[\n]/g, '\\n')
+      .replace(/[\r]/g, '\\r')
+      .replace(/[\t]/g, '\\t')
+      # .replace(/[\s]/g, '\\ ') # do not
+    "\"#{escaped}\""
+
+
   empty: (str) ->
     str.length == 0
 
@@ -2095,13 +2416,16 @@ class StringMethods
 
     str.replace(pattern, replacement)
 
-  include: (str, other) ->
 
+  include: (str, other) ->
     str.indexOf(other) >= 0
 
 
   index: (str, needle, offset) ->
+    needle = __str(needle)
+
     if offset?
+      offset = __int(offset)
       offset = str.length + offset if offset < 0
 
     # unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
@@ -2247,16 +2571,20 @@ class StringMethods
 
 
   rjust: (str, width, pad_str = " ") ->
+    width = __int(width)
     len = str.length
     if len >= width
       str
     else
+      pad_str = __str(pad_str)
       throw R.ArgumentError.new() if pad_str.length == 0
       pad_len = width - len
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
   rpartition: (str, pattern) ->
+    pattern = __str(pattern)
+
     idx = _str.rindex(str, pattern)
     unless idx is null
       start = idx + pattern.length
@@ -2272,6 +2600,41 @@ class StringMethods
 
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
+
+
+  scan: (str, pattern, block = null) ->
+    unless R.Regexp.isRegexp(pattern)
+      pattern = __str(pattern)
+      pattern = R.Regexp.quote(pattern)
+
+    index = 0
+
+    R['$~'] = null
+    match_arr = if block != null then str else []
+
+    # FIXME: different from rubinius implementation
+    while match = str[index..-1].match(pattern)
+      fin  = index + match.index + match[0].length
+      fin += 1 if match[0].length == 0
+
+      R['$~'] = new R.MatchData(match, {offset: index, string: str})
+
+      if match.length > 1
+        val = match[1...match.length]
+      else
+        val = [match[0]]
+
+      if block != null
+        block(val)
+      else
+        val = val[0] if match.length == 1
+        match_arr.push val
+
+      index = fin
+      break if index > str.length
+
+    # return this if block was passed
+    if block != null then str else match_arr
 
 
   squeeze: (str) ->
@@ -2464,6 +2827,40 @@ class StringMethods
     chars.join('')
 
 
+  to_i: (str, base) ->
+    base = 10 if base is undefined
+    base = __int(base)
+
+    if base < 0 or base > 36 or base is 1
+      throw R.ArgumentError.new()
+
+    # ignore whitespace
+    lit = _str.strip(str)
+
+    # ([\+\-]?) matches +\- prefixes if any
+    # ([^\+^\-_]+) matches everything after, except '_'.
+    unless lit.match(/^([\+\-]?)([^\+^\-_]+)/)
+      return 0
+
+    # replace after check, so that _123 is invalid
+    lit = lit.replace(/_/g, '')
+
+    # if base > 0
+    #   return R(0) unless BASE_IDENTIFIER[lit[0..1]] is base
+    # else if base is 0
+    #   base_str = if lit[0].match(/[\+\-]/) then lit[1..2] else lit[0..1]
+    #   base = R.String.BASE_IDENTIFIER[base_str]
+
+    parseInt(lit, base)
+
+
+  to_f: (str) ->
+    number_match  = str.match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
+    number_string = number_match?[0] ? "0.0"
+    Number(number_string.replace(/_/g, ''))
+
+
+
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
     # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
@@ -2473,6 +2870,7 @@ class StringMethods
 
 
   upto: (str, stop, exclusive, block) ->
+    stop = __str(stop)
     exclusive ||= false
     if block is undefined and exclusive?.call?
       block = exclusive
@@ -2516,14 +2914,21 @@ class StringMethods
       throw R.ArgumentError.new()
 
 
-_str = R._str = new StringMethods()
+
+_str = R._str = (arr) ->
+  new RString(arr)
+
+R.extend(_str, new StringMethods())
 
 
 class HashMethods extends EnumerableMethods
 
 
 
-_hsh = R._hsh = new HashMethods()
+_hsh = R._hsh = (arr) ->
+  new RHash(arr)
+
+R.extend(_hsh, new HashMethods())
 
 
 
@@ -3482,22 +3887,25 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   iterator: () ->
-    @to_a().to_native()
+    @valueOf()
 
-  native_array: () ->
-    @arr ||= @iterator()
 
   next: ->
     idx = @idx
     @idx += 1
-    @native_array()[idx]
+    @valueOf()[idx]
+
+
+  to_a: () ->
+    new RArray(@valueOf())
+
 
   to_enum: (iter = "each", args...) ->
     new RubyJS.Enumerator(this, iter, args)
 
 
   valueOf: ->
-    @to_a().valueOf()
+    _itr.to_a(this)
 
 
   eachWithIndex: @prototype.each_with_index
@@ -3719,6 +4127,7 @@ class RubyJS.Array extends RubyJS.Object
   # @private
   unbox: @prototype.to_native
 
+
   to_native_clone: -> @__native__.slice(0)
 
 
@@ -3852,10 +4261,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @return R.Array
   #
-  combination: (args...) ->
-    block = @__extract_block(args)
-    num   = RCoerce.to_int_native args[0]
-    return @to_enum('combination', num) unless block?.call?
+  combination: (num, block) ->
+    return @to_enum('combination', num) unless block?
     _arr.combination(@__native__, num, block)
     this
 
@@ -3986,14 +4393,10 @@ class RubyJS.Array extends RubyJS.Object
   #     # out: 0 -- 1 -- 2 --
   #
   each_index: (block) ->
-    if block && block.call?
-      idx = -1
-      len = @__native__.length
-      while ++idx < len
-        block(idx)
-      this
-    else
-      @to_enum('each_index')
+    return @to_enum('each_index') unless block?
+    _arr.each_index(@__native__, block)
+    this
+
 
 
   # Calls block once for each element in self, passing that element as a
@@ -4012,8 +4415,6 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum() unless block?.call?
     _arr.each(@__native__, block)
     this
-
-
 
 
   # Alias for R.Array#[] R.Array#slice
@@ -4087,7 +4488,6 @@ class RubyJS.Array extends RubyJS.Object
   #     a.fetch(4, (i) -> i*i))  #=> 16
   #
   fetch: (idx, default_or_block) ->
-    idx = RCoerce.to_int_native(idx)
     _arr.fetch(@__native__, idx, default_or_block)
 
 
@@ -4120,57 +4520,16 @@ class RubyJS.Array extends RubyJS.Object
   #
   fill: (args...) ->
     throw R.ArgumentError.new() if args.length == 0
-
+    # OPTIMIZE arguments
     block = @__extract_block(args)
 
     if block
       throw R.ArgumentError.new() if args.length >= 3
-      one = args[0]; two = args[1]
+      _arr.fill(@__native__,  args[0],  args[1], block)
     else
       throw R.ArgumentError.new() if args.length > 3
-      obj = args[0]; one = args[1]; two = args[2]
+      _arr.fill(@__native__,  args[0], args[1], args[2])
 
-    size = @__size__()
-
-    if one?.is_range?
-      # TODO: implement fill with range
-      throw R.NotImplementedError.new()
-
-    else if one isnt undefined && one isnt null
-      left = RCoerce.to_int_native(one)
-      left = left + size    if left < 0
-      left = 0              if left < 0
-
-      if two isnt undefined && two isnt null
-        try
-          right = RCoerce.to_int_native(two)
-        catch e
-          throw R.ArgumentError.new("second argument must be a Fixnum")
-        return this if right is 0
-        right = right + left
-      else
-        right = size
-    else
-      left  = 0
-      right = size
-
-    total = right
-
-    if right > size # pad with nul if length is greater than array
-      fill = @__native_array_with__(right - size, null)
-      @concat( fill )
-      total = right
-
-    i = left
-    if block
-      while total > i
-        v = block.call(this, i)
-        @__native__[i] = if v is undefined then null else v
-        i += 1
-    else
-      while total > i
-        @__native__[i] = obj
-        i += 1
     this
 
 
@@ -4203,13 +4562,10 @@ class RubyJS.Array extends RubyJS.Object
   #     a.insert(2, 99)         #=> ["a", "b", 99, "c", "d"]
   #     a.insert(-2, 1, 2, 3)   #=> ["a", "b", 99, "c", 1, 2, 3, "d"]
   #
-  insert: (idx, items...) ->
+  insert: (idx) ->
     throw R.ArgumentError.new() if idx is undefined
-    return this if items.length == 0
-    # Adjust the index for correct insertion
-    idx = RCoerce.to_int_native(idx)
-
-    ary = _arr.insert.apply(_arr, [@__native__, idx].concat(items))
+    return this if arguments.length == 0
+    ary = __call(_arr.insert, @__native__, arguments)
     this
 
 
@@ -4258,13 +4614,9 @@ class RubyJS.Array extends RubyJS.Object
   #
   keep_if: (block) ->
     return @to_enum('keep_if') unless block?.call?
+    ary = _arr.keep_if(@__native__, block)
+    if @__native__.length is ary.length then this else @replace(ary)
 
-    ary = []
-    # TODO: use while
-    @each (el) ->
-      ary.push(el) unless R.falsey(block(el))
-
-    if @__size__() is ary.length then this else @replace(ary)
 
   # Array Difference - Returns a new array that is a copy of the original
   # array, removing any items that also appear in other_ary. (If you need set-
@@ -4279,13 +4631,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo recursive arrays not tested
   #
   minus: (other) ->
-    other = RCoerce.to_ary(other)
-
-    ary = []
-    @each (el) ->
-      ary.push(el) unless other.include(el)
-
-    new R.Array(ary)
+    new RArray(_arr.minus(@__native__, other))
 
 
   # Repetition—With a String argument, equivalent to self.join(str).
@@ -4297,31 +4643,9 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ 1, 2, 3 ]).multiply ","  # => "1,2,3"
   #
   multiply: (multiplier) ->
-    @__ensure_args_length(arguments, 1)
-    throw R.TypeError.new() if multiplier is null
-
-    multiplier = R(multiplier)
-    if multiplier.to_str?
-      return @join(multiplier)
-    else
-      multiplier = RCoerce.to_int_native(multiplier)
-
-      throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
-
-      total = @__size__()
-      if total is 0
-        return new R.Array([])
-      else if total is 1
-        return @dup()
-
-      ary = []
-      arr = @__native__
-
-      idx = -1
-      while ++idx < multiplier
-        ary = ary.concat(arr)
-
-      return new R.Array(ary)
+    R.__ensure_args_length(arguments, 1)
+    # can be string or array
+    R(_arr.multiply(@__native__, multiplier))
 
   # Returns the last element(s) of self. If the array is empty, the first form
   # returns nil.
@@ -4428,14 +4752,9 @@ class RubyJS.Array extends RubyJS.Object
     throw R.ArgumentError.new() if arguments.length > 1
 
     if many is undefined
-      @__native__.pop()
+      _arr.pop(@__native__)
     else
-      many = RCoerce.to_int_native(many)
-      throw R.ArgumentError.new("negative array size") if many < 0
-      first = @__size__() - many
-      first = 0 if first < 0
-      @slice_bang(first, many)
-
+      new RArray(_arr.pop(@__native__, many))
 
   # Returns an array of all combinations of elements from all arrays. The
   # length of the returned array is the product of the length of self and the
@@ -4452,32 +4771,9 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @todo does not check if the result size will fit in an Array.
   #
-  product: (args...) ->
-    result = []
-    block = @__extract_block(args)
-
-    args = for a in args
-      RCoerce.to_ary_native(a)
-
-    args = args.reverse()
-    args.push(@__native__)
-
-    # Implementation notes: We build a block that will generate all the
-    # combinations by building it up successively using "inject" and starting
-    # with one responsible to append the values.
-    outer = _arr.inject args, result.push, (trigger, values) ->
-      (partial) ->
-        for val in values
-          trigger.call(result, partial.concat(val))
-
-    outer( [] )
-    if block
-      block_result = this
-      for v in result
-        block_result.append block(v)
-      block_result
-    else
-      new RArray(result)
+  product: ->
+    ary = __call(_arr.product, @__native__, arguments)
+    if ary == @__native__ then this else new RArray(ary)
 
 
   # Append—Pushes the given object(s) on to the end of this array. This
@@ -4504,13 +4800,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.rassoc("four")   #=> nil
   #
   rassoc: (obj) ->
-    obj = R(obj)
+    _arr.rassoc(@__native__, obj)
 
-    @catch_break (breaker) ->
-      @each (elem) ->
-        if elem.is_array? and R(elem.at(1))?['=='](obj)
-          breaker.break(elem)
-      null
 
   # Returns the index of the last object in self == to obj. If a block is
   # given instead of an argument, returns index of first object for which
@@ -4529,28 +4820,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   rindex: (other) ->
     return @to_enum('rindex') if other is undefined
-
-    if other.call?
-      block = other
-      len   = @__size__()
-      ridx  = @catch_break (breaker) ->
-        idx = -1
-        @reverse_each (el) ->
-          idx += 1
-          unless R.falsey(block(el))
-            breaker.break(idx)
-        null
-    else
-      # TODO: 2012-11-06 use a while loop with idx counting down
-      ridx = @catch_break (breaker) ->
-        idx = -1
-        @reverse_each (el) ->
-          idx += 1
-          if R(el)['=='](other)
-            breaker.break(idx)
-        null
-
-    if ridx is null then null else R(@__size__() - ridx - 1)
+    ridx = _arr.rindex(@__native__, other)
+    if ridx is null then null else new R.Fixnum(ridx)
 
   # Choose a random element or n random elements from the array. The elements
   # are chosen by using random and unique indices into the array in order to
@@ -4565,23 +4836,12 @@ class RubyJS.Array extends RubyJS.Object
   #     R([1,2,3]).sample(4)   # => [2,1,3]
   #
   sample: (n, range = undefined) ->
-    return @at(@rand(@size())) if n is undefined
+    val = _arr.sample(@__native__, n, range)
+    if n is undefined
+      val
+    else
+      new RArray(val)
 
-    n = RCoerce.to_int_native(n)
-    throw R.ArgumentError.new() if n < 0
-
-    size = @__size__()
-    n    = size if n > size
-    ary  = @to_native_clone()
-
-    idx = -1
-    while ++idx < n
-      ridx = idx + R.rand(size - idx) # Random idx
-      tmp  = ary[idx]
-      ary[idx]  = ary[ridx]
-      ary[ridx] = tmp
-
-    new R.Array(ary).slice(0, n)
 
   # Equivalent to Array#delete_if, deleting elements from self for which the
   # block evaluates to true, but returns nil if no changes were made. The array
@@ -4594,6 +4854,7 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum('reject_bang') unless block?.call?
     ary = @reject(block)
     if ary.__size__() is @__size__() then null else @replace(ary)
+
 
   # Replaces the contents of self with the contents of other_ary, truncating
   # or expanding if necessary.
@@ -4654,17 +4915,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.rotate(-3)     # => ["b", "c", "d", "a"]
   #
   rotate: (cnt) ->
-    cnt = 1 if cnt is undefined
-    cnt = RCoerce.to_int_native(cnt)
+    new RArray(_arr.rotate(@__native__, cnt))
 
-    ary = @dup()
-    return ary             if @__size__() is 1
-    return new R.Array([]) if @empty()
-
-    idx = cnt % ary.__size__()
-
-    sliced = ary.slice(R.rng(0, idx, true))
-    ary.slice(R.rng(idx,-1)).concat(sliced)
 
   # Rotates self in place so that the element at cnt comes first, and returns
   # self. If cnt is negative then it rotates in the opposite direction.
@@ -4676,13 +4928,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.rotate_bang(-3)    # => ["a", "b", "c", "d"]
   #
   rotate_bang: (cnt) ->
-    if cnt is undefined
-      cnt = 1
-      @replace @rotate(cnt)
-    else
-      cnt = RCoerce.to_int_native(cnt)
-      return this if cnt is 0 or cnt is 1
-      @replace @rotate(cnt)
+    return this if cnt is 0 or cnt is 1
+    @replace _arr.rotate(@__native__, cnt)
 
 
   # Invokes the block passing in successive elements from self, deleting
@@ -4706,6 +4953,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.select (v) -> v.match /[aeiou]/   #=> ["a", "e"]
   #
   #
+
 
   # Returns the first element of self and removes it (shifting all other
   # elements down by one). Returns nil if the array is empty.
@@ -4744,20 +4992,13 @@ class RubyJS.Array extends RubyJS.Object
   shuffle: ->
     @dup().tap (ary) -> ary.shuffle_bang()
 
+
   # Shuffles elements in self in place. If rng is given, it will be used as
   # the random number generator.
   #
   shuffle_bang: ->
-    size = @__size__()
-    arr  = @__native__
+    @replace(_arr.shuffle(@__native__))
 
-    idx = -1
-    while ++idx < size
-      rnd = idx + R.rand(size - idx)
-      tmp = arr[idx]
-      arr[idx] = arr[rnd]
-      arr[rnd] = tmp
-    this
 
   # Length of array
   size: ->
@@ -4791,38 +5032,16 @@ class RubyJS.Array extends RubyJS.Object
   #
   slice: (idx, length) ->
     throw new R.TypeError.new() if idx is null
-    size = @__size__()
 
-    # TODO: implement ranges
-
-    if idx?.is_range?
-      range = idx
-      range_start = RCoerce.to_int_native(range.begin())
-      range_end   = RCoerce.to_int_native(range.end()  )
-      range_start = range_start + size if range_start < 0
-
-      if range_end < 0
-        range_end = range_end + size
-      # else if range_end >= size
-      #   range_end = size - 1
-
-      range_end   = range_end + 1 unless range.exclude_end()
-      range_lenth = range_end - range_start
-      return null if range_start > size  or range_start < 0
-      return new R.Array(@__native__.slice(range_start, range_end))
+    val = _arr.slice(@__native__, idx, length)
+    if val is null
+      null
+    else if idx?.is_range?
+      new RArray(val)
+    else if length is undefined
+      val
     else
-      idx = RCoerce.to_int_native(idx)
-
-    idx = size + idx if idx < 0
-    # return @$String('') if is_range and idx.lteq(size) and idx.gt(length)
-
-    if length is undefined
-      return null if idx < 0 or idx >= size
-      @at(idx)
-    else
-      length = RCoerce.to_int_native(length)
-      return null if idx < 0 or idx > size or length < 0
-      new R.Array(@__native__.slice(idx, length + idx))
+      new RArray(val)
 
 
   # Deletes the element(s) given by an index (optionally with a length) or by
@@ -4902,6 +5121,7 @@ class RubyJS.Array extends RubyJS.Object
   sort_bang: (block) ->
     @replace @sort(block)
 
+
   # Sorts self in place using a set of keys generated by mapping the values in
   # self through the given block.
   #
@@ -4966,8 +5186,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.unshift("a")   #=> ["a", "b", "c", "d"]
   #     a.unshift(1, 2)  #=> [ 1, 2, "a", "b", "c", "d"]
   #
-  unshift: (args...) ->
-    @replace(args.concat(@__native__))
+  unshift: ->
+    @replace(__call(_arr.unshift, @__native__, arguments))
 
 
   # Set Union—Returns a new array by joining this array with other_ary,
@@ -4977,7 +5197,7 @@ class RubyJS.Array extends RubyJS.Object
   #       #=> [ "a", "b", "c", "d" ]
   #
   union: (other) ->
-    @plus(other).uniq()
+    new RArray(_arr.union(@__native__, other))
 
 
   to_a: ->
@@ -5006,10 +5226,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo not working with ranges
   #
   values_at: (args...) ->
-    ary = for idx in args
-      @at(RCoerce.to_int_native(idx)) || null
-
-    new R.Array(ary)
+    new RArray(__call(_arr.values_at, @__native__, args))
 
 
   # ---- Aliases --------------------------------------------------------------
@@ -5052,18 +5269,9 @@ class RubyJS.Array extends RubyJS.Object
   tryConvert:   @prototype.try_convert
   valuesAt:     @prototype.values_at
 
-  # ---- Private --------------------------------------------------------------
-
-  __native_array_with__: (size, obj) ->
-    ary = nativeArray(RCoerce.to_int_native(size))
-    idx = -1
-    while ++idx < size
-      ary[idx] = obj
-    ary
 
 
 RArray = R.Array = RubyJS.Array
-R._arr = _arr
 
 
 
@@ -5686,6 +5894,7 @@ class RubyJS.Hash extends RubyJS.Object
 
   # ---- Aliases --------------------------------------------------------------
 
+RHash = R.Hash
 
 R.hashify = (obj, default_value) ->
   new R.Hash(obj, default_value)
@@ -6604,10 +6813,8 @@ class RubyJS.String extends RubyJS.Object
   # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
   #
   count: ->
-    args = [@__native__]
-    for el, i in arguments
-      args.push(RCoerce.to_str_native(el))
-    new R.Fixnum(_str.count.apply(_str, args))
+    num = __call(_str.count, @__native__, arguments)
+    new R.Fixnum(num)
 
 
   #crypt
@@ -6637,6 +6844,7 @@ class RubyJS.String extends RubyJS.Object
     for el, i in arguments
       args[i + 1] = RCoerce.to_str_native(el)
 
+    # str = __call(_str.delete, @__native__, arguments)
     str = _str.delete.apply(null, args)
     if @__native__ is str then null else @replace(str)
 
@@ -6652,6 +6860,7 @@ class RubyJS.String extends RubyJS.Object
   downcase: () ->
     new RString(_str.downcase(@__native__))
 
+
   # Downcases the contents of str, returning nil if no changes were made.
   #
   # @note case replacement is effective only in ASCII region.
@@ -6665,20 +6874,13 @@ class RubyJS.String extends RubyJS.Object
   # notation and all special characters escaped.
   #
   dump: ->
-    escaped =  @to_native().replace(/[\f]/g, '\\f')
-      .replace(/["]/g, "\\\"")
-      .replace(/[\n]/g, '\\n')
-      .replace(/[\r]/g, '\\r')
-      .replace(/[\t]/g, '\\t')
-      # .replace(/[\s]/g, '\\ ') # do not
-    R("\"#{escaped}\"")
+    new RString(_str.dump(@__native__))
 
 
   dup: ->
     dup = @clone()
     dup.initialize_copy(this)
     dup
-
 
 
   #each_byte
@@ -6901,8 +7103,6 @@ class RubyJS.String extends RubyJS.Object
   # @todo #index(regexp)
   #
   index: (needle, offset) ->
-    needle = RCoerce.to_str_native(needle)
-    offset = RCoerce.to_int_native(offset) if offset?
     val = _str.index(@__native__, needle, offset)
     if val is null then null else new R.Fixnum(val)
 
@@ -7125,8 +7325,6 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").rjust(20, '1234')   #=> "123412341234123hello"
   #
   rjust: (width, padString = " ") ->
-    width     = RCoerce.to_int_native(width)
-    padString = RCoerce.to_str_native(padString)
     new RString(_str.rjust(@__native__, width, padString))
 
 
@@ -7149,7 +7347,6 @@ class RubyJS.String extends RubyJS.Object
   # @todo does not yet affect R['$~']
   rpartition: (pattern) ->
     # TODO: regexps
-    pattern = RCoerce.to_str_native(pattern)
     new RArray(_str.rpartition(@__native__, pattern))
 
 
@@ -7201,36 +7398,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo some untested specs
   #
   scan: (pattern, block = null) ->
-    unless R.Regexp.isRegexp(pattern)
-      pattern = RCoerce.to_str_native(pattern)
-      pattern = R.Regexp.quote(pattern)
-
-    index = 0
-
-    R['$~'] = null
-    match_arr = if block != null then this else []
-
-    # FIXME: different from rubinius implementation
-    while match = @__native__[index..-1].match(pattern)
-      fin  = index + match.index + match[0].length
-      fin += 1 if match[0].length == 0
-
-      R['$~'] = new R.MatchData(match, {offset: index, string: @__native__})
-
-      if match.length > 1
-        val = match[1...match.length]
-      else
-        val = [match[0]]
-
-      if block != null
-        block(val)
-      else
-        val = val[0] if match.length == 1
-        match_arr.push val
-
-      index = fin
-      break if index > this.length
-
+    match_arr = _str.scan(@__native__, pattern, block)
     # return this if block was passed
     if block != null then this else (new RArray(match_arr))
 
@@ -7373,7 +7541,7 @@ class RubyJS.String extends RubyJS.Object
   squeeze: ->
     args = [@__native__]
     for el, i in arguments
-      args.push(RCoerce.to_str_native(el))
+      args.push(__str(el))
     new RString(_str.squeeze.apply(_str, args))
 
 
@@ -7543,11 +7711,7 @@ class RubyJS.String extends RubyJS.Object
   # @todo Some exotic formats not yet fully supported.
   #
   to_f: ->
-    # TODO
-    number_match  = @to_native().match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
-    number_string = number_match?[0] ? "0.0"
-    @$Float Number(number_string.replace(/_/g, ''))
-
+    @$Float( _str.to_f(@__native__) )
 
   # @BASE_IDENTIFIER:
   #   '0b': 2
@@ -7590,31 +7754,7 @@ class RubyJS.String extends RubyJS.Object
   #       - e.g: R("1012").to_i(2) should return 5, but due to 2 being invalid it retunrs 0 now.
   # @todo #to_i(0) does not auto-detect base
   to_i: (base) ->
-    # TODO
-    base = 10 if base is undefined
-    base = RCoerce.to_int_native(base)
-
-    if base < 0 or base > 36 or base is 1
-      throw R.ArgumentError.new()
-
-    # ignore whitespace
-    lit = @strip().to_native()
-
-    # ([\+\-]?) matches +\- prefixes if any
-    # ([^\+^\-_]+) matches everything after, except '_'.
-    unless lit.match(/^([\+\-]?)([^\+^\-_]+)/)
-      return R(0)
-
-    # replace after check, so that _123 is invalid
-    lit = lit.replace(/_/g, '')
-
-    # if base > 0
-    #   return R(0) unless BASE_IDENTIFIER[lit[0..1]] is base
-    # else if base is 0
-    #   base_str = if lit[0].match(/[\+\-]/) then lit[1..2] else lit[0..1]
-    #   base = R.String.BASE_IDENTIFIER[base_str]
-
-    @$Integer parseInt(lit, base)
+    new R.Fixnum(_str.to_i(@__native__, base))
 
 
   #to_r
@@ -7713,7 +7853,6 @@ class RubyJS.String extends RubyJS.Object
   # @todo R('a').upto('c').to_a() should return ['a', 'b', 'c'] (include 'c')
   #
   upto: (stop, exclusive, block) ->
-    stop = RCoerce.to_str_native(stop)
     if block is undefined and exclusive?.call?
       block = exclusive
       exclusive = false
@@ -7724,23 +7863,6 @@ class RubyJS.String extends RubyJS.Object
     _str.upto(@__native__, stop, exclusive, block)
 
     this
-
-  # used for the remaining missing test
-  # _rubyjs_ascii_succ: ->
-  #   @$Integer(@to_native().charCodeAt(0)).succ().chr()
-
-
-  #valid_encoding?
-
-
-  # ---- Class methods --------------------------------------------------------
-
-
-  # ---- Private methods ------------------------------------------------------
-
-  # @private
-  __char_natives__: ->
-    @__native__.split('')
 
 
   # ---- Unsupported methods --------------------------------------------------
