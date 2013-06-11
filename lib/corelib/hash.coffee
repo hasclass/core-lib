@@ -29,19 +29,9 @@ class RubyJS.Hash extends RubyJS.Object
   #     h.assoc("foo")      #=> null
   #
   assoc: (needle) ->
-    needle = R(needle)
+    val = _hsh.assoc(@__native__, needle)
+    if val is null then null else new RArray(val)
 
-    arr = []
-    if needle.rubyjs?
-      for own k, v of @__native__
-        if needle.equals(k)
-          return new R.Array([k, v])
-    else
-      for own k, v of @__native__
-        if needle == k
-          return new R.Array([k, v])
-
-    null
 
 
   # Removes all key-value pairs from hsh.
@@ -114,15 +104,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Object, null]
   #
   delete: (key, block) ->
-    if @has_key(key)
-      value = @get(key)
-      delete @__native__[key]
-      return value
-    else
-      if block?.call?
-        block(key)
-      else
-        null
+    _hsh.delete(@__native__, key, block)
 
 
   # Deletes every key-value pair from hsh for which block evaluates to true.
@@ -137,14 +119,10 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   delete_if: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        if block(k,v)
-          delete @__native__[k]
+    return @to_enum('delete_if') unless block?.call?
+    _hsh.delete_if(@__native__, block)
+    this
 
-      this
-    else
-      @to_enum('delete_if')
 
 
   # Calls block once for each key in hsh, passing the key-value pair as
@@ -162,12 +140,12 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   each: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        block(k,v)
-      this
-    else
-      @to_enum('each')
+    return @to_enum('each') unless block?
+
+    _hsh.each(@__native__, block)
+    this
+
+
 
 
 
@@ -189,12 +167,9 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   each_key: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        block(k)
-      this
-    else
-      @to_enum('each_key')
+    return @to_enum('each_key') unless block?
+    _hsh.each_key(@__native__, block)
+    this
 
 
   # Calls block once for each key in hsh, passing the value as a parameter.
@@ -211,12 +186,10 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   each_value: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        block(v)
-      this
-    else
-      @to_enum('each_value')
+    return @to_enum('each_value') unless block?
+    _hsh.each_value(@__native__, block)
+    this
+
 
   # Returns true if hsh contains no key-value pairs.
   #
@@ -225,9 +198,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Boolean]
   #
   empty: ->
-    for own k, v of @__native__
-      return false
-    true
+    _hsh.empty(@__native__)
 
 
   eql: (other) ->
@@ -263,17 +234,11 @@ class RubyJS.Hash extends RubyJS.Object
   #     # key not found (KeyError)
   #
   fetch: (key, default_value) ->
-    if arguments.length == 0
-      throw R.ArgumentError.new()
+    __call(_hsh.fetch, @__native__, arguments)
 
-    if @has_key(key)
-      @get(key)
-    else if default_value?.call? || arguments[2]?.call?
-      (arguments[2] || default_value)(key)
-    else if default_value != undefined
-      default_value
-    else
-      throw R.KeyError.new()
+
+  flatten: (recursion = 1) ->
+    new RArray(_hsh.flatten(@__native__, recursion))
 
 
   # Element Reference—Retrieves the value object corresponding to the key
@@ -305,16 +270,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Boolean]
   #
   has_value: (val) ->
-    val = R(val)
-
-    if val.rubyjs?
-      for own k, v of @__native__
-        return true if val.equals(v)
-    else
-      for own k, v of @__native__
-        return true if v == val
-
-    false
+    _hsh.has_value(@__native__, val)
 
 
   # Returns true if the given key is present in hsh.
@@ -327,7 +283,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @alias #include, #member
   #
   has_key: (key) ->
-    `key in this.__native__`
+    _hsh.has_key(@__native__, key)
 
 
   include: @prototype.has_key
@@ -342,7 +298,7 @@ class RubyJS.Hash extends RubyJS.Object
   #
   keep_if: (block) ->
     return @to_enum('keep_if') unless block?.call?
-    @reject_bang(block)
+    _hsh.keep_if(@__native__, block)
     this
 
 
@@ -359,16 +315,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @alias #index
   #
   key: (value) ->
-    # value = R(value)
-
-    if value.rubyjs?
-      for own k, v of @__native__
-        return k if value.equals(v)
-    else
-      for own k, v of @__native__
-        return k if v.valueOf() == value
-
-    null
+    _hsh.key(@__native__, value)
 
 
   index: @prototype.key
@@ -383,10 +330,8 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Hash]
   #
   invert: ->
-    hsh = {}
-    for own k, v of @__native__
-      hsh[v] = k
-    new R.Hash(hsh)
+    new R.Hash(_hsh.invert(@__native__))
+
 
   # Returns a new array populated with the keys from this hash. See also
   # Hash#values.
@@ -398,37 +343,15 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   keys: ->
-    arr = for own k, v of @__native__
-      k
-    new R.Array(arr)
+    new R.Array(_hsh.keys(@__native__))
 
 
   merge: (other, block) ->
-    hsh = {}
-    other = other.__native__ if other.rubyjs?
-
-    for own k, v of @__native__
-      hsh[k] = v
-    for own k, v of other
-      if block?.call? and `k in hsh`
-        hsh[k] = block(k, hsh[k], v)
-      else
-        hsh[k] = v
-
-    new R.Hash(hsh)
+    new R.Hash(_hsh.merge(@__native__, other, block))
 
 
   merge_bang: (other, block) ->
-    other = other.__native__ if other.rubyjs?
-
-    for own k, v of @__native__
-      @__native__[k] = v
-    for own k, v of other
-      if block?.call? and `k in this.__native__`
-        @__native__[k] = block(k, @__native__[k], v)
-      else
-        @__native__[k] = v
-
+    _hsh.merge$(@__native__, other, block)
     this
 
 
@@ -442,43 +365,20 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   rassoc: (needle) ->
-    needle = R(needle)
-
-    arr = []
-    if needle.rubyjs?
-      for own k, v of @__native__
-        if needle.equals(v)
-          return new R.Array([k, v])
-    else
-      for own k, v of @__native__
-        if needle == v
-          return new R.Array([k, v])
-
-    null
-
-
+    val = _hsh.rassoc(@__native__, needle)
+    if val is null then null else new RArray(val)
 
 
   reject: (block) ->
     return @to_enum('reject') unless block?.call?
-
-    dup = {}
-    for own k,v of @__native__
-      if !block(k, v)
-        dup[k] = v
-    new R.Hash(dup)
+    new R.Hash(_hsh.reject(@__native__, block))
 
 
   reject_bang: (block) ->
     return @to_enum('reject_bang') unless block?.call?
+    val = _hsh.reject$(@__native__, block)
+    if changed is null then null else this
 
-    changed = false
-    for own k,v of @__native__
-      if !block(k, v)
-        delete this.__native__[k]
-        changed = true
-
-    if changed then this else null
 
   # Returns a new hash consisting of entries for which the block returns true.
   #
@@ -490,24 +390,14 @@ class RubyJS.Hash extends RubyJS.Object
   #     h.select {|k,v| v < 200}  #=> {"a" => 100}
   select: (block) ->
     return @to_enum('select') unless block?.call?
-
-    dup = {}
-    for own k,v of @__native__
-      if block(k, v)
-        dup[k] = v
-
+    dup = _hsh.select(@__native__, block)
     new R.Hash(dup)
+
 
   select_bang: (block) ->
     return @to_enum('select_bang') unless block?.call?
-
-    changed = false
-    for own k,v of @__native__
-      if block(k, v)
-        delete this.__native__[k]
-        changed = true
-
-    if changed then this else null
+    val = _hsh.select$(@__native__, block)
+    if val is null then null  else this
 
 
   # Element Assignment—Associates the value given by value with the key given
@@ -528,13 +418,8 @@ class RubyJS.Hash extends RubyJS.Object
     @__native__[key] = value
 
 
-  flatten: (recursion = 1) ->
-    recursion = RCoerce.to_int_native(recursion)
-    @to_a().flatten(recursion)
-
   sort: (block) ->
-    @to_a().sort(block)
-
+    new RArray(_hsh.sort(@__native__, block))
 
 
   store: @prototype.set
@@ -550,12 +435,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Fixnum]
   #
   size: ->
-    counter = 0
-
-    for own k, v of @__native__
-      counter += 1
-
-    new R.Fixnum(counter)
+    new R.Fixnum(_hsh.size(@__native__))
 
 
   # Converts hsh to a nested array of [ key, value ] arrays.
@@ -567,9 +447,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   to_a: ->
-    arr = for own k, v of @__native__
-      [k, v]
-    new R.Array(arr)
+    new R.Array(_hsh.to_a(@__native__))
 
 
   # Returns self.
@@ -601,14 +479,12 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   values: ->
-    arr = for own k, v of @__native__
-      v
-    new R.Array(arr)
+    new RArray(_hsh.values(@__native__))
 
-  values_at: (keys) ->
-    arr = for k in arguments
-      @get(k)
-    R(arr)
+
+  values_at: ->
+    arr = __call(_hsh.values_at, @__native__, arguments)
+    new RArray(arr)
 
 
   valueOf: ->

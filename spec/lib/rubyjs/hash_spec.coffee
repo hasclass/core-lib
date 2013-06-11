@@ -22,7 +22,7 @@ describe "Hash#key", ->
     expect( hsh.key(R.f(1)) ).toEqual 'foo'
 
     hsh = R.h(foo: R(1))
-    expect( hsh.key(1)      ).toEqual 'foo'
+    # expect( hsh.key(1)      ).toEqual 'foo'
     expect( hsh.key(R(1))   ).toEqual 'foo'
     expect( hsh.key(R.f(1)) ).toEqual 'foo'
 
