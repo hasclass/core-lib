@@ -57,22 +57,25 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   iterator: () ->
-    @to_a().to_native()
+    @valueOf()
 
-  native_array: () ->
-    @arr ||= @iterator()
 
   next: ->
     idx = @idx
     @idx += 1
-    @native_array()[idx]
+    @valueOf()[idx]
+
+
+  to_a: () ->
+    new RArray(@valueOf())
+
 
   to_enum: (iter = "each", args...) ->
     new RubyJS.Enumerator(this, iter, args)
 
 
   valueOf: ->
-    @to_a().valueOf()
+    _itr.to_a(this)
 
 
   eachWithIndex: @prototype.each_with_index

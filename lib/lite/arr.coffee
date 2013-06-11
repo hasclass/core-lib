@@ -49,6 +49,8 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
+    return _arr.to_enum('combination', arr, num) unless block?.call?
+
     num = __int(num)
     len = arr.length
 
@@ -138,7 +140,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
-    return _itr.to_enum(arr, 'each') unless block?.call?
+    return _arr.to_enum('each', [arr]) unless block?.call?
 
     if block.length > 0 # 'if' needed for to_a
       block = Block.supportMultipleArgs(block)
@@ -151,6 +153,20 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  to_enum: (name, args) ->
+    new R.Enumerator(_arr, name, args)
+
+
+  each_index: (arr, block) ->
+    return _arr.to_enum('each_index', [arr]) unless block?.call?
+
+    idx = -1
+    len = arr.length
+    while ++idx < len
+      block(idx)
+    this
+
+
   get: (a, b) ->
     _arr.slice(a,b)
 
@@ -160,6 +176,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   fetch: (arr, idx, default_or_block) ->
+    idx  = __int(idx)
     len  = arr.length
     orig = idx
     idx  = idx + len if idx < 0

@@ -23,16 +23,16 @@ describe "Array#fetch", ->
 
   xit "passes the original index argument object to the block, not the converted Integer", ->
     o =
-      to_int: -> R( 5)
+      valueOf: -> ( 5)
     expect( R( [1, 2, 3] ).fetch(o, (i) -> i )      ).toEqual o
 
   xit "gives precedence to the default block over the default argument", ->
     # UNSUPPORTED
     # expect( R( [1, 2, 3] ).fetch(9, 'foo', (i) -> i * i ) ).toEqual 81
 
-  it "tries to convert the passed argument to an Integer using #to_int", ->
+  it "tries to convert the passed argument to an Integer using #valueOf", ->
     obj =
-      to_int: -> R 2
+      valueOf: ->  2
     expect( R( ["a", "b", "c"] ).fetch(obj) ).toEqual "c"
 
   it "raises a TypeError when the passed argument can't be coerced to Integer", ->

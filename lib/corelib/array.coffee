@@ -185,6 +185,7 @@ class RubyJS.Array extends RubyJS.Object
   # @private
   unbox: @prototype.to_native
 
+
   to_native_clone: -> @__native__.slice(0)
 
 
@@ -318,10 +319,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @return R.Array
   #
-  combination: (args...) ->
-    block = @__extract_block(args)
-    num   = RCoerce.to_int_native args[0]
-    return @to_enum('combination', num) unless block?.call?
+  combination: (num, block) ->
+    return @to_enum('combination', num) unless block?
     _arr.combination(@__native__, num, block)
     this
 
@@ -553,7 +552,6 @@ class RubyJS.Array extends RubyJS.Object
   #     a.fetch(4, (i) -> i*i))  #=> 16
   #
   fetch: (idx, default_or_block) ->
-    idx = RCoerce.to_int_native(idx)
     _arr.fetch(@__native__, idx, default_or_block)
 
 
@@ -1132,6 +1130,7 @@ class RubyJS.Array extends RubyJS.Object
     sliced = ary.slice(R.rng(0, idx, true))
     ary.slice(R.rng(idx,-1)).concat(sliced)
 
+
   # Rotates self in place so that the element at cnt comes first, and returns
   # self. If cnt is negative then it rotates in the opposite direction.
   #
@@ -1529,5 +1528,4 @@ class RubyJS.Array extends RubyJS.Object
 
 
 RArray = R.Array = RubyJS.Array
-R._arr = _arr
 

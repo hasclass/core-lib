@@ -186,6 +186,8 @@ class EnumerableMethods
 
 
   each_with_index: (coll, block) ->
+    return new R.Enumerator(_itr, 'each_with_index', [coll]) unless block?.call?
+
     callback = _blockify(block, coll)
 
     idx = 0
