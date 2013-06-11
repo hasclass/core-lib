@@ -618,6 +618,18 @@ class ArrayMethods extends EnumerableMethods
       arr[0]
 
 
+  map: (arr, block) ->
+    callback = Block.splat_arguments(block)
+
+    idx = -1
+    len = arr.length
+    ary = new Array(len)
+    while ++idx < len
+      ary[idx] = callback(arr[idx])
+
+    ary
+
+
   take: @prototype.first
 
 

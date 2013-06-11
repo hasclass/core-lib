@@ -125,8 +125,12 @@ class StringMethods
   end_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
     for w in needles
-      if str.lastIndexOf(w) + w.length is str.length
-        return true
+      try
+        w = __str(w)
+        if str.lastIndexOf(w) + w.length is str.length
+          return true
+      catch e
+
     false
 
 
@@ -534,9 +538,16 @@ class StringMethods
     ary
 
 
-  start_with: (str, needles...) ->
+  start_with: (str) ->
+    needles = _coerce.split_args(arguments, 1)
+
     for needle in needles
-      return true if str.indexOf(needle) is 0
+      try
+        needle = __str(needle)
+        return true if str.indexOf(needle) is 0
+      catch e
+        # TODO get rid of try
+
     false
 
 

@@ -19,18 +19,18 @@ class EnumerableMethods
 
 
   all: (coll, block) ->
-    @catch_break (breaker) ->
+    _itr.catch_break (breaker) ->
       callback = __blockify(block, coll)
-      @each coll, ->
+      _itr.each coll, ->
         result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
       true
 
 
   any: (coll, block) ->
-    @catch_break (breaker) ->
+    _itr.catch_break (breaker) ->
       callback = __blockify(block, coll)
-      @each coll, ->
+      _itr.each coll, ->
         result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
       false
@@ -40,7 +40,7 @@ class EnumerableMethods
     callback = __blockify(block, this)
 
     ary = []
-    @each coll, ->
+    _itr.each coll, ->
       ary.push(callback.invoke(arguments))
 
     _arr.flatten(ary, 1)
@@ -52,17 +52,17 @@ class EnumerableMethods
   count: (coll, block) ->
     counter = 0
     if block is undefined
-      @each coll, -> counter += 1
+      _itr.each coll, -> counter += 1
     else if block is null
-      @each coll, (el) -> counter += 1 if el is null
+      _itr.each coll, (el) -> counter += 1 if el is null
     else if block.call?
       callback = __blockify(block, coll)
-      @each coll, ->
+      _itr.each coll, ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
       countable = block
-      @each coll, (el) ->
+      _itr.each coll, (el) ->
         counter += 1 if R.is_equal(countable, el)
     counter
 
@@ -84,7 +84,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
 
     cache = new R.Array([])
-    @each coll, ->
+    _itr.each coll, ->
       args = callback.args(arguments)
       cache.append args
       callback.invoke(arguments)
@@ -108,7 +108,7 @@ class EnumerableMethods
   drop: (coll, n) ->
     # TODO use splice when implemented
     ary = []
-    @each_with_index coll, (el, idx) ->
+    _itr.each_with_index coll, (el, idx) ->
       ary.push(el) if n <= idx
     ary
 
@@ -119,7 +119,7 @@ class EnumerableMethods
     ary = []
     dropping = true
 
-    @each coll, ->
+    _itr.each coll, ->
       unless dropping && callback.invoke(arguments)
         dropping = false
         ary.push(callback.args(arguments))
@@ -133,7 +133,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
     len = block.length
     ary = []
-    @each coll, ->
+    _itr.each coll, ->
       ary.push(BlockMulti.prototype.args(arguments))
       ary.shift() if ary.length > n
       if ary.length is n
@@ -150,7 +150,7 @@ class EnumerableMethods
     # yields into an array
     callback = new BlockMulti(block, coll)
     len = block.length
-    @each coll, ->
+    _itr.each coll, ->
       args = callback.args(arguments)
       if len > 1 and R.Array.isNativeArray(args)
         block.apply(coll, args)
@@ -165,7 +165,7 @@ class EnumerableMethods
     len      = block.length
     ary      = []
 
-    @each coll, ->
+    _itr.each coll, ->
       ary.push( BlockMulti.prototype.args(arguments) )
       if ary.length == n
         args = ary.slice(0)
@@ -191,7 +191,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
 
     idx = 0
-    @each coll, ->
+    _itr.each coll, ->
       val = callback.invokeSplat(callback.args(arguments), idx)
       idx += 1
       val
@@ -202,7 +202,7 @@ class EnumerableMethods
   each_with_object: (coll, obj, block) ->
     callback = __blockify(block, coll)
 
-    @each coll, ->
+    _itr.each coll, ->
       args = BlockMulti.prototype.args(arguments)
       callback.invokeSplat(args, obj)
 
@@ -215,8 +215,8 @@ class EnumerableMethods
       ifnone = null
 
     callback = __blockify(block, this)
-    @catch_break (breaker) ->
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      _itr.each coll, ->
         unless R.falsey(callback.invoke(arguments))
           breaker.break(callback.args(arguments))
 
@@ -226,7 +226,7 @@ class EnumerableMethods
   find_all: (coll, block) ->
     ary = []
     callback = __blockify(block, coll)
-    @each coll, ->
+    _itr.each coll, ->
       unless R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
@@ -239,10 +239,10 @@ class EnumerableMethods
     else
       block = (el) -> R.is_equal(value, el)
 
-    idx = 0
-    callback = __blockify(block, coll)
-    @catch_break (breaker) ->
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      idx = 0
+      callback = __blockify(block, coll)
+      _itr.each coll, ->
         breaker.break(idx) if callback.invoke(arguments)
         idx += 1
 
@@ -258,8 +258,8 @@ class EnumerableMethods
 
 
   include: (coll, other) ->
-    @catch_break (breaker) ->
-      @each coll, (el) ->
+    _itr.catch_break (breaker) ->
+      _itr.each coll, (el) ->
         breaker.break(true) if __equals(other, el)
       false
 
@@ -286,10 +286,10 @@ class EnumerableMethods
 
 
   inject: (coll, init, sym, block) ->
-    [init, sym, block] = @__inject_args__(init, sym, block)
+    [init, sym, block] = _itr.__inject_args__(init, sym, block)
 
     callback = __blockify(block, coll)
-    @each coll, ->
+    _itr.each coll, ->
       if init is undefined
         init = callback.args(arguments)
       else
@@ -304,11 +304,11 @@ class EnumerableMethods
     pattern  = R(pattern)
     callback = __blockify(block, coll)
     if block
-      @each coll, (el) ->
+      _itr.each coll, (el) ->
         if pattern['==='](el)
           ary.push(callback.invoke(arguments))
     else
-      @each coll, (el) ->
+      _itr.each coll, (el) ->
         ary.push(el) if pattern['==='](el)
     ary
 
@@ -317,7 +317,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
 
     h = {}
-    @each coll, ->
+    _itr.each coll, ->
       args = callback.args(arguments)
       key  = callback.invoke(arguments)
 
@@ -331,7 +331,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
 
     arr = []
-    @each coll, ->
+    _itr.each coll, ->
       arr.push(callback.invoke(arguments))
 
     arr
@@ -342,18 +342,7 @@ class EnumerableMethods
 
     block ||= R.Comparable.cmp
 
-    # # Following Optimization won't complain if:
-    # # [1,2,'3']
-    # #
-    # # optimization for elements that are arrays
-    # #
-    # if @__samesame__?()
-    #   arr = @__native__
-    #   if arr.length < 65535
-    #     _max = Math.max.apply(Math, arr)
-    #     return _max if _max isnt NaN
-
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if max is undefined
         max = item
       else
@@ -367,7 +356,7 @@ class EnumerableMethods
   max_by: (coll, block) ->
     max = undefined
     # OPTIMIZE: use sorted element
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if max is undefined
         max = item
       else
@@ -385,7 +374,7 @@ class EnumerableMethods
     #
     # optimization for elements that are arrays
 
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if min is undefined
         min = item
       else
@@ -400,7 +389,7 @@ class EnumerableMethods
   min_by: (coll, block) ->
     min = undefined
     # OPTIMIZE: use sorted element
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if min is undefined
         min = item
       else
@@ -411,17 +400,17 @@ class EnumerableMethods
 
   minmax: (coll, block) ->
     # TODO: optimize
-    [@min(coll, block), @max(coll, block)]
+    [_itr.min(coll, block), _itr.max(coll, block)]
 
 
   minmax_by: (coll, block) ->
-    [@min_by(coll, block), @max_by(coll, block)]
+    [_itr.min_by(coll, block), _itr.max_by(coll, block)]
 
 
   none: (coll, block) ->
-    @catch_break (breaker) ->
+    _itr.catch_break (breaker) ->
       callback = __blockify(block, coll)
-      @each coll, (args) ->
+      _itr.each coll, (args) ->
         result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
       true
@@ -430,9 +419,9 @@ class EnumerableMethods
   one: (coll, block) ->
     counter  = 0
 
-    @catch_break (breaker) ->
+    _itr.catch_break (breaker) ->
       callback = __blockify(block, coll)
-      @each coll, (args) ->
+      _itr.each coll, (args) ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
         breaker.break(false) if counter > 1
@@ -446,7 +435,7 @@ class EnumerableMethods
 
     callback = __blockify(block, coll)
 
-    @each coll, ->
+    _itr.each coll, ->
       args = BlockMulti.prototype.args(arguments)
 
       if callback.invokeSplat(args)
@@ -461,7 +450,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
 
     ary = []
-    @each coll, ->
+    _itr.each coll, ->
       if R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
@@ -471,7 +460,7 @@ class EnumerableMethods
   reverse_each: (coll, block) ->
     # There is no other way then to convert to an array first.
     # Because Enumerable depends only on #each (through #to_a)
-    _arr.reverse_each(@to_a(coll), block )
+    _arr.reverse_each(_itr.to_a(coll), block )
     coll
 
   slice_before: (args...) ->
@@ -510,7 +499,7 @@ class EnumerableMethods
     callback = __blockify(block, coll)
 
     ary = []
-    @each coll, (value) ->
+    _itr.each coll, (value) ->
       ary.push new MYSortedElement(value, callback.invoke(arguments))
 
     ary = _arr.sort(ary, R.Comparable.cmpstrict)
@@ -520,7 +509,7 @@ class EnumerableMethods
   take: (coll, n) ->
     throw R.ArgumentError.new() if n < 0
     ary = []
-    R.catch_break (breaker) ->
+    _itr.catch_break (breaker) ->
       _itr.each coll, ->
         breaker.break() if ary.length is n
         ary.push(BlockMulti.prototype.args(arguments))
@@ -532,8 +521,8 @@ class EnumerableMethods
   take_while: (coll, block) ->
     ary = []
 
-    @catch_break (breaker) ->
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      _itr.each coll, ->
         breaker.break() if R.falsey block.apply(coll, arguments)
         ary.push(BlockMulti.prototype.args(arguments))
 
@@ -543,7 +532,7 @@ class EnumerableMethods
   to_a: (coll) ->
     ary = []
 
-    @each coll, ->
+    _itr.each coll, ->
       args = if arguments.length > 1 then nativeSlice.call(arguments, 0) else arguments[0]
       ary.push(args)
       null
