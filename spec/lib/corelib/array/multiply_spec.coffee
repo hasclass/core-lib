@@ -1,22 +1,22 @@
 describe "Array#*", ->
-  it "tries to convert the passed argument to a String using #to_str", ->
+  it "tries to convert the passed argument to a String using #valueOf", ->
     obj =
-      to_str: -> R('::')
+      valueOf: -> '::'
     expect(R([1, 2, 3, 4]).multiply obj).toEqual R('1::2::3::4')
 
   it "tires to convert the passed argument to an Integer using #to_int", ->
     obj =
-      to_int: -> R(2)
+      valueOf: -> 2
     expect(R([1, 2, 3, 4]).multiply obj).toEqual R([1, 2, 3, 4, 1, 2, 3, 4])
 
   it "raises a TypeError if the argument can neither be converted to a string nor an integer", ->
     obj = {}
     expect( -> R([1,2]).multiply obj ).toThrow('TypeError')
 
-  it "converts the passed argument to a String rather than an Integer", ->
+  xit "converts the passed argument to a String rather than an Integer", ->
     obj =
-      to_int: -> R(2)
-      to_str: -> R("2")
+      valueOf: -> 2
+      # valueOf: -> "2"
     expect(R(['a', 'b', 'c']).multiply obj).toEqual R("a2b2c")
 
   it "raises a TypeError is the passed argument is nil", ->

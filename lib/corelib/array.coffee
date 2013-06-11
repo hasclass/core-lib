@@ -583,12 +583,10 @@ class RubyJS.Array extends RubyJS.Object
 
     if block
       throw R.ArgumentError.new() if args.length >= 3
-      one = args[0]; two = args[1]
-      _arr.fill(@__native__, one, two, block)
+      _arr.fill(@__native__,  args[0],  args[1], block)
     else
       throw R.ArgumentError.new() if args.length > 3
-      obj = args[0]; one = args[1]; two = args[2]
-      _arr.fill(@__native__, obj, one, two)
+      _arr.fill(@__native__,  args[0], args[1], args[2])
 
     this
 
@@ -677,13 +675,9 @@ class RubyJS.Array extends RubyJS.Object
   #
   keep_if: (block) ->
     return @to_enum('keep_if') unless block?.call?
+    ary = _arr.keep_if(@__native__, block)
+    if @__native__.length is ary.length then this else @replace(ary)
 
-    ary = []
-    # TODO: use while
-    @each (el) ->
-      ary.push(el) unless R.falsey(block(el))
-
-    if @__size__() is ary.length then this else @replace(ary)
 
   # Array Difference - Returns a new array that is a copy of the original
   # array, removing any items that also appear in other_ary. (If you need set-
@@ -698,13 +692,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo recursive arrays not tested
   #
   minus: (other) ->
-    other = RCoerce.to_ary(other)
-
-    ary = []
-    @each (el) ->
-      ary.push(el) unless other.include(el)
-
-    new R.Array(ary)
+    new RArray(_arr.minus(@__native__, other))
 
 
   # Repetition—With a String argument, equivalent to self.join(str).
@@ -716,31 +704,9 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ 1, 2, 3 ]).multiply ","  # => "1,2,3"
   #
   multiply: (multiplier) ->
-    @__ensure_args_length(arguments, 1)
-    throw R.TypeError.new() if multiplier is null
-
-    multiplier = R(multiplier)
-    if multiplier.to_str?
-      return @join(multiplier)
-    else
-      multiplier = RCoerce.to_int_native(multiplier)
-
-      throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
-
-      total = @__size__()
-      if total is 0
-        return new R.Array([])
-      else if total is 1
-        return @dup()
-
-      ary = []
-      arr = @__native__
-
-      idx = -1
-      while ++idx < multiplier
-        ary = ary.concat(arr)
-
-      return new R.Array(ary)
+    R.__ensure_args_length(arguments, 1)
+    # can be string or array
+    R(_arr.multiply(@__native__, multiplier))
 
   # Returns the last element(s) of self. If the array is empty, the first form
   # returns nil.
@@ -872,31 +838,8 @@ class RubyJS.Array extends RubyJS.Object
   # @todo does not check if the result size will fit in an Array.
   #
   product: (args...) ->
-    result = []
-    block = @__extract_block(args)
-
-    args = for a in args
-      RCoerce.to_ary_native(a)
-
-    args = args.reverse()
-    args.push(@__native__)
-
-    # Implementation notes: We build a block that will generate all the
-    # combinations by building it up successively using "inject" and starting
-    # with one responsible to append the values.
-    outer = _arr.inject args, result.push, (trigger, values) ->
-      (partial) ->
-        for val in values
-          trigger.call(result, partial.concat(val))
-
-    outer( [] )
-    if block
-      block_result = this
-      for v in result
-        block_result.append block(v)
-      block_result
-    else
-      new RArray(result)
+    ary = _arr.product.apply(_arr, [@__native__].concat(args))
+    if ary == @__native__ then this else new RArray(ary)
 
 
   # Append—Pushes the given object(s) on to the end of this array. This
@@ -923,13 +866,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.rassoc("four")   #=> nil
   #
   rassoc: (obj) ->
-    obj = R(obj)
-
-    @catch_break (breaker) ->
-      @each (elem) ->
-        if elem.is_array? and R(elem.at(1))?['=='](obj)
-          breaker.break(elem)
-      null
+    _arr.rassoc(@__native__, obj)
 
   # Returns the index of the last object in self == to obj. If a block is
   # given instead of an argument, returns index of first object for which
@@ -948,28 +885,8 @@ class RubyJS.Array extends RubyJS.Object
   #
   rindex: (other) ->
     return @to_enum('rindex') if other is undefined
-
-    if other.call?
-      block = other
-      len   = @__size__()
-      ridx  = @catch_break (breaker) ->
-        idx = -1
-        @reverse_each (el) ->
-          idx += 1
-          unless R.falsey(block(el))
-            breaker.break(idx)
-        null
-    else
-      # TODO: 2012-11-06 use a while loop with idx counting down
-      ridx = @catch_break (breaker) ->
-        idx = -1
-        @reverse_each (el) ->
-          idx += 1
-          if R(el)['=='](other)
-            breaker.break(idx)
-        null
-
-    if ridx is null then null else R(@__size__() - ridx - 1)
+    ridx = _arr.rindex(@__native__, other)
+    if ridx is null then null else new R.Fixnum(ridx)
 
   # Choose a random element or n random elements from the array. The elements
   # are chosen by using random and unique indices into the array in order to
@@ -984,23 +901,12 @@ class RubyJS.Array extends RubyJS.Object
   #     R([1,2,3]).sample(4)   # => [2,1,3]
   #
   sample: (n, range = undefined) ->
-    return @at(@rand(@size())) if n is undefined
+    val = _arr.sample(@__native__, n, range)
+    if n is undefined
+      val
+    else
+      new RArray(val)
 
-    n = RCoerce.to_int_native(n)
-    throw R.ArgumentError.new() if n < 0
-
-    size = @__size__()
-    n    = size if n > size
-    ary  = @to_native_clone()
-
-    idx = -1
-    while ++idx < n
-      ridx = idx + R.rand(size - idx) # Random idx
-      tmp  = ary[idx]
-      ary[idx]  = ary[ridx]
-      ary[ridx] = tmp
-
-    new R.Array(ary).slice(0, n)
 
   # Equivalent to Array#delete_if, deleting elements from self for which the
   # block evaluates to true, but returns nil if no changes were made. The array
@@ -1013,6 +919,7 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum('reject_bang') unless block?.call?
     ary = @reject(block)
     if ary.__size__() is @__size__() then null else @replace(ary)
+
 
   # Replaces the contents of self with the contents of other_ary, truncating
   # or expanding if necessary.
@@ -1073,17 +980,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.rotate(-3)     # => ["b", "c", "d", "a"]
   #
   rotate: (cnt) ->
-    cnt = 1 if cnt is undefined
-    cnt = RCoerce.to_int_native(cnt)
-
-    ary = @dup()
-    return ary             if @__size__() is 1
-    return new R.Array([]) if @empty()
-
-    idx = cnt % ary.__size__()
-
-    sliced = ary.slice(R.rng(0, idx, true))
-    ary.slice(R.rng(idx,-1)).concat(sliced)
+    new RArray(_arr.rotate(@__native__, cnt))
 
 
   # Rotates self in place so that the element at cnt comes first, and returns
@@ -1096,13 +993,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.rotate_bang(-3)    # => ["a", "b", "c", "d"]
   #
   rotate_bang: (cnt) ->
-    if cnt is undefined
-      cnt = 1
-      @replace @rotate(cnt)
-    else
-      cnt = RCoerce.to_int_native(cnt)
-      return this if cnt is 0 or cnt is 1
-      @replace @rotate(cnt)
+    return this if cnt is 0 or cnt is 1
+    @replace _arr.rotate(@__native__, cnt)
 
 
   # Invokes the block passing in successive elements from self, deleting
@@ -1164,20 +1056,13 @@ class RubyJS.Array extends RubyJS.Object
   shuffle: ->
     @dup().tap (ary) -> ary.shuffle_bang()
 
+
   # Shuffles elements in self in place. If rng is given, it will be used as
   # the random number generator.
   #
   shuffle_bang: ->
-    size = @__size__()
-    arr  = @__native__
+    @replace(_arr.shuffle(@__native__))
 
-    idx = -1
-    while ++idx < size
-      rnd = idx + R.rand(size - idx)
-      tmp = arr[idx]
-      arr[idx] = arr[rnd]
-      arr[rnd] = tmp
-    this
 
   # Length of array
   size: ->
@@ -1211,38 +1096,16 @@ class RubyJS.Array extends RubyJS.Object
   #
   slice: (idx, length) ->
     throw new R.TypeError.new() if idx is null
-    size = @__size__()
 
-    # TODO: implement ranges
-
-    if idx?.is_range?
-      range = idx
-      range_start = RCoerce.to_int_native(range.begin())
-      range_end   = RCoerce.to_int_native(range.end()  )
-      range_start = range_start + size if range_start < 0
-
-      if range_end < 0
-        range_end = range_end + size
-      # else if range_end >= size
-      #   range_end = size - 1
-
-      range_end   = range_end + 1 unless range.exclude_end()
-      range_lenth = range_end - range_start
-      return null if range_start > size  or range_start < 0
-      return new R.Array(@__native__.slice(range_start, range_end))
+    val = _arr.slice(@__native__, idx, length)
+    if val is null
+      null
+    else if idx?.is_range?
+      new RArray(val)
+    else if length is undefined
+      val
     else
-      idx = RCoerce.to_int_native(idx)
-
-    idx = size + idx if idx < 0
-    # return @$String('') if is_range and idx.lteq(size) and idx.gt(length)
-
-    if length is undefined
-      return null if idx < 0 or idx >= size
-      @at(idx)
-    else
-      length = RCoerce.to_int_native(length)
-      return null if idx < 0 or idx > size or length < 0
-      new R.Array(@__native__.slice(idx, length + idx))
+      new RArray(val)
 
 
   # Deletes the element(s) given by an index (optionally with a length) or by
@@ -1321,6 +1184,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   sort_bang: (block) ->
     @replace @sort(block)
+
 
   # Sorts self in place using a set of keys generated by mapping the values in
   # self through the given block.
@@ -1426,10 +1290,22 @@ class RubyJS.Array extends RubyJS.Object
   # @todo not working with ranges
   #
   values_at: (args...) ->
-    ary = for idx in args
-      @at(RCoerce.to_int_native(idx)) || null
+    new RArray(@call_with(_arr.values_at, args))
 
-    new R.Array(ary)
+
+  call_with: (func, args) ->
+    thisArg = @__native__
+    a = args
+    switch args.length
+      when 0 then func(thisArg)
+      when 1 then func(thisArg, a[0])
+      when 2 then func(thisArg, a[0], a[1])
+      when 3 then func(thisArg, a[0], a[1], a[2])
+      when 4 then func(thisArg, a[0], a[1], a[2], a[3])
+      when 5 then func(thisArg, a[0], a[1], a[2], a[3], a[4])
+      when 6 then func(thisArg, a[0], a[1], a[2], a[3], a[4], a[5])
+      # Slow fallback when passed more than 6 arguments.
+      else func.apply(null, [thisArg].concat(nativeSlice.call(arguments, 0)))
 
 
   # ---- Aliases --------------------------------------------------------------

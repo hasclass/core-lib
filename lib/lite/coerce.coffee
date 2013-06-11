@@ -50,6 +50,11 @@ _coerce =
     typeof obj is 'object' && obj != null && _coerce.isArray(obj.valueOf())
 
 
+  is_str: (obj) ->
+    return true if typeof obj is 'string'
+    typeof obj is 'object' && obj != null && typeof obj.valueOf() is 'string'
+
+
   arr: (obj) ->
     throw R.TypeError.new() if obj == null
     throw R.TypeError.new() if typeof obj != 'object'
@@ -75,3 +80,4 @@ __int = _coerce.int
 __num = _coerce.num
 __arr = _coerce.arr
 __isArr = _coerce.is_arr
+__isStr = _coerce.is_str

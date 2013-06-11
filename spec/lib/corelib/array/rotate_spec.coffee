@@ -12,10 +12,10 @@ describe "Array#rotate", ->
       expect( a.rotate( 13) ).toEqual R([4, 5, 1, 2, 3])
       expect( a.rotate(  0) ).toEqual R(a)
 
-    it "coerces the argument using to_int", ->
+    it "coerces the argument using valueOf", ->
       expect( R([1, 2, 3]).rotate(2.6) ).toEqual R([3, 1, 2])
 
-      obj = {to_int: -> R(2)}
+      obj = {valueOf: -> 2}
       expect( R([1, 2, 3]).rotate(obj) ).toEqual R([3, 1, 2])
 
     it "raises a TypeError if not passed an integer-like argument", ->
@@ -68,10 +68,10 @@ describe "Array#rotate!", ->
       expect( a.rotate_bang(13) is a ).toEqual true
       expect( a ).toEqual R([4, 5, 1, 2, 3])
 
-    it "coerces the argument using to_int", ->
+    it "coerces the argument using valueOf", ->
       expect( R([1, 2, 3]).rotate_bang(2.6) ).toEqual R([3, 1, 2])
 
-      obj = {to_int: -> R(2) }
+      obj = {valueOf: -> 2 }
       expect( R([1, 2, 3]).rotate_bang(obj) ).toEqual R([3, 1, 2])
 
     it "raises a TypeError if not passed an integer-like argument", ->

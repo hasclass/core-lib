@@ -193,6 +193,7 @@ class ArrayMethods extends EnumerableMethods
     arr[idx]
 
 
+  # @destructive
   fill: (arr, args...) ->
     throw R.ArgumentError.new() if args.length == 0
     block = R.__extract_block(args)
@@ -289,6 +290,19 @@ class ArrayMethods extends EnumerableMethods
     nativeJoin.call(arr, separator)
 
 
+  keep_if: (arr, block) ->
+    return _arr.to_enum('keep_if', [arr]) unless block?
+
+    ary = []
+    idx = -1
+    len = arr.length
+    while ++idx < len
+      el = arr[idx]
+      ary.push(el) unless R.falsey(block(el))
+
+    ary
+
+
   last: (arr, n) ->
     len = arr.length
     if n is undefined
@@ -303,32 +317,83 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
+  minus: (arr, other) ->
+    other = __arr(other)
+
+    ary = []
+    idx = -1
+    len = arr.length
+    while ++idx < len
+      el = arr[idx]
+      ary.push(el) unless _arr.include(other, el)
+
+    ary
+
+
+  multiply: (arr, multiplier) ->
+    throw R.TypeError.new() if multiplier is null
+
+    if __isStr(multiplier)
+      return _arr.join(arr, __str(multiplier))
+    else
+      multiplier = __int(multiplier)
+
+      throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
+
+      total = arr.length
+      if total is 0
+        return []
+      else if total is 1
+        return arr.slice(0)
+
+      ary = []
+      idx = -1
+      while ++idx < multiplier
+        ary = ary.concat(arr)
+
+      ary
+
+
+
   product: (arr, args...) ->
-    # TODO
-    # block = R.__extract_block(args)
-    # args = args.reverse()
-    # for a in args
-    #   throw R.TypeError.new() unless __isArr(a)
+    result = []
+    block = R.__extract_block(args)
 
-    # ary = []
-    # args.push(arr)
+    args = for a in args
+      __arr(a)
+    args = args.reverse()
+    args.push(arr)
 
-    # # Implementation notes: We build a block that will generate all the
-    # # combinations by building it up successively using "inject" and starting
-    # # with one responsible to append the values.
-    # outer = _arr.inject arr, ary.push, (trigger, values) ->
-    #   (partial) ->
-    #     for val in values
-    #       trigger.call(ary, partial.concat(val))
+    # Implementation notes: We build a block that will generate all the
+    # combinations by building it up successively using "inject" and starting
+    # with one responsible to append the values.
+    outer = _arr.inject args, result.push, (trigger, values) ->
+      (partial) ->
+        for val in values
+          trigger.call(result, partial.concat(val))
 
-    # outer( [] )
-    # if block
-    #   block_result = arr
-    #   for v in ary
-    #     block_result.push(block(v))
-    #   block_result
-    # else
-    #   ary
+    outer( [] )
+    if block
+      block_result = arr
+      for v in result
+        block_result.push(block(v))
+      block_result
+    else
+      result
+
+
+  rassoc: (arr, obj) ->
+    len = arr.length
+    idx = -1
+    while ++idx < len
+      elem = arr[idx]
+      try
+        el = __arr(elem)
+        if R.is_equal(el[1], obj)
+          return elem
+      catch e
+        null
+    null
 
 
   reverse_each: (arr, block) ->
@@ -342,6 +407,108 @@ class ArrayMethods extends EnumerableMethods
       block(arr[idx])
 
     arr
+
+
+  rindex: (arr, other) ->
+    return _arr.to_enum('rindex', [arr, other]) if other is undefined
+
+    len = arr.length
+    ridx = arr.length
+    if other.call?
+      block = other
+      while ridx--
+        el = arr[ridx]
+        unless R.falsey(block(el))
+          return ridx
+
+    else
+      # TODO: 2012-11-06 use a while loop with idx counting down
+      while ridx--
+        el = arr[ridx]
+        if R.is_equal(el, other)
+          return ridx
+
+    null
+
+
+  rotate: (arr, cnt) ->
+    if cnt is undefined
+      cnt = 1
+    else
+      cnt = __int(cnt)
+
+    len = arr.length
+    return arr  if len is 1
+    return []   if len is 0
+
+    idx = cnt % len
+
+    # TODO: optimize
+    sliced = arr.slice(0, idx)
+    arr.slice(idx).concat(sliced)
+
+
+  sample: (arr, n, range = undefined) ->
+    len = arr.length
+    return arr[R.rand(len)] if n is undefined
+    n = __int(n)
+    throw R.ArgumentError.new() if n < 0
+
+    n    = len if n > len
+
+    ary = arr.slice(0)
+    idx = -1
+    while ++idx < n
+      ridx = idx + R.rand(len - idx) # Random idx
+      tmp  = ary[idx]
+      ary[idx]  = ary[ridx]
+      ary[ridx] = tmp
+
+    ary.slice(0, n)
+
+
+  shuffle: (arr) ->
+    len = arr.length
+    ary = new Array(len)
+    idx = -1
+    while ++idx < len
+      rnd = idx + R.rand(len - idx)
+      tmp = arr[idx]
+      ary[idx] = arr[rnd]
+      ary[rnd] = tmp
+    ary
+
+
+  slice: (arr, idx, length) ->
+    throw new R.TypeError.new() if idx is null
+    size = arr.length
+
+    if idx?.is_range?
+      range = idx
+      range_start = __int(range.begin())
+      range_end   = __int(range.end()  )
+      range_start = range_start + size if range_start < 0
+
+      if range_end < 0
+        range_end = range_end + size
+
+      range_end   = range_end + 1 unless range.exclude_end()
+      range_lenth = range_end - range_start
+      return null if range_start > size  or range_start < 0
+      return arr.slice(range_start, range_end)
+    else
+      idx = __int(idx)
+
+    idx = size + idx if idx < 0
+    # return @$String('') if is_range and idx.lteq(size) and idx.gt(length)
+
+    if length is undefined
+      return null if idx < 0 or idx >= size
+      arr[idx]
+    else
+      length = __int(length)
+      return null if idx < 0 or idx > size or length < 0
+      arr.slice(idx, length + idx)
 
 
   transpose: (arr) ->
@@ -372,6 +539,21 @@ class ArrayMethods extends EnumerableMethods
     ary = []
     _arr.each arr, (el) ->
       ary.push(el) if ary.indexOf(el) < 0
+    ary
+
+
+  # values_at2: (arr, args...) ->
+  #   for idx in args
+  #     _arr.at(arr, __int(idx)) || null
+
+
+  values_at: (arr) ->
+    len = arguments.length
+    ary = new Array(len - 1)
+    idx = 1
+    while idx < len
+      ary[idx - 1] = _arr.at(arr, __int(arguments[idx])) || null
+      idx += 1
     ary
 
 

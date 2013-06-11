@@ -23,12 +23,12 @@ describe "Array#sample", ->
       expect( a ).toEqual R [1, 2, 3, 4]
       expect( a ).toNotEqual sum  # Might fail once every 2^40 times ...
 
-    it "tries to convert n to an Integer using #to_int", ->
+    it "tries to convert n to an Integer using #valueOf", ->
       a = R [1, 2, 3, 4]
       expect( a.sample(2.3).size() ).toEqual R(2)
 
       obj =
-        to_int: -> R(2)
+        valueOf: -> 2
       expect( a.sample(obj).size() ).toEqual R(2)
 
     it "returns all values with n big enough", ->

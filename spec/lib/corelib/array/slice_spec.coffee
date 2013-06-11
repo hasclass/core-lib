@@ -41,9 +41,9 @@ describe "Array#slice!", ->
 #     array.slice(4).should == array
 #     array.slice(0..3).should == [1, 'two', 3.0, array]
 
-  it "calls to_int on start and length arguments", ->
+  it "calls valueOf on start and length arguments", ->
     obj =
-      to_int: -> R(2)
+      valueOf: -> 2
 
     a = R [1, 2, 3, 4, 5]
     expect( a.slice_bang(obj) ).toEqual 3
@@ -70,7 +70,7 @@ describe "Array#slice!", ->
     expect( a.slice_bang(R.rng(0,3)) ).toEqual R([1,2,3])
     expect( a ).toEqual R([])
 
-  xit "calls to_int on range arguments", ->
+  xit "calls valueOf on range arguments", ->
 #     from = mock('from')
 #     to = mock('to')
 
@@ -78,8 +78,8 @@ describe "Array#slice!", ->
 #     def from.<=>(o) 0 end
 #     def to.<=>(o) 0 end
 
-#     def from.to_int() 1 end
-#     def to.to_int() -2 end
+#     def from.valueOf() 1 end
+#     def to.valueOf() -2 end
 
 #     a = [1, 2, 3, 4, 5]
 
@@ -242,9 +242,9 @@ describe "Array#slice", ->
     sub.replace(['a', 'b'])
     expect( a ).toEqual R([1, 2, 3])
 
-  it "tries to convert the passed argument to an Integer using #to_int", ->
+  it "tries to convert the passed argument to an Integer using #valueOf", ->
     obj =
-      to_int: -> R(2)
+      valueOf: -> 2
 
     a = R([1, 2, 3, 4])
     expect( a.slice(obj) ).toEqual 3
@@ -378,7 +378,7 @@ describe "Array#slice", ->
   #   sub.replace([:a, :b])
   #   a.should == [1, 2, 3]
 
-  # it "tries to convert Range elements to Integers using #to_int with [m..n] and [m...n]", ->
+  # it "tries to convert Range elements to Integers using #valueOf with [m..n] and [m...n]", ->
   #   from = mock('from')
   #   to = mock('to')
 
@@ -386,8 +386,8 @@ describe "Array#slice", ->
   #   def from.<=>(o) 0 end
   #   def to.<=>(o) 0 end
 
-  #   def from.to_int() 1 end
-  #   def to.to_int() -2 end
+  #   def from.valueOf() 1 end
+  #   def to.valueOf() -2 end
 
   #   a = [1, 2, 3, 4]
 
@@ -536,7 +536,7 @@ describe "Array#slice", ->
   #   it "raises a RangeError when the start index is out of range of Fixnum", ->
   #     array = [1, 2, 3, 4, 5, 6]
   #     obj = mock('large value')
-  #     obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
+  #     obj.should_receive(:valueOf).and_return(0x8000_0000_0000_0000_0000)
   #     expect( -> array.slice(obj) ).toThrow(RangeError)
 
   #     obj = 8e19
@@ -545,7 +545,7 @@ describe "Array#slice", ->
   #   it "raises a RangeError when the length is out of range of Fixnum", ->
   #     array = [1, 2, 3, 4, 5, 6]
   #     obj = mock('large value')
-  #     obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
+  #     obj.should_receive(:valueOf).and_return(0x8000_0000_0000_0000_0000)
   #     expect( -> array.slice(1, obj) ).toThrow(RangeError)
 
   #     obj = 8e19
@@ -555,7 +555,7 @@ describe "Array#slice", ->
   #   it "raises a TypeError when the start index is out of range of Fixnum", ->
   #     array = [1, 2, 3, 4, 5, 6]
   #     obj = mock('large value')
-  #     obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
+  #     obj.should_receive(:valueOf).and_return(0x8000_0000_0000_0000_0000)
   #     expect( -> array.slice(obj) ).toThrow(TypeError)
 
   #     obj = 8e19
@@ -564,7 +564,7 @@ describe "Array#slice", ->
   #   it "raises a TypeError when the length is out of range of Fixnum", ->
   #     array = [1, 2, 3, 4, 5, 6]
   #     obj = mock('large value')
-  #     obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
+  #     obj.should_receive(:valueOf).and_return(0x8000_0000_0000_0000_0000)
   #     expect( -> array.slice(1, obj) ).toThrow(TypeError)
 
   #     obj = 8e19

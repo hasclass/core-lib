@@ -3,9 +3,9 @@ describe "Array#values_at", ->
     expect( R([1, 2, 3, 4, 5]).values_at() ).toEqual R([])
     expect( R([1, 2, 3, 4, 5]).values_at(1, 0, 5, -1, -8, 10) ).toEqual R([2, 1, null, 5, null, null])
 
-  it "calls to_int on its indices", ->
+  it "calls valueOf on its indices", ->
     obj =
-      to_int: -> R(1)
+      valueOf: -> (1)
     expect( R([1, 2]).values_at(obj, obj, obj) ).toEqual R([2, 2, 2])
 
   it "returns an array of elements in the ranges when passes ranges", ->

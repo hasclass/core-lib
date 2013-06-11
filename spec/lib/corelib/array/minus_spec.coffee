@@ -17,12 +17,12 @@ describe "Array#-", ->
   #     array = ArraySpecs.recursive_array
   #     (array - array).should == []
 
-  it "tries to convert the passed arguments to Arrays using #to_ary", ->
+  it "tries to convert the passed arguments to Arrays using #valueOf", ->
     obj =
-      to_ary: -> R([2, 3, 3, 4])
+      valueOf: -> [2, 3, 3, 4]
     expect( R([1, 1, 2, 2, 3, 4]).minus obj).toEqual R([1, 1])
 
-  it "raises a TypeError if the argument cannot be coerced to an Array by calling #to_ary", ->
+  it "raises a TypeError if the argument cannot be coerced to an Array by calling #valueOf", ->
     obj = 'not an array'
     expect( -> R([1, 2, 3]).minus obj ).toThrow('TypeError')
 
@@ -31,7 +31,7 @@ describe "Array#-", ->
 #     (ArraySpecs.MyArray[1, 2, 3] - ArraySpecs.MyArray[]).should be_kind_of(Array)
 #     ([1, 2, 3] - ArraySpecs.MyArray[]).should be_kind_of(Array)
 
-  xit "does not call to_ary on array subclasses", ->
+  xit "does not call valueOf on array subclasses", ->
     # ([5, 6, 7] - ArraySpecs.ToAryArray[7]).should == [5, 6]
 
 #   it "removes an item identified as equivalent via #hash and #eql?", ->
