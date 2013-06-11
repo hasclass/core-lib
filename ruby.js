@@ -8,7 +8,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, MYSortedElement, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RHash, RString, StrProto, StringMethods, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __call, __equals, __int, __isArr, __isStr, __num, __str, _arr, _blockify, _coerce, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RHash, RString, SortedElement, StrProto, StringMethods, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __equals, __int, __isArr, __isStr, __num, __str, _arr, _coerce, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice;
@@ -95,11 +95,13 @@ http://www.rubyjs.org/LICENSE.txt
 
   nativeUnshift = ArrProto.unshift;
 
+  nativePush = ArrProto.push;
+
   Block = (function() {
     function Block() {}
 
     Block.create = function(block, thisArg) {
-      if (block && (block.call != null)) {
+      if ((block != null ? block.call : void 0) != null) {
         if (block.length !== 1) {
           return new BlockMulti(block, thisArg);
         } else {
@@ -110,30 +112,18 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Block.supportMultipleArgs = function(block) {
-      if (block.length === 1) {
-        return block;
-      } else {
+    Block.splat_arguments = function(block) {
+      if (block.length > 1) {
         return function(item) {
-          if (typeof item === 'object' && R.Array.isNativeArray(item)) {
-            return block.apply(this, item);
+          if (typeof item === 'object' && __isArr(item)) {
+            return block.apply(null, item);
           } else {
             return block(item);
           }
         };
+      } else {
+        return block;
       }
-    };
-
-    Block.prototype.invoke = function() {
-      throw "Calling #invoke on an abstract Block instance";
-    };
-
-    Block.prototype.invokeSplat = function() {
-      throw "Calling #invokeSplat on an abstract Block instance";
-    };
-
-    Block.prototype.args = function() {
-      throw "Calling #args on an abstract Block instance";
     };
 
     return Block;
@@ -174,7 +164,7 @@ http://www.rubyjs.org/LICENSE.txt
         return this.block.apply(this.thisArg, args);
       } else {
         arg = args[0];
-        if (typeof arg === 'object' && R.Array.isNativeArray(arg)) {
+        if (typeof arg === 'object' && __isArr(arg)) {
           return this.block.apply(this.thisArg, arg);
         } else {
           return this.block.call(this.thisArg, arg);
@@ -214,7 +204,7 @@ http://www.rubyjs.org/LICENSE.txt
 
   R.Block = Block;
 
-  R.blockify = _blockify = Block.create;
+  R.blockify = __blockify = Block.create;
 
   RubyJS.Breaker = (function() {
     function Breaker(return_value, broken) {
@@ -1151,10 +1141,10 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     EnumerableMethods.prototype.all = function(coll, block) {
-      return this.catch_break(function(breaker) {
+      return _itr.catch_break(function(breaker) {
         var callback;
-        callback = _blockify(block, coll);
-        this.each(coll, function() {
+        callback = __blockify(block, coll);
+        _itr.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
           if (R.falsey(result)) {
@@ -1166,10 +1156,10 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     EnumerableMethods.prototype.any = function(coll, block) {
-      return this.catch_break(function(breaker) {
+      return _itr.catch_break(function(breaker) {
         var callback;
-        callback = _blockify(block, coll);
-        this.each(coll, function() {
+        callback = __blockify(block, coll);
+        _itr.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
           if (!R.falsey(result)) {
@@ -1185,9 +1175,9 @@ http://www.rubyjs.org/LICENSE.txt
       if (block == null) {
         block = null;
       }
-      callback = _blockify(block, this);
+      callback = __blockify(block, this);
       ary = [];
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         return ary.push(callback.invoke(arguments));
       });
       return _arr.flatten(ary, 1);
@@ -1199,18 +1189,18 @@ http://www.rubyjs.org/LICENSE.txt
       var callback, countable, counter;
       counter = 0;
       if (block === void 0) {
-        this.each(coll, function() {
+        _itr.each(coll, function() {
           return counter += 1;
         });
       } else if (block === null) {
-        this.each(coll, function(el) {
+        _itr.each(coll, function(el) {
           if (el === null) {
             return counter += 1;
           }
         });
       } else if (block.call != null) {
-        callback = _blockify(block, coll);
-        this.each(coll, function() {
+        callback = __blockify(block, coll);
+        _itr.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
           if (!R.falsey(result)) {
@@ -1219,7 +1209,7 @@ http://www.rubyjs.org/LICENSE.txt
         });
       } else {
         countable = block;
-        this.each(coll, function(el) {
+        _itr.each(coll, function(el) {
           if (R.is_equal(countable, el)) {
             return counter += 1;
           }
@@ -1247,9 +1237,9 @@ http://www.rubyjs.org/LICENSE.txt
       if (!block) {
         return coll.to_enum('cycle', n);
       }
-      callback = _blockify(block, coll);
+      callback = __blockify(block, coll);
       cache = new R.Array([]);
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         var args;
         args = callback.args(arguments);
         cache.append(args);
@@ -1283,7 +1273,7 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.drop = function(coll, n) {
       var ary;
       ary = [];
-      this.each_with_index(coll, function(el, idx) {
+      _itr.each_with_index(coll, function(el, idx) {
         if (n <= idx) {
           return ary.push(el);
         }
@@ -1293,10 +1283,10 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.drop_while = function(coll, block) {
       var ary, callback, dropping;
-      callback = _blockify(block, coll);
+      callback = __blockify(block, coll);
       ary = [];
       dropping = true;
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         if (!(dropping && callback.invoke(arguments))) {
           dropping = false;
           return ary.push(callback.args(arguments));
@@ -1307,10 +1297,10 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.each_cons = function(coll, n, block) {
       var ary, callback, len;
-      callback = _blockify(block, coll);
+      callback = __blockify(block, coll);
       len = block.length;
       ary = [];
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         ary.push(BlockMulti.prototype.args(arguments));
         if (ary.length > n) {
           ary.shift();
@@ -1330,7 +1320,7 @@ http://www.rubyjs.org/LICENSE.txt
       var callback, len;
       callback = new BlockMulti(block, coll);
       len = block.length;
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         var args;
         args = callback.args(arguments);
         if (len > 1 && R.Array.isNativeArray(args)) {
@@ -1344,10 +1334,10 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.each_slice = function(coll, n, block) {
       var args, ary, callback, len;
-      callback = _blockify(block, coll);
+      callback = __blockify(block, coll);
       len = block.length;
       ary = [];
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         var args;
         ary.push(BlockMulti.prototype.args(arguments));
         if (ary.length === n) {
@@ -1376,9 +1366,9 @@ http://www.rubyjs.org/LICENSE.txt
       if ((block != null ? block.call : void 0) == null) {
         return new R.Enumerator(_itr, 'each_with_index', [coll]);
       }
-      callback = _blockify(block, coll);
+      callback = __blockify(block, coll);
       idx = 0;
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         var val;
         val = callback.invokeSplat(callback.args(arguments), idx);
         idx += 1;
@@ -1389,8 +1379,8 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.each_with_object = function(coll, obj, block) {
       var callback;
-      callback = _blockify(block, coll);
-      this.each(coll, function() {
+      callback = __blockify(block, coll);
+      _itr.each(coll, function() {
         var args;
         args = BlockMulti.prototype.args(arguments);
         return callback.invokeSplat(args, obj);
@@ -1407,9 +1397,9 @@ http://www.rubyjs.org/LICENSE.txt
         block = ifnone;
         ifnone = null;
       }
-      callback = _blockify(block, this);
-      return this.catch_break(function(breaker) {
-        this.each(coll, function() {
+      callback = __blockify(block, this);
+      return _itr.catch_break(function(breaker) {
+        _itr.each(coll, function() {
           if (!R.falsey(callback.invoke(arguments))) {
             return breaker["break"](callback.args(arguments));
           }
@@ -1421,8 +1411,8 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.find_all = function(coll, block) {
       var ary, callback;
       ary = [];
-      callback = _blockify(block, coll);
-      this.each(coll, function() {
+      callback = __blockify(block, coll);
+      _itr.each(coll, function() {
         if (!R.falsey(callback.invoke(arguments))) {
           return ary.push(callback.args(arguments));
         }
@@ -1431,7 +1421,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     EnumerableMethods.prototype.find_index = function(coll, value) {
-      var block, callback, idx;
+      var block;
       if (value.call != null) {
         block = value;
       } else {
@@ -1439,10 +1429,11 @@ http://www.rubyjs.org/LICENSE.txt
           return R.is_equal(value, el);
         };
       }
-      idx = 0;
-      callback = _blockify(block, coll);
-      return this.catch_break(function(breaker) {
-        this.each(coll, function() {
+      return _itr.catch_break(function(breaker) {
+        var callback, idx;
+        idx = 0;
+        callback = __blockify(block, coll);
+        _itr.each(coll, function() {
           if (callback.invoke(arguments)) {
             breaker["break"](idx);
           }
@@ -1460,15 +1451,15 @@ http://www.rubyjs.org/LICENSE.txt
         if (n < 0) {
           throw new R.ArgumentError('ArgumentError');
         }
-        return this.take(coll, n);
+        return _itr.take(coll, n);
       } else {
-        return this.take(coll, 1)[0];
+        return _itr.take(coll, 1)[0];
       }
     };
 
     EnumerableMethods.prototype.include = function(coll, other) {
-      return this.catch_break(function(breaker) {
-        this.each(coll, function(el) {
+      return _itr.catch_break(function(breaker) {
+        _itr.each(coll, function(el) {
           if (__equals(other, el)) {
             return breaker["break"](true);
           }
@@ -1500,9 +1491,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.inject = function(coll, init, sym, block) {
       var callback, _ref1;
-      _ref1 = this.__inject_args__(init, sym, block), init = _ref1[0], sym = _ref1[1], block = _ref1[2];
-      callback = R.blockify(block, coll);
-      this.each(coll, function() {
+      _ref1 = _itr.__inject_args__(init, sym, block), init = _ref1[0], sym = _ref1[1], block = _ref1[2];
+      callback = __blockify(block, coll);
+      _itr.each(coll, function() {
         var args;
         if (init === void 0) {
           return init = callback.args(arguments);
@@ -1518,15 +1509,15 @@ http://www.rubyjs.org/LICENSE.txt
       var ary, callback;
       ary = [];
       pattern = R(pattern);
-      callback = R.blockify(block, coll);
+      callback = __blockify(block, coll);
       if (block) {
-        this.each(coll, function(el) {
+        _itr.each(coll, function(el) {
           if (pattern['==='](el)) {
             return ary.push(callback.invoke(arguments));
           }
         });
       } else {
-        this.each(coll, function(el) {
+        _itr.each(coll, function(el) {
           if (pattern['==='](el)) {
             return ary.push(el);
           }
@@ -1537,9 +1528,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.group_by = function(coll, block) {
       var callback, h;
-      callback = R.blockify(block, coll);
+      callback = __blockify(block, coll);
       h = {};
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         var args, key;
         args = callback.args(arguments);
         key = callback.invoke(arguments);
@@ -1551,9 +1542,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.map = function(coll, block) {
       var arr, callback;
-      callback = R.blockify(block, coll);
+      callback = __blockify(block, coll);
       arr = [];
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         return arr.push(callback.invoke(arguments));
       });
       return arr;
@@ -1563,7 +1554,7 @@ http://www.rubyjs.org/LICENSE.txt
       var max;
       max = void 0;
       block || (block = R.Comparable.cmp);
-      this.each(coll, function(item) {
+      _itr.each(coll, function(item) {
         var comp;
         if (max === void 0) {
           return max = item;
@@ -1583,7 +1574,7 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.max_by = function(coll, block) {
       var max;
       max = void 0;
-      this.each(coll, function(item) {
+      _itr.each(coll, function(item) {
         var cmp;
         if (max === void 0) {
           return max = item;
@@ -1601,7 +1592,7 @@ http://www.rubyjs.org/LICENSE.txt
       var min;
       min = void 0;
       block || (block = R.Comparable.cmp);
-      this.each(coll, function(item) {
+      _itr.each(coll, function(item) {
         var comp;
         if (min === void 0) {
           return min = item;
@@ -1621,7 +1612,7 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.min_by = function(coll, block) {
       var min;
       min = void 0;
-      this.each(coll, function(item) {
+      _itr.each(coll, function(item) {
         var cmp;
         if (min === void 0) {
           return min = item;
@@ -1636,18 +1627,18 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     EnumerableMethods.prototype.minmax = function(coll, block) {
-      return [this.min(coll, block), this.max(coll, block)];
+      return [_itr.min(coll, block), _itr.max(coll, block)];
     };
 
     EnumerableMethods.prototype.minmax_by = function(coll, block) {
-      return [this.min_by(coll, block), this.max_by(coll, block)];
+      return [_itr.min_by(coll, block), _itr.max_by(coll, block)];
     };
 
     EnumerableMethods.prototype.none = function(coll, block) {
-      return this.catch_break(function(breaker) {
+      return _itr.catch_break(function(breaker) {
         var callback;
-        callback = R.blockify(block, coll);
-        this.each(coll, function(args) {
+        callback = __blockify(block, coll);
+        _itr.each(coll, function(args) {
           var result;
           result = callback.invoke(arguments);
           if (!R.falsey(result)) {
@@ -1661,10 +1652,10 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.one = function(coll, block) {
       var counter;
       counter = 0;
-      return this.catch_break(function(breaker) {
+      return _itr.catch_break(function(breaker) {
         var callback;
-        callback = R.blockify(block, coll);
-        this.each(coll, function(args) {
+        callback = __blockify(block, coll);
+        _itr.each(coll, function(args) {
           var result;
           result = callback.invoke(arguments);
           if (!R.falsey(result)) {
@@ -1682,8 +1673,8 @@ http://www.rubyjs.org/LICENSE.txt
       var callback, left, right;
       left = [];
       right = [];
-      callback = R.blockify(block, coll);
-      this.each(coll, function() {
+      callback = __blockify(block, coll);
+      _itr.each(coll, function() {
         var args;
         args = BlockMulti.prototype.args(arguments);
         if (callback.invokeSplat(args)) {
@@ -1697,9 +1688,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.reject = function(coll, block) {
       var ary, callback;
-      callback = R.blockify(block, coll);
+      callback = __blockify(block, coll);
       ary = [];
-      this.each(coll, function() {
+      _itr.each(coll, function() {
         if (R.falsey(callback.invoke(arguments))) {
           return ary.push(callback.args(arguments));
         }
@@ -1708,7 +1699,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     EnumerableMethods.prototype.reverse_each = function(coll, block) {
-      _arr.reverse_each(this.to_a(coll), block);
+      _arr.reverse_each(_itr.to_a(coll), block);
       return coll;
     };
 
@@ -1727,10 +1718,10 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.sort_by = function(coll, block) {
       var ary, callback;
-      callback = R.blockify(block, coll);
+      callback = __blockify(block, coll);
       ary = [];
-      this.each(coll, function(value) {
-        return ary.push(new MYSortedElement(value, callback.invoke(arguments)));
+      _itr.each(coll, function(value) {
+        return ary.push(new SortedElement(value, callback.invoke(arguments)));
       });
       ary = _arr.sort(ary, R.Comparable.cmpstrict);
       return _arr.map(ary, function(se) {
@@ -1744,8 +1735,8 @@ http://www.rubyjs.org/LICENSE.txt
         throw R.ArgumentError["new"]();
       }
       ary = [];
-      this.catch_break(function(breaker) {
-        return this.each(coll, function() {
+      _itr.catch_break(function(breaker) {
+        return _itr.each(coll, function() {
           if (ary.length === n) {
             breaker["break"]();
           }
@@ -1758,8 +1749,8 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.take_while = function(coll, block) {
       var ary;
       ary = [];
-      this.catch_break(function(breaker) {
-        return this.each(coll, function() {
+      _itr.catch_break(function(breaker) {
+        return _itr.each(coll, function() {
           if (R.falsey(block.apply(coll, arguments))) {
             breaker["break"]();
           }
@@ -1772,8 +1763,10 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.to_a = function(coll) {
       var ary;
       ary = [];
-      this.each(coll, function() {
-        ary.push(BlockMulti.prototype.args(arguments));
+      _itr.each(coll, function() {
+        var args;
+        args = arguments.length > 1 ? nativeSlice.call(arguments, 0) : arguments[0];
+        ary.push(args);
         return null;
       });
       return ary;
@@ -1844,18 +1837,18 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  MYSortedElement = (function() {
-    function MYSortedElement(value, sort_by) {
+  SortedElement = (function() {
+    function SortedElement(value, sort_by) {
       this.value = value;
       this.sort_by = sort_by;
     }
 
-    MYSortedElement.prototype['<=>'] = function(other) {
+    SortedElement.prototype['<=>'] = function(other) {
       var _ref1;
       return (_ref1 = this.sort_by) != null ? _ref1['<=>'](other.sort_by) : void 0;
     };
 
-    return MYSortedElement;
+    return SortedElement;
 
   })();
 
@@ -2024,26 +2017,22 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     ArrayMethods.prototype.flatten = function(arr, recursion) {
-      var ary;
+      var ary, el, idx, len;
       if (recursion == null) {
         recursion = -1;
       }
       arr = __arr(arr);
       ary = [];
-      _arr.each(arr, function(el) {
-        var item, _j, _len1, _ref2, _results;
+      len = arr.length;
+      idx = -1;
+      while (++idx < len) {
+        el = arr[idx];
         if (recursion !== 0 && __isArr(el)) {
-          _ref2 = _arr.flatten(el, recursion - 1);
-          _results = [];
-          for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
-            item = _ref2[_j];
-            _results.push(ary.push(item));
-          }
-          return _results;
+          nativePush.apply(ary, _arr.flatten(el, recursion - 1));
         } else {
-          return ary.push(el);
+          ary.push(el);
         }
-      });
+      }
       return ary;
     };
 
@@ -2052,15 +2041,27 @@ http://www.rubyjs.org/LICENSE.txt
       if (block == null) {
         return _arr.to_enum('each', [arr]);
       }
-      if (block.length > 0) {
-        block = Block.supportMultipleArgs(block);
-      }
+      block = Block.splat_arguments(block);
       idx = -1;
       len = arr.length;
       while (++idx < arr.length) {
         block(arr[idx]);
       }
       return arr;
+    };
+
+    ArrayMethods.prototype.each_with_context = function(arr, thisArg, block) {
+      var idx, len;
+      if (block == null) {
+        return _arr.to_enum('each_with_context', [arr, thisArg]);
+      }
+      block = Block.splat_arguments(block);
+      idx = -1;
+      len = arr.length;
+      while (++idx < arr.length) {
+        block.call(thisArg, arr[idx]);
+      }
+      return thisArg;
     };
 
     ArrayMethods.prototype.to_enum = function(name, args) {
@@ -2240,6 +2241,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (block == null) {
         return _arr.to_enum('keep_if', [arr]);
       }
+      block = Block.splat_arguments(block);
       ary = [];
       idx = -1;
       len = arr.length;
@@ -2397,9 +2399,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (block == null) {
         return _arr.to_enum('reverse_each', [arr]);
       }
-      if (block.length > 0) {
-        block = Block.supportMultipleArgs(block);
-      }
+      block = Block.splat_arguments(block);
       idx = arr.length;
       while (idx--) {
         block(arr[idx]);
@@ -2415,7 +2415,7 @@ http://www.rubyjs.org/LICENSE.txt
       len = arr.length;
       ridx = arr.length;
       if (other.call != null) {
-        block = other;
+        block = Block.splat_arguments(other);
         while (ridx--) {
           el = arr[ridx];
           if (!R.falsey(block(el))) {
@@ -2565,13 +2565,16 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     ArrayMethods.prototype.uniq = function(arr) {
-      var ary;
+      var ary, el, idx, len;
+      idx = -1;
+      len = arr.length;
       ary = [];
-      _arr.each(arr, function(el) {
+      while (++idx < len) {
+        el = arr[idx];
         if (ary.indexOf(el) < 0) {
-          return ary.push(el);
+          ary.push(el);
         }
-      });
+      }
       return ary;
     };
 
@@ -2596,6 +2599,57 @@ http://www.rubyjs.org/LICENSE.txt
       }
       return ary;
     };
+
+    ArrayMethods.prototype.find_index = function(arr, value) {
+      var block, idx, len;
+      len = arr.length;
+      idx = -1;
+      if (typeof value === 'function' || (typeof value === 'object' && (value.call != null))) {
+        block = Block.splat_arguments(value);
+      } else if (value !== null && typeof value === 'object') {
+        block = function(el) {
+          return R.is_equal(value, el);
+        };
+      } else {
+        while (++idx < len) {
+          if (arr[idx] === value) {
+            return idx;
+          }
+        }
+        return null;
+      }
+      while (++idx < len) {
+        if (block(arr[idx])) {
+          return idx;
+        }
+      }
+      return null;
+    };
+
+    ArrayMethods.prototype.first = function(arr, n) {
+      if (n != null) {
+        if (n < 0) {
+          throw new R.ArgumentError('ArgumentError');
+        }
+        return arr.slice(0, n);
+      } else {
+        return arr[0];
+      }
+    };
+
+    ArrayMethods.prototype.map = function(arr, block) {
+      var ary, callback, idx, len;
+      callback = Block.splat_arguments(block);
+      idx = -1;
+      len = arr.length;
+      ary = new Array(len);
+      while (++idx < len) {
+        ary[idx] = callback(arr[idx]);
+      }
+      return ary;
+    };
+
+    ArrayMethods.prototype.take = ArrayMethods.prototype.first;
 
     ArrayMethods.prototype.__native_array_with__ = function(size, obj) {
       var ary, idx;
@@ -2773,12 +2827,17 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     StringMethods.prototype.end_with = function(str) {
-      var needles, w, _j, _len1;
+      var e, needles, w, _j, _len1;
       needles = _coerce.split_args(arguments, 1);
       for (_j = 0, _len1 = needles.length; _j < _len1; _j++) {
         w = needles[_j];
-        if (str.lastIndexOf(w) + w.length === str.length) {
-          return true;
+        try {
+          w = __str(w);
+          if (str.lastIndexOf(w) + w.length === str.length) {
+            return true;
+          }
+        } catch (_error) {
+          e = _error;
         }
       }
       return false;
@@ -3273,13 +3332,18 @@ http://www.rubyjs.org/LICENSE.txt
       return ary;
     };
 
-    StringMethods.prototype.start_with = function() {
-      var needle, needles, str, _j, _len1;
-      str = arguments[0], needles = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    StringMethods.prototype.start_with = function(str) {
+      var e, needle, needles, _j, _len1;
+      needles = _coerce.split_args(arguments, 1);
       for (_j = 0, _len1 = needles.length; _j < _len1; _j++) {
         needle = needles[_j];
-        if (str.indexOf(needle) === 0) {
-          return true;
+        try {
+          needle = __str(needle);
+          if (str.indexOf(needle) === 0) {
+            return true;
+          }
+        } catch (_error) {
+          e = _error;
         }
       }
       return false;
@@ -3405,6 +3469,383 @@ http://www.rubyjs.org/LICENSE.txt
       _ref2 = HashMethods.__super__.constructor.apply(this, arguments);
       return _ref2;
     }
+
+    HashMethods.prototype.assoc = function(hsh, needle) {
+      var k, v;
+      if (typeof needle === 'object' && (needle.equals != null)) {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (needle.equals(k)) {
+            return [k, v];
+          }
+        }
+      } else {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (needle === k) {
+            return [k, v];
+          }
+        }
+      }
+      return null;
+    };
+
+    HashMethods.prototype["delete"] = function(hsh, key, block) {
+      var value;
+      if (key in hsh) {
+        value = hsh[key];
+        delete hsh[key];
+        return value;
+      } else {
+        if ((block != null ? block.call : void 0) != null) {
+          return block(key);
+        } else {
+          return null;
+        }
+      }
+    };
+
+    HashMethods.prototype.delete_if = function(hsh, block) {
+      var k, v;
+      if ((block != null ? block.call : void 0) != null) {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (block(k, v)) {
+            delete hsh[k];
+          }
+        }
+        return hsh;
+      } else {
+
+      }
+    };
+
+    HashMethods.prototype.each = function(hsh, block) {
+      var k, v;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        block(k, v);
+      }
+      return hsh;
+    };
+
+    HashMethods.prototype.each_key = function(hsh, block) {
+      var k, v;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        block(k);
+      }
+      return hsh;
+    };
+
+    HashMethods.prototype.each_value = function(hsh, block) {
+      var k, v;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        block(v);
+      }
+      return hsh;
+    };
+
+    HashMethods.prototype.empty = function(hsh) {
+      var k, v;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        return false;
+      }
+      return true;
+    };
+
+    HashMethods.prototype.fetch = function(hsh, key, default_value) {
+      var _ref3;
+      if (arguments.length <= 1) {
+        throw R.ArgumentError["new"]();
+      }
+      if (key in hsh) {
+        return hsh[key];
+      } else if (((default_value != null ? default_value.call : void 0) != null) || (((_ref3 = arguments[3]) != null ? _ref3.call : void 0) != null)) {
+        return (arguments[3] || default_value)(key);
+      } else if (default_value !== void 0) {
+        return default_value;
+      } else {
+        throw R.KeyError["new"]();
+      }
+    };
+
+    HashMethods.prototype.flatten = function(hsh, recursion) {
+      if (recursion == null) {
+        recursion = 1;
+      }
+      recursion = __int(recursion);
+      return _arr.flatten(_hsh.to_a(hsh), recursion);
+    };
+
+    HashMethods.prototype.get = function(hsh, key) {
+      return hsh[key];
+    };
+
+    HashMethods.prototype.has_value = function(hsh, val) {
+      var k, v;
+      if (typeof val === 'object' && (val.equals != null)) {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (val.equals(v)) {
+            return true;
+          }
+        }
+      } else {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (v === val) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    HashMethods.prototype.has_key = function(hsh, key) {
+      return key in hsh;
+    };
+
+    HashMethods.prototype.include = HashMethods.prototype.has_key;
+
+    HashMethods.prototype.member = HashMethods.prototype.has_key;
+
+    HashMethods.prototype.keep_if = function(hsh, block) {
+      _hsh.reject$(hsh, block);
+      return hsh;
+    };
+
+    HashMethods.prototype.key = function(hsh, value) {
+      var k, v;
+      if (typeof value === 'object' && (value.equals != null)) {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (value.equals(v)) {
+            return k;
+          }
+        }
+      } else {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (v === value) {
+            return k;
+          }
+        }
+      }
+      return null;
+    };
+
+    HashMethods.prototype.invert = function(hsh) {
+      var k, ret, v;
+      ret = {};
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        ret[v] = k;
+      }
+      return ret;
+    };
+
+    HashMethods.prototype.keys = function(hsh) {
+      var k, v, _results;
+      _results = [];
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        _results.push(k);
+      }
+      return _results;
+    };
+
+    HashMethods.prototype.merge = function(hsh, other, block) {
+      var k, out, v;
+      out = {};
+      if (other.rubyjs != null) {
+        other = other.__native__;
+      }
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        out[k] = v;
+      }
+      for (k in other) {
+        if (!__hasProp.call(other, k)) continue;
+        v = other[k];
+        if (((block != null ? block.call : void 0) != null) && k in out) {
+          out[k] = block(k, out[k], v);
+        } else {
+          out[k] = v;
+        }
+      }
+      return out;
+    };
+
+    HashMethods.prototype.merge$ = function(hsh, other, block) {
+      var k, v;
+      if (other.rubyjs != null) {
+        other = other.__native__;
+      }
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        hsh[k] = v;
+      }
+      for (k in other) {
+        if (!__hasProp.call(other, k)) continue;
+        v = other[k];
+        if (((block != null ? block.call : void 0) != null) && k in hsh) {
+          hsh[k] = block(k, hsh[k], v);
+        } else {
+          hsh[k] = v;
+        }
+      }
+      return hsh;
+    };
+
+    HashMethods.prototype.rassoc = function(hsh, needle) {
+      var k, v;
+      if (typeof needle === 'object' && (needle.equals != null)) {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (needle.equals(v)) {
+            return [k, v];
+          }
+        }
+      } else {
+        for (k in hsh) {
+          if (!__hasProp.call(hsh, k)) continue;
+          v = hsh[k];
+          if (needle === v) {
+            return [k, v];
+          }
+        }
+      }
+      return null;
+    };
+
+    HashMethods.prototype.reject = function(hsh, block) {
+      var dup, k, v;
+      dup = {};
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        if (!block(k, v)) {
+          dup[k] = v;
+        }
+      }
+      return dup;
+    };
+
+    HashMethods.prototype.reject$ = function(hsh, block) {
+      var changed, k, v;
+      changed = false;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        if (!block(k, v)) {
+          delete hsh[k];
+          changed = true;
+        }
+      }
+      if (changed) {
+        return hsh;
+      } else {
+        return null;
+      }
+    };
+
+    HashMethods.prototype.select = function(hsh, block) {
+      var dup, k, v;
+      dup = {};
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        if (block(k, v)) {
+          dup[k] = v;
+        }
+      }
+      return dup;
+    };
+
+    HashMethods.prototype.select$ = function(hsh, block) {
+      var changed, k, v;
+      changed = false;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        if (block(k, v)) {
+          delete hsh[k];
+          changed = true;
+        }
+      }
+      if (changed) {
+        return hsh;
+      } else {
+        return null;
+      }
+    };
+
+    HashMethods.prototype.size = function(hsh) {
+      var counter, k, v;
+      counter = 0;
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        counter += 1;
+      }
+      return counter;
+    };
+
+    HashMethods.prototype.sort = function(hsh, block) {
+      return _arr.sort(_hsh.to_a(hsh), block);
+    };
+
+    HashMethods.prototype.to_a = function(hsh) {
+      var k, v, _results;
+      _results = [];
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        _results.push([k, v]);
+      }
+      return _results;
+    };
+
+    HashMethods.prototype.values = function(hsh) {
+      var k, v, _results;
+      _results = [];
+      for (k in hsh) {
+        if (!__hasProp.call(hsh, k)) continue;
+        v = hsh[k];
+        _results.push(v);
+      }
+      return _results;
+    };
+
+    HashMethods.prototype.values_at = function() {
+      var hsh, k, keys, _j, _len1, _results;
+      hsh = arguments[0], keys = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      _results = [];
+      for (_j = 0, _len1 = keys.length; _j < _len1; _j++) {
+        k = keys[_j];
+        _results.push(hsh[k]);
+      }
+      return _results;
+    };
 
     return HashMethods;
 
@@ -5040,29 +5481,13 @@ http://www.rubyjs.org/LICENSE.txt
     }
 
     Hash.prototype.assoc = function(needle) {
-      var arr, k, v, _ref3, _ref4;
-      needle = R(needle);
-      arr = [];
-      if (needle.rubyjs != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          if (needle.equals(k)) {
-            return new R.Array([k, v]);
-          }
-        }
+      var val;
+      val = _hsh.assoc(this.__native__, needle);
+      if (val === null) {
+        return null;
       } else {
-        _ref4 = this.__native__;
-        for (k in _ref4) {
-          if (!__hasProp.call(_ref4, k)) continue;
-          v = _ref4[k];
-          if (needle === k) {
-            return new R.Array([k, v]);
-          }
-        }
+        return new RArray(val);
       }
-      return null;
     };
 
     Hash.prototype.clear = function() {
@@ -5094,93 +5519,45 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Hash.prototype["delete"] = function(key, block) {
-      var value;
-      if (this.has_key(key)) {
-        value = this.get(key);
-        delete this.__native__[key];
-        return value;
-      } else {
-        if ((block != null ? block.call : void 0) != null) {
-          return block(key);
-        } else {
-          return null;
-        }
-      }
+      return _hsh["delete"](this.__native__, key, block);
     };
 
     Hash.prototype.delete_if = function(block) {
-      var k, v, _ref3;
-      if ((block != null ? block.call : void 0) != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          if (block(k, v)) {
-            delete this.__native__[k];
-          }
-        }
-        return this;
-      } else {
+      if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('delete_if');
       }
+      _hsh.delete_if(this.__native__, block);
+      return this;
     };
 
     Hash.prototype.each = function(block) {
-      var k, v, _ref3;
-      if ((block != null ? block.call : void 0) != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          block(k, v);
-        }
-        return this;
-      } else {
+      if (block == null) {
         return this.to_enum('each');
       }
+      _hsh.each(this.__native__, block);
+      return this;
     };
 
     Hash.prototype.each_pair = Hash.prototype.each;
 
     Hash.prototype.each_key = function(block) {
-      var k, v, _ref3;
-      if ((block != null ? block.call : void 0) != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          block(k);
-        }
-        return this;
-      } else {
+      if (block == null) {
         return this.to_enum('each_key');
       }
+      _hsh.each_key(this.__native__, block);
+      return this;
     };
 
     Hash.prototype.each_value = function(block) {
-      var k, v, _ref3;
-      if ((block != null ? block.call : void 0) != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          block(v);
-        }
-        return this;
-      } else {
+      if (block == null) {
         return this.to_enum('each_value');
       }
+      _hsh.each_value(this.__native__, block);
+      return this;
     };
 
     Hash.prototype.empty = function() {
-      var k, v, _ref3;
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        return false;
-      }
-      return true;
+      return _hsh.empty(this.__native__);
     };
 
     Hash.prototype.eql = function(other) {
@@ -5202,19 +5579,14 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Hash.prototype.fetch = function(key, default_value) {
-      var _ref3;
-      if (arguments.length === 0) {
-        throw R.ArgumentError["new"]();
+      return __call(_hsh.fetch, this.__native__, arguments);
+    };
+
+    Hash.prototype.flatten = function(recursion) {
+      if (recursion == null) {
+        recursion = 1;
       }
-      if (this.has_key(key)) {
-        return this.get(key);
-      } else if (((default_value != null ? default_value.call : void 0) != null) || (((_ref3 = arguments[2]) != null ? _ref3.call : void 0) != null)) {
-        return (arguments[2] || default_value)(key);
-      } else if (default_value !== void 0) {
-        return default_value;
-      } else {
-        throw R.KeyError["new"]();
-      }
+      return new RArray(_hsh.flatten(this.__native__, recursion));
     };
 
     Hash.prototype.get = function(key) {
@@ -5226,32 +5598,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Hash.prototype.has_value = function(val) {
-      var k, v, _ref3, _ref4;
-      val = R(val);
-      if (val.rubyjs != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          if (val.equals(v)) {
-            return true;
-          }
-        }
-      } else {
-        _ref4 = this.__native__;
-        for (k in _ref4) {
-          if (!__hasProp.call(_ref4, k)) continue;
-          v = _ref4[k];
-          if (v === val) {
-            return true;
-          }
-        }
-      }
-      return false;
+      return _hsh.has_value(this.__native__, val);
     };
 
     Hash.prototype.has_key = function(key) {
-      return key in this.__native__;
+      return _hsh.has_key(this.__native__, key);
     };
 
     Hash.prototype.include = Hash.prototype.has_key;
@@ -5262,212 +5613,82 @@ http://www.rubyjs.org/LICENSE.txt
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('keep_if');
       }
-      this.reject_bang(block);
+      _hsh.keep_if(this.__native__, block);
       return this;
     };
 
     Hash.prototype.key = function(value) {
-      var k, v, _ref3, _ref4;
-      if (value.rubyjs != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          if (value.equals(v)) {
-            return k;
-          }
-        }
-      } else {
-        _ref4 = this.__native__;
-        for (k in _ref4) {
-          if (!__hasProp.call(_ref4, k)) continue;
-          v = _ref4[k];
-          if (v.valueOf() === value) {
-            return k;
-          }
-        }
-      }
-      return null;
+      return _hsh.key(this.__native__, value);
     };
 
     Hash.prototype.index = Hash.prototype.key;
 
     Hash.prototype.invert = function() {
-      var hsh, k, v, _ref3;
-      hsh = {};
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        hsh[v] = k;
-      }
-      return new R.Hash(hsh);
+      return new R.Hash(_hsh.invert(this.__native__));
     };
 
     Hash.prototype.keys = function() {
-      var arr, k, v;
-      arr = (function() {
-        var _ref3, _results;
-        _ref3 = this.__native__;
-        _results = [];
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          _results.push(k);
-        }
-        return _results;
-      }).call(this);
-      return new R.Array(arr);
+      return new R.Array(_hsh.keys(this.__native__));
     };
 
     Hash.prototype.merge = function(other, block) {
-      var hsh, k, v, _ref3;
-      hsh = {};
-      if (other.rubyjs != null) {
-        other = other.__native__;
-      }
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        hsh[k] = v;
-      }
-      for (k in other) {
-        if (!__hasProp.call(other, k)) continue;
-        v = other[k];
-        if (((block != null ? block.call : void 0) != null) && k in hsh) {
-          hsh[k] = block(k, hsh[k], v);
-        } else {
-          hsh[k] = v;
-        }
-      }
-      return new R.Hash(hsh);
+      return new R.Hash(_hsh.merge(this.__native__, other, block));
     };
 
     Hash.prototype.merge_bang = function(other, block) {
-      var k, v, _ref3;
-      if (other.rubyjs != null) {
-        other = other.__native__;
-      }
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        this.__native__[k] = v;
-      }
-      for (k in other) {
-        if (!__hasProp.call(other, k)) continue;
-        v = other[k];
-        if (((block != null ? block.call : void 0) != null) && k in this.__native__) {
-          this.__native__[k] = block(k, this.__native__[k], v);
-        } else {
-          this.__native__[k] = v;
-        }
-      }
+      _hsh.merge$(this.__native__, other, block);
       return this;
     };
 
     Hash.prototype.rassoc = function(needle) {
-      var arr, k, v, _ref3, _ref4;
-      needle = R(needle);
-      arr = [];
-      if (needle.rubyjs != null) {
-        _ref3 = this.__native__;
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          if (needle.equals(v)) {
-            return new R.Array([k, v]);
-          }
-        }
+      var val;
+      val = _hsh.rassoc(this.__native__, needle);
+      if (val === null) {
+        return null;
       } else {
-        _ref4 = this.__native__;
-        for (k in _ref4) {
-          if (!__hasProp.call(_ref4, k)) continue;
-          v = _ref4[k];
-          if (needle === v) {
-            return new R.Array([k, v]);
-          }
-        }
+        return new RArray(val);
       }
-      return null;
     };
 
     Hash.prototype.reject = function(block) {
-      var dup, k, v, _ref3;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('reject');
       }
-      dup = {};
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        if (!block(k, v)) {
-          dup[k] = v;
-        }
-      }
-      return new R.Hash(dup);
+      return new R.Hash(_hsh.reject(this.__native__, block));
     };
 
     Hash.prototype.reject_bang = function(block) {
-      var changed, k, v, _ref3;
+      var val;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('reject_bang');
       }
-      changed = false;
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        if (!block(k, v)) {
-          delete this.__native__[k];
-          changed = true;
-        }
-      }
-      if (changed) {
-        return this;
-      } else {
+      val = _hsh.reject$(this.__native__, block);
+      if (changed === null) {
         return null;
+      } else {
+        return this;
       }
     };
 
     Hash.prototype.select = function(block) {
-      var dup, k, v, _ref3;
+      var dup;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('select');
       }
-      dup = {};
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        if (block(k, v)) {
-          dup[k] = v;
-        }
-      }
+      dup = _hsh.select(this.__native__, block);
       return new R.Hash(dup);
     };
 
     Hash.prototype.select_bang = function(block) {
-      var changed, k, v, _ref3;
+      var val;
       if ((block != null ? block.call : void 0) == null) {
         return this.to_enum('select_bang');
       }
-      changed = false;
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        if (block(k, v)) {
-          delete this.__native__[k];
-          changed = true;
-        }
-      }
-      if (changed) {
-        return this;
-      } else {
+      val = _hsh.select$(this.__native__, block);
+      if (val === null) {
         return null;
+      } else {
+        return this;
       }
     };
 
@@ -5475,46 +5696,18 @@ http://www.rubyjs.org/LICENSE.txt
       return this.__native__[key] = value;
     };
 
-    Hash.prototype.flatten = function(recursion) {
-      if (recursion == null) {
-        recursion = 1;
-      }
-      recursion = RCoerce.to_int_native(recursion);
-      return this.to_a().flatten(recursion);
-    };
-
     Hash.prototype.sort = function(block) {
-      return this.to_a().sort(block);
+      return new RArray(_hsh.sort(this.__native__, block));
     };
 
     Hash.prototype.store = Hash.prototype.set;
 
     Hash.prototype.size = function() {
-      var counter, k, v, _ref3;
-      counter = 0;
-      _ref3 = this.__native__;
-      for (k in _ref3) {
-        if (!__hasProp.call(_ref3, k)) continue;
-        v = _ref3[k];
-        counter += 1;
-      }
-      return new R.Fixnum(counter);
+      return new R.Fixnum(_hsh.size(this.__native__));
     };
 
     Hash.prototype.to_a = function() {
-      var arr, k, v;
-      arr = (function() {
-        var _ref3, _results;
-        _ref3 = this.__native__;
-        _results = [];
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          _results.push([k, v]);
-        }
-        return _results;
-      }).call(this);
-      return new R.Array(arr);
+      return new R.Array(_hsh.to_a(this.__native__));
     };
 
     Hash.prototype.to_hash = function() {
@@ -5530,33 +5723,13 @@ http://www.rubyjs.org/LICENSE.txt
     Hash.prototype.update = Hash.prototype.merge_bang;
 
     Hash.prototype.values = function() {
-      var arr, k, v;
-      arr = (function() {
-        var _ref3, _results;
-        _ref3 = this.__native__;
-        _results = [];
-        for (k in _ref3) {
-          if (!__hasProp.call(_ref3, k)) continue;
-          v = _ref3[k];
-          _results.push(v);
-        }
-        return _results;
-      }).call(this);
-      return new R.Array(arr);
+      return new RArray(_hsh.values(this.__native__));
     };
 
-    Hash.prototype.values_at = function(keys) {
-      var arr, k;
-      arr = (function() {
-        var _j, _len1, _results;
-        _results = [];
-        for (_j = 0, _len1 = arguments.length; _j < _len1; _j++) {
-          k = arguments[_j];
-          _results.push(this.get(k));
-        }
-        return _results;
-      }).apply(this, arguments);
-      return R(arr);
+    Hash.prototype.values_at = function() {
+      var arr;
+      arr = __call(_hsh.values_at, this.__native__, arguments);
+      return new RArray(arr);
     };
 
     Hash.prototype.valueOf = function() {
@@ -6263,13 +6436,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.end_with = function() {
-      var needles, neeldes;
-      needles = _arr.select(arguments, function(s) {
-        var _ref3;
-        return ((_ref3 = R(s)) != null ? _ref3.to_str : void 0) != null;
-      });
-      neeldes = _arr.map(needles, _fn(RCoerce.to_str_native));
-      return _str.end_with.apply(_str, [this.__native__].concat(__slice.call(needles)));
+      return __call(_str.end_with, this.__native__, arguments);
     };
 
     String.prototype.eql = function(other) {
@@ -6523,14 +6690,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.start_with = function() {
-      var needles, neeldes;
-      needles = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      needles = _arr.select(needles, function(s) {
-        var _ref3;
-        return ((_ref3 = R(s)) != null ? _ref3.to_str : void 0) != null;
-      });
-      neeldes = _arr.map(needles, _fn(RCoerce.to_str_native));
-      return _str.start_with.apply(_str, [this.__native__].concat(__slice.call(needles)));
+      return __call(_str.start_with, this.__native__, arguments);
     };
 
     String.prototype.strip = function() {

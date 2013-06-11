@@ -62,6 +62,7 @@ nativeJoin     = ArrProto.join
 nativeSort     = ArrProto.sort
 nativeSlice    = ArrProto.slice
 nativeUnshift  = ArrProto.unshift
+nativePush  = ArrProto.push
 
 # TODO: create BlockNone class that coerces multiple yield arguments into array.
 
@@ -74,7 +75,7 @@ class Block
   # a single block argument.
   #
   @create: (block, thisArg) ->
-    if block && block.call? #block_given
+    if block?.call? #block_given
       if block.length != 1
         new BlockMulti(block, thisArg)
       else
@@ -82,38 +83,21 @@ class Block
     else
       new BlockArgs(block, thisArg)
 
+  # handles block argument splatting
+  # reverse_each([[1,2]], (a,b) -> )
   # if block has multiple arguments, returns a wrapper
   # function that applies arguments to block instead of passing.
   # Otherwise it returns the block itself.
-  #
-  @supportMultipleArgs: (block) ->
-    if block.length is 1
-      block
-    else
+  @splat_arguments: (block) ->
+    if block.length > 1
       (item) ->
-        if typeof item is 'object' && R.Array.isNativeArray(item)
-          block.apply(this, item)
+        if typeof item is 'object' && __isArr(item)
+          block.apply(null, item)
         else
           block(item)
+    else
+      block
 
-
-  invoke: () ->
-    throw "Calling #invoke on an abstract Block instance"
-
-  # Use invokeSplat applies the arguments to the block.
-  #
-  # E.g.
-  #
-  #     each_with_object: (obj) ->
-  #        @each (el) ->
-  #          callback.invokeSplat(el, obj)
-  #
-  invokeSplat: ->
-    throw "Calling #invokeSplat on an abstract Block instance"
-
-  # @abstract
-  args: () ->
-    throw "Calling #args on an abstract Block instance"
 
 # @private
 class BlockArgs
@@ -121,6 +105,7 @@ class BlockArgs
 
   invoke: (args) ->
     RCoerce.single_block_args(args, @block)
+
 
 # @private
 class BlockMulti
@@ -135,10 +120,11 @@ class BlockMulti
       @block.apply(@thisArg, args)
     else
       arg = args[0]
-      if typeof arg is 'object' && R.Array.isNativeArray(arg)
+      if typeof arg is 'object' && __isArr(arg)
         @block.apply(@thisArg, arg)
       else
         @block.call(@thisArg, arg)
+
 
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
@@ -158,8 +144,9 @@ class BlockSingle
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
 
+
 R.Block = Block
-R.blockify = _blockify = Block.create
+R.blockify = __blockify = Block.create
 
 # Breaker is a R class for adding support to breaking out of functions
 # that act like loops. Because we mimick ruby block/procs/lambdas by passing
@@ -1091,28 +1078,28 @@ class EnumerableMethods
 
 
   all: (coll, block) ->
-    @catch_break (breaker) ->
-      callback = _blockify(block, coll)
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      callback = __blockify(block, coll)
+      _itr.each coll, ->
         result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
       true
 
 
   any: (coll, block) ->
-    @catch_break (breaker) ->
-      callback = _blockify(block, coll)
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      callback = __blockify(block, coll)
+      _itr.each coll, ->
         result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
       false
 
 
   collect_concat: (coll, block = null) ->
-    callback = _blockify(block, this)
+    callback = __blockify(block, this)
 
     ary = []
-    @each coll, ->
+    _itr.each coll, ->
       ary.push(callback.invoke(arguments))
 
     _arr.flatten(ary, 1)
@@ -1124,17 +1111,17 @@ class EnumerableMethods
   count: (coll, block) ->
     counter = 0
     if block is undefined
-      @each coll, -> counter += 1
+      _itr.each coll, -> counter += 1
     else if block is null
-      @each coll, (el) -> counter += 1 if el is null
+      _itr.each coll, (el) -> counter += 1 if el is null
     else if block.call?
-      callback = _blockify(block, coll)
-      @each coll, ->
+      callback = __blockify(block, coll)
+      _itr.each coll, ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
     else
       countable = block
-      @each coll, (el) ->
+      _itr.each coll, (el) ->
         counter += 1 if R.is_equal(countable, el)
     counter
 
@@ -1153,10 +1140,10 @@ class EnumerableMethods
 
     return coll.to_enum('cycle', n) unless block
 
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     cache = new R.Array([])
-    @each coll, ->
+    _itr.each coll, ->
       args = callback.args(arguments)
       cache.append args
       callback.invoke(arguments)
@@ -1180,18 +1167,18 @@ class EnumerableMethods
   drop: (coll, n) ->
     # TODO use splice when implemented
     ary = []
-    @each_with_index coll, (el, idx) ->
+    _itr.each_with_index coll, (el, idx) ->
       ary.push(el) if n <= idx
     ary
 
 
   drop_while: (coll, block) ->
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     ary = []
     dropping = true
 
-    @each coll, ->
+    _itr.each coll, ->
       unless dropping && callback.invoke(arguments)
         dropping = false
         ary.push(callback.args(arguments))
@@ -1202,10 +1189,10 @@ class EnumerableMethods
 
   each_cons: (coll, n, block) ->
     # TODO: use callback
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
     len = block.length
     ary = []
-    @each coll, ->
+    _itr.each coll, ->
       ary.push(BlockMulti.prototype.args(arguments))
       ary.shift() if ary.length > n
       if ary.length is n
@@ -1222,7 +1209,7 @@ class EnumerableMethods
     # yields into an array
     callback = new BlockMulti(block, coll)
     len = block.length
-    @each coll, ->
+    _itr.each coll, ->
       args = callback.args(arguments)
       if len > 1 and R.Array.isNativeArray(args)
         block.apply(coll, args)
@@ -1233,11 +1220,11 @@ class EnumerableMethods
 
 
   each_slice: (coll, n, block) ->
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
     len      = block.length
     ary      = []
 
-    @each coll, ->
+    _itr.each coll, ->
       ary.push( BlockMulti.prototype.args(arguments) )
       if ary.length == n
         args = ary.slice(0)
@@ -1260,10 +1247,10 @@ class EnumerableMethods
   each_with_index: (coll, block) ->
     return new R.Enumerator(_itr, 'each_with_index', [coll]) unless block?.call?
 
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     idx = 0
-    @each coll, ->
+    _itr.each coll, ->
       val = callback.invokeSplat(callback.args(arguments), idx)
       idx += 1
       val
@@ -1272,9 +1259,9 @@ class EnumerableMethods
 
 
   each_with_object: (coll, obj, block) ->
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
-    @each coll, ->
+    _itr.each coll, ->
       args = BlockMulti.prototype.args(arguments)
       callback.invokeSplat(args, obj)
 
@@ -1286,9 +1273,9 @@ class EnumerableMethods
       block  = ifnone
       ifnone = null
 
-    callback = _blockify(block, this)
-    @catch_break (breaker) ->
-      @each coll, ->
+    callback = __blockify(block, this)
+    _itr.catch_break (breaker) ->
+      _itr.each coll, ->
         unless R.falsey(callback.invoke(arguments))
           breaker.break(callback.args(arguments))
 
@@ -1297,8 +1284,8 @@ class EnumerableMethods
 
   find_all: (coll, block) ->
     ary = []
-    callback = _blockify(block, coll)
-    @each coll, ->
+    callback = __blockify(block, coll)
+    _itr.each coll, ->
       unless R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
@@ -1311,10 +1298,10 @@ class EnumerableMethods
     else
       block = (el) -> R.is_equal(value, el)
 
-    idx = 0
-    callback = _blockify(block, coll)
-    @catch_break (breaker) ->
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      idx = 0
+      callback = __blockify(block, coll)
+      _itr.each coll, ->
         breaker.break(idx) if callback.invoke(arguments)
         idx += 1
 
@@ -1324,14 +1311,14 @@ class EnumerableMethods
   first: (coll, n = null) ->
     if n != null
       throw new R.ArgumentError('ArgumentError') if n < 0
-      @take(coll, n)
+      _itr.take(coll, n)
     else
-      @take(coll, 1)[0]
+      _itr.take(coll, 1)[0]
 
 
   include: (coll, other) ->
-    @catch_break (breaker) ->
-      @each coll, (el) ->
+    _itr.catch_break (breaker) ->
+      _itr.each coll, (el) ->
         breaker.break(true) if __equals(other, el)
       false
 
@@ -1358,10 +1345,10 @@ class EnumerableMethods
 
 
   inject: (coll, init, sym, block) ->
-    [init, sym, block] = @__inject_args__(init, sym, block)
+    [init, sym, block] = _itr.__inject_args__(init, sym, block)
 
-    callback = R.blockify(block, coll)
-    @each coll, ->
+    callback = __blockify(block, coll)
+    _itr.each coll, ->
       if init is undefined
         init = callback.args(arguments)
       else
@@ -1374,22 +1361,22 @@ class EnumerableMethods
   grep: (coll, pattern, block) ->
     ary      = []
     pattern  = R(pattern)
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
     if block
-      @each coll, (el) ->
+      _itr.each coll, (el) ->
         if pattern['==='](el)
           ary.push(callback.invoke(arguments))
     else
-      @each coll, (el) ->
+      _itr.each coll, (el) ->
         ary.push(el) if pattern['==='](el)
     ary
 
 
   group_by: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     h = {}
-    @each coll, ->
+    _itr.each coll, ->
       args = callback.args(arguments)
       key  = callback.invoke(arguments)
 
@@ -1400,10 +1387,10 @@ class EnumerableMethods
 
 
   map: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     arr = []
-    @each coll, ->
+    _itr.each coll, ->
       arr.push(callback.invoke(arguments))
 
     arr
@@ -1414,18 +1401,7 @@ class EnumerableMethods
 
     block ||= R.Comparable.cmp
 
-    # # Following Optimization won't complain if:
-    # # [1,2,'3']
-    # #
-    # # optimization for elements that are arrays
-    # #
-    # if @__samesame__?()
-    #   arr = @__native__
-    #   if arr.length < 65535
-    #     _max = Math.max.apply(Math, arr)
-    #     return _max if _max isnt NaN
-
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if max is undefined
         max = item
       else
@@ -1439,7 +1415,7 @@ class EnumerableMethods
   max_by: (coll, block) ->
     max = undefined
     # OPTIMIZE: use sorted element
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if max is undefined
         max = item
       else
@@ -1457,7 +1433,7 @@ class EnumerableMethods
     #
     # optimization for elements that are arrays
 
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if min is undefined
         min = item
       else
@@ -1472,7 +1448,7 @@ class EnumerableMethods
   min_by: (coll, block) ->
     min = undefined
     # OPTIMIZE: use sorted element
-    @each coll, (item) ->
+    _itr.each coll, (item) ->
       if min is undefined
         min = item
       else
@@ -1483,17 +1459,17 @@ class EnumerableMethods
 
   minmax: (coll, block) ->
     # TODO: optimize
-    [@min(coll, block), @max(coll, block)]
+    [_itr.min(coll, block), _itr.max(coll, block)]
 
 
   minmax_by: (coll, block) ->
-    [@min_by(coll, block), @max_by(coll, block)]
+    [_itr.min_by(coll, block), _itr.max_by(coll, block)]
 
 
   none: (coll, block) ->
-    @catch_break (breaker) ->
-      callback = R.blockify(block, coll)
-      @each coll, (args) ->
+    _itr.catch_break (breaker) ->
+      callback = __blockify(block, coll)
+      _itr.each coll, (args) ->
         result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
       true
@@ -1502,9 +1478,9 @@ class EnumerableMethods
   one: (coll, block) ->
     counter  = 0
 
-    @catch_break (breaker) ->
-      callback = R.blockify(block, coll)
-      @each coll, (args) ->
+    _itr.catch_break (breaker) ->
+      callback = __blockify(block, coll)
+      _itr.each coll, (args) ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
         breaker.break(false) if counter > 1
@@ -1516,9 +1492,9 @@ class EnumerableMethods
     left  = []
     right = []
 
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
-    @each coll, ->
+    _itr.each coll, ->
       args = BlockMulti.prototype.args(arguments)
 
       if callback.invokeSplat(args)
@@ -1530,10 +1506,10 @@ class EnumerableMethods
 
 
   reject: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     ary = []
-    @each coll, ->
+    _itr.each coll, ->
       if R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
@@ -1543,7 +1519,7 @@ class EnumerableMethods
   reverse_each: (coll, block) ->
     # There is no other way then to convert to an array first.
     # Because Enumerable depends only on #each (through #to_a)
-    _arr.reverse_each(@to_a(coll), block )
+    _arr.reverse_each(_itr.to_a(coll), block )
     coll
 
   slice_before: (args...) ->
@@ -1579,11 +1555,11 @@ class EnumerableMethods
 
 
   sort_by: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     ary = []
-    @each coll, (value) ->
-      ary.push new MYSortedElement(value, callback.invoke(arguments))
+    _itr.each coll, (value) ->
+      ary.push new SortedElement(value, callback.invoke(arguments))
 
     ary = _arr.sort(ary, R.Comparable.cmpstrict)
     _arr.map(ary, (se) -> se.value)
@@ -1592,8 +1568,8 @@ class EnumerableMethods
   take: (coll, n) ->
     throw R.ArgumentError.new() if n < 0
     ary = []
-    @catch_break (breaker) ->
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      _itr.each coll, ->
         breaker.break() if ary.length is n
         ary.push(BlockMulti.prototype.args(arguments))
 
@@ -1604,8 +1580,8 @@ class EnumerableMethods
   take_while: (coll, block) ->
     ary = []
 
-    @catch_break (breaker) ->
-      @each coll, ->
+    _itr.catch_break (breaker) ->
+      _itr.each coll, ->
         breaker.break() if R.falsey block.apply(coll, arguments)
         ary.push(BlockMulti.prototype.args(arguments))
 
@@ -1615,9 +1591,9 @@ class EnumerableMethods
   to_a: (coll) ->
     ary = []
 
-    @each coll, ->
-      # args = if arguments.length == 1 then arguments[0] else nativeSlice.call(arguments)
-      ary.push(BlockMulti.prototype.args(arguments))
+    _itr.each coll, ->
+      args = if arguments.length > 1 then nativeSlice.call(arguments, 0) else arguments[0]
+      ary.push(args)
       null
 
     ary
@@ -1664,7 +1640,7 @@ class EnumerableMethods
 # `value` is the original element and `sort_by` the one to be sorted by
 #
 # @private
-class MYSortedElement
+class SortedElement
   constructor: (@value, @sort_by) ->
 
   '<=>': (other) ->
@@ -1805,10 +1781,12 @@ class ArrayMethods extends EnumerableMethods
     arr = __arr(arr)
     ary = []
 
-    _arr.each arr, (el) ->
+    len = arr.length
+    idx = -1
+    while (++idx < len)
+      el = arr[idx]
       if recursion != 0 && __isArr(el)
-        for item in _arr.flatten(el, recursion - 1)
-          ary.push(item)
+        nativePush.apply(ary, _arr.flatten(el, recursion - 1))
       else
         ary.push(el)
 
@@ -1818,8 +1796,7 @@ class ArrayMethods extends EnumerableMethods
   each: (arr, block) ->
     return _arr.to_enum('each', [arr]) unless block?
 
-    if block.length > 0 # 'if' needed for to_a
-      block = Block.supportMultipleArgs(block)
+    block = Block.splat_arguments(block)
 
     idx = -1
     len = arr.length
@@ -1827,6 +1804,19 @@ class ArrayMethods extends EnumerableMethods
       block(arr[idx])
 
     arr
+
+  # @non-ruby
+  each_with_context: (arr, thisArg, block) ->
+    return _arr.to_enum('each_with_context', [arr, thisArg]) unless block?
+
+    block = Block.splat_arguments(block)
+
+    idx = -1
+    len = arr.length
+    while ++idx < arr.length
+      block.call(thisArg, arr[idx])
+
+    thisArg
 
 
   to_enum: (name, args) ->
@@ -1969,6 +1959,8 @@ class ArrayMethods extends EnumerableMethods
   keep_if: (arr, block) ->
     return _arr.to_enum('keep_if', [arr]) unless block?
 
+    block = Block.splat_arguments(block)
+
     ary = []
     idx = -1
     len = arr.length
@@ -2088,8 +2080,7 @@ class ArrayMethods extends EnumerableMethods
   reverse_each: (arr, block) ->
     return _arr.to_enum('reverse_each', [arr]) unless block?
 
-    if block.length > 0 # if needed for to_a
-      block = Block.supportMultipleArgs(block)
+    block = Block.splat_arguments(block)
 
     idx = arr.length
     while idx--
@@ -2104,7 +2095,7 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     ridx = arr.length
     if other.call?
-      block = other
+      block = Block.splat_arguments(other)
       while ridx--
         el = arr[ridx]
         unless R.falsey(block(el))
@@ -2226,9 +2217,14 @@ class ArrayMethods extends EnumerableMethods
 
 
   uniq: (arr) ->
+    idx = -1
+    len = arr.length
     ary = []
-    _arr.each arr, (el) ->
+
+    while (++idx < len)
+      el = arr[idx]
       ary.push(el) if ary.indexOf(el) < 0
+
     ary
 
 
@@ -2254,6 +2250,53 @@ class ArrayMethods extends EnumerableMethods
       ary[idx - 1] = _arr.at(arr, __int(arguments[idx])) || null
       idx += 1
     ary
+
+
+
+  # ---- Enumerable implementations ------------------------
+
+
+  find_index: (arr, value) ->
+    len = arr.length
+    idx = -1
+
+    if typeof value is 'function' or (typeof value is 'object' && value.call?)
+      block = Block.splat_arguments(value)
+    else if value != null && typeof value is 'object'
+      block = (el) -> R.is_equal(value, el)
+    else
+      while ++idx < len
+        return idx if arr[idx] == value
+      return null
+
+    while ++idx < len
+      return idx if block(arr[idx])
+
+    null
+
+
+  first: (arr, n) ->
+    if n?
+      throw new R.ArgumentError('ArgumentError') if n < 0
+      arr.slice(0,n)
+    else
+      arr[0]
+
+
+  map: (arr, block) ->
+    callback = Block.splat_arguments(block)
+
+    idx = -1
+    len = arr.length
+    ary = new Array(len)
+    while ++idx < len
+      ary[idx] = callback(arr[idx])
+
+    ary
+
+
+  take: @prototype.first
+
 
 
   __native_array_with__: (size, obj) ->
@@ -2396,8 +2439,12 @@ class StringMethods
   end_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
     for w in needles
-      if str.lastIndexOf(w) + w.length is str.length
-        return true
+      try
+        w = __str(w)
+        if str.lastIndexOf(w) + w.length is str.length
+          return true
+      catch e
+
     false
 
 
@@ -2805,9 +2852,16 @@ class StringMethods
     ary
 
 
-  start_with: (str, needles...) ->
+  start_with: (str) ->
+    needles = _coerce.split_args(arguments, 1)
+
     for needle in needles
-      return true if str.indexOf(needle) is 0
+      try
+        needle = __str(needle)
+        return true if str.indexOf(needle) is 0
+      catch e
+        # TODO get rid of try
+
     false
 
 
@@ -2922,6 +2976,235 @@ R.extend(_str, new StringMethods())
 
 
 class HashMethods extends EnumerableMethods
+  assoc: (hsh, needle) ->
+    if typeof needle is 'object' and needle.equals?
+      for own k, v of hsh
+        return [k, v] if needle.equals(k)
+    else
+      for own k, v of hsh
+        return [k, v] if needle == k
+
+    null
+
+
+  delete: (hsh, key, block) ->
+    if `key in hsh`
+      value = hsh[key]
+      delete hsh[key]
+      return value
+    else
+      if block?.call?
+        block(key)
+      else
+        null
+
+
+  delete_if: (hsh, block) ->
+    if block?.call?
+      for own k,v of hsh
+        if block(k,v)
+          delete hsh[k]
+      hsh
+    else
+      # TODO: @to_enum('delete_if')
+
+
+  each: (hsh, block) ->
+    # TODO to_enum
+    for own k,v of hsh
+      block(k,v)
+    hsh
+
+
+  each_key: (hsh, block) ->
+    for own k,v of hsh
+      block(k)
+    hsh
+
+
+  each_value: (hsh, block) ->
+    for own k,v of hsh
+      block(v)
+    hsh
+
+
+  empty: (hsh) ->
+    for own k, v of hsh
+      return false
+    true
+
+
+  fetch: (hsh, key, default_value) ->
+    if arguments.length <= 1
+      throw R.ArgumentError.new()
+
+    if `key in hsh`
+      hsh[key]
+    else if default_value?.call? || arguments[3]?.call?
+      (arguments[3] || default_value)(key)
+    else if default_value != undefined
+      default_value
+    else
+      throw R.KeyError.new()
+
+
+  flatten: (hsh, recursion = 1) ->
+    recursion = __int(recursion)
+    _arr.flatten(_hsh.to_a(hsh), recursion)
+
+
+  get: (hsh, key) ->
+    hsh[key]
+
+
+  has_value: (hsh, val) ->
+    if typeof val is 'object' && val.equals?
+      for own k, v of hsh
+        return true if val.equals(v)
+    else
+      for own k, v of hsh
+        return true if v == val
+
+    false
+
+
+  has_key: (hsh, key) ->
+    `key in hsh`
+
+
+  include: @prototype.has_key
+  member:  @prototype.has_key
+
+
+  keep_if: (hsh, block) ->
+    _hsh.reject$(hsh, block)
+    hsh
+
+
+  key: (hsh, value) ->
+    if typeof value is 'object' && value.equals?
+      for own k, v of hsh
+        return k if value.equals(v)
+    else
+      for own k, v of hsh
+        return k if v == value
+
+    null
+
+
+  invert: (hsh) ->
+    ret = {}
+    for own k, v of hsh
+      ret[v] = k
+    ret
+
+
+  keys: (hsh) ->
+    k for own k, v of hsh
+
+
+  merge: (hsh, other, block) ->
+    out = {}
+    other = other.__native__ if other.rubyjs?
+
+    for own k, v of hsh
+      out[k] = v
+    for own k, v of other
+      if block?.call? and `k in out`
+        out[k] = block(k, out[k], v)
+      else
+        out[k] = v
+
+    out
+
+
+  merge$: (hsh, other, block) ->
+    other = other.__native__ if other.rubyjs?
+
+    for own k, v of hsh
+      hsh[k] = v
+    for own k, v of other
+      if block?.call? and `k in hsh`
+        hsh[k] = block(k, hsh[k], v)
+      else
+        hsh[k] = v
+
+    hsh
+
+
+  rassoc: (hsh, needle) ->
+    if typeof needle is 'object' && needle.equals?
+      for own k, v of hsh
+        if needle.equals(v)
+          return [k, v]
+    else
+      for own k, v of hsh
+        if needle == v
+          return [k, v]
+
+    null
+
+
+  reject: (hsh, block) ->
+    dup = {}
+    for own k,v of hsh
+      if !block(k, v)
+        dup[k] = v
+    dup
+
+
+  # @destructive
+  reject$: (hsh, block) ->
+    changed = false
+    for own k,v of hsh
+      if !block(k, v)
+        delete hsh[k]
+        changed = true
+
+    if changed then hsh else null
+
+
+  select: (hsh, block) ->
+    dup = {}
+    for own k,v of hsh
+      if block(k, v)
+        dup[k] = v
+    dup
+
+
+  select$: (hsh, block) ->
+    changed = false
+    for own k,v of hsh
+      if block(k, v)
+        delete hsh[k]
+        changed = true
+
+    if changed then hsh else null
+
+
+  size: (hsh) ->
+    counter = 0
+    for own k, v of hsh
+      counter += 1
+    counter
+
+
+  sort: (hsh, block) ->
+    _arr.sort(_hsh.to_a(hsh), block)
+
+
+
+  to_a: (hsh) ->
+    for own k, v of hsh
+      [k, v]
+
+
+  values: (hsh) ->
+    v for own k, v of hsh
+
+
+  values_at: (hsh, keys...) ->
+    hsh[k] for k in keys
 
 
 
@@ -5231,6 +5514,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- Aliases --------------------------------------------------------------
 
+
   @__add_default_aliases__(@prototype)
 
   # @alias collect_bang
@@ -5306,19 +5590,9 @@ class RubyJS.Hash extends RubyJS.Object
   #     h.assoc("foo")      #=> null
   #
   assoc: (needle) ->
-    needle = R(needle)
+    val = _hsh.assoc(@__native__, needle)
+    if val is null then null else new RArray(val)
 
-    arr = []
-    if needle.rubyjs?
-      for own k, v of @__native__
-        if needle.equals(k)
-          return new R.Array([k, v])
-    else
-      for own k, v of @__native__
-        if needle == k
-          return new R.Array([k, v])
-
-    null
 
 
   # Removes all key-value pairs from hsh.
@@ -5391,15 +5665,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Object, null]
   #
   delete: (key, block) ->
-    if @has_key(key)
-      value = @get(key)
-      delete @__native__[key]
-      return value
-    else
-      if block?.call?
-        block(key)
-      else
-        null
+    _hsh.delete(@__native__, key, block)
 
 
   # Deletes every key-value pair from hsh for which block evaluates to true.
@@ -5414,14 +5680,10 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   delete_if: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        if block(k,v)
-          delete @__native__[k]
+    return @to_enum('delete_if') unless block?.call?
+    _hsh.delete_if(@__native__, block)
+    this
 
-      this
-    else
-      @to_enum('delete_if')
 
 
   # Calls block once for each key in hsh, passing the key-value pair as
@@ -5439,12 +5701,12 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   each: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        block(k,v)
-      this
-    else
-      @to_enum('each')
+    return @to_enum('each') unless block?
+
+    _hsh.each(@__native__, block)
+    this
+
+
 
 
 
@@ -5466,12 +5728,9 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   each_key: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        block(k)
-      this
-    else
-      @to_enum('each_key')
+    return @to_enum('each_key') unless block?
+    _hsh.each_key(@__native__, block)
+    this
 
 
   # Calls block once for each key in hsh, passing the value as a parameter.
@@ -5488,12 +5747,10 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [this, R.Enumerator]
   #
   each_value: (block) ->
-    if block?.call?
-      for own k,v of @__native__
-        block(v)
-      this
-    else
-      @to_enum('each_value')
+    return @to_enum('each_value') unless block?
+    _hsh.each_value(@__native__, block)
+    this
+
 
   # Returns true if hsh contains no key-value pairs.
   #
@@ -5502,9 +5759,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Boolean]
   #
   empty: ->
-    for own k, v of @__native__
-      return false
-    true
+    _hsh.empty(@__native__)
 
 
   eql: (other) ->
@@ -5540,17 +5795,11 @@ class RubyJS.Hash extends RubyJS.Object
   #     # key not found (KeyError)
   #
   fetch: (key, default_value) ->
-    if arguments.length == 0
-      throw R.ArgumentError.new()
+    __call(_hsh.fetch, @__native__, arguments)
 
-    if @has_key(key)
-      @get(key)
-    else if default_value?.call? || arguments[2]?.call?
-      (arguments[2] || default_value)(key)
-    else if default_value != undefined
-      default_value
-    else
-      throw R.KeyError.new()
+
+  flatten: (recursion = 1) ->
+    new RArray(_hsh.flatten(@__native__, recursion))
 
 
   # Element Reference—Retrieves the value object corresponding to the key
@@ -5582,16 +5831,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [Boolean]
   #
   has_value: (val) ->
-    val = R(val)
-
-    if val.rubyjs?
-      for own k, v of @__native__
-        return true if val.equals(v)
-    else
-      for own k, v of @__native__
-        return true if v == val
-
-    false
+    _hsh.has_value(@__native__, val)
 
 
   # Returns true if the given key is present in hsh.
@@ -5604,7 +5844,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @alias #include, #member
   #
   has_key: (key) ->
-    `key in this.__native__`
+    _hsh.has_key(@__native__, key)
 
 
   include: @prototype.has_key
@@ -5619,7 +5859,7 @@ class RubyJS.Hash extends RubyJS.Object
   #
   keep_if: (block) ->
     return @to_enum('keep_if') unless block?.call?
-    @reject_bang(block)
+    _hsh.keep_if(@__native__, block)
     this
 
 
@@ -5636,16 +5876,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @alias #index
   #
   key: (value) ->
-    # value = R(value)
-
-    if value.rubyjs?
-      for own k, v of @__native__
-        return k if value.equals(v)
-    else
-      for own k, v of @__native__
-        return k if v.valueOf() == value
-
-    null
+    _hsh.key(@__native__, value)
 
 
   index: @prototype.key
@@ -5660,10 +5891,8 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Hash]
   #
   invert: ->
-    hsh = {}
-    for own k, v of @__native__
-      hsh[v] = k
-    new R.Hash(hsh)
+    new R.Hash(_hsh.invert(@__native__))
+
 
   # Returns a new array populated with the keys from this hash. See also
   # Hash#values.
@@ -5675,37 +5904,15 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   keys: ->
-    arr = for own k, v of @__native__
-      k
-    new R.Array(arr)
+    new R.Array(_hsh.keys(@__native__))
 
 
   merge: (other, block) ->
-    hsh = {}
-    other = other.__native__ if other.rubyjs?
-
-    for own k, v of @__native__
-      hsh[k] = v
-    for own k, v of other
-      if block?.call? and `k in hsh`
-        hsh[k] = block(k, hsh[k], v)
-      else
-        hsh[k] = v
-
-    new R.Hash(hsh)
+    new R.Hash(_hsh.merge(@__native__, other, block))
 
 
   merge_bang: (other, block) ->
-    other = other.__native__ if other.rubyjs?
-
-    for own k, v of @__native__
-      @__native__[k] = v
-    for own k, v of other
-      if block?.call? and `k in this.__native__`
-        @__native__[k] = block(k, @__native__[k], v)
-      else
-        @__native__[k] = v
-
+    _hsh.merge$(@__native__, other, block)
     this
 
 
@@ -5719,43 +5926,20 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   rassoc: (needle) ->
-    needle = R(needle)
-
-    arr = []
-    if needle.rubyjs?
-      for own k, v of @__native__
-        if needle.equals(v)
-          return new R.Array([k, v])
-    else
-      for own k, v of @__native__
-        if needle == v
-          return new R.Array([k, v])
-
-    null
-
-
+    val = _hsh.rassoc(@__native__, needle)
+    if val is null then null else new RArray(val)
 
 
   reject: (block) ->
     return @to_enum('reject') unless block?.call?
-
-    dup = {}
-    for own k,v of @__native__
-      if !block(k, v)
-        dup[k] = v
-    new R.Hash(dup)
+    new R.Hash(_hsh.reject(@__native__, block))
 
 
   reject_bang: (block) ->
     return @to_enum('reject_bang') unless block?.call?
+    val = _hsh.reject$(@__native__, block)
+    if changed is null then null else this
 
-    changed = false
-    for own k,v of @__native__
-      if !block(k, v)
-        delete this.__native__[k]
-        changed = true
-
-    if changed then this else null
 
   # Returns a new hash consisting of entries for which the block returns true.
   #
@@ -5767,24 +5951,14 @@ class RubyJS.Hash extends RubyJS.Object
   #     h.select {|k,v| v < 200}  #=> {"a" => 100}
   select: (block) ->
     return @to_enum('select') unless block?.call?
-
-    dup = {}
-    for own k,v of @__native__
-      if block(k, v)
-        dup[k] = v
-
+    dup = _hsh.select(@__native__, block)
     new R.Hash(dup)
+
 
   select_bang: (block) ->
     return @to_enum('select_bang') unless block?.call?
-
-    changed = false
-    for own k,v of @__native__
-      if block(k, v)
-        delete this.__native__[k]
-        changed = true
-
-    if changed then this else null
+    val = _hsh.select$(@__native__, block)
+    if val is null then null  else this
 
 
   # Element Assignment—Associates the value given by value with the key given
@@ -5805,13 +5979,8 @@ class RubyJS.Hash extends RubyJS.Object
     @__native__[key] = value
 
 
-  flatten: (recursion = 1) ->
-    recursion = RCoerce.to_int_native(recursion)
-    @to_a().flatten(recursion)
-
   sort: (block) ->
-    @to_a().sort(block)
-
+    new RArray(_hsh.sort(@__native__, block))
 
 
   store: @prototype.set
@@ -5827,12 +5996,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Fixnum]
   #
   size: ->
-    counter = 0
-
-    for own k, v of @__native__
-      counter += 1
-
-    new R.Fixnum(counter)
+    new R.Fixnum(_hsh.size(@__native__))
 
 
   # Converts hsh to a nested array of [ key, value ] arrays.
@@ -5844,9 +6008,7 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   to_a: ->
-    arr = for own k, v of @__native__
-      [k, v]
-    new R.Array(arr)
+    new R.Array(_hsh.to_a(@__native__))
 
 
   # Returns self.
@@ -5878,14 +6040,12 @@ class RubyJS.Hash extends RubyJS.Object
   # @return [R.Array]
   #
   values: ->
-    arr = for own k, v of @__native__
-      v
-    new R.Array(arr)
+    new RArray(_hsh.values(@__native__))
 
-  values_at: (keys) ->
-    arr = for k in arguments
-      @get(k)
-    R(arr)
+
+  values_at: ->
+    arr = __call(_hsh.values_at, @__native__, arguments)
+    new RArray(arr)
 
 
   valueOf: ->
@@ -6968,10 +7128,7 @@ class RubyJS.String extends RubyJS.Object
   # Returns true if str ends with one of the suffixes given.
   #
   end_with: ->
-    needles = _arr.select(arguments, (s) -> R(s)?.to_str? )
-    neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
-
-    _str.end_with(@__native__, needles...)
+    __call(_str.end_with, @__native__, arguments)
 
 
   # Two strings are equal if they have the same length and content.
@@ -7553,11 +7710,8 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello").start_with("heaven", "hell")     #=> true
   #     R("hello").start_with("heaven", "paradise") #=> false
   #
-  start_with: (needles...) ->
-    needles = _arr.select(needles, (s) -> R(s)?.to_str? )
-    neeldes = _arr.map(needles, _fn(RCoerce.to_str_native) )
-
-    _str.start_with(@__native__, needles...)
+  start_with: ->
+    __call(_str.start_with, @__native__, arguments)
 
 
   # Returns a copy of str with leading and trailing whitespace removed.
