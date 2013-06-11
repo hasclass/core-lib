@@ -153,6 +153,19 @@ class ArrayMethods extends EnumerableMethods
 
     arr
 
+  # @non-ruby
+  each_with_context: (arr, thisArg, block) ->
+    return _arr.to_enum('each_with_context', [arr, thisArg]) unless block?
+
+    block = Block.splat_arguments(block)
+
+    idx = -1
+    len = arr.length
+    while ++idx < arr.length
+      block.call(thisArg, arr[idx])
+
+    thisArg
+
 
   to_enum: (name, args) ->
     # new R.Enumerator(_arr, name, args)
