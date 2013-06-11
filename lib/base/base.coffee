@@ -34,7 +34,7 @@ class RubyJS.Base
   # TODO: TEST
   pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['w', 'fn', '_str', '_arr', '_itr', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
