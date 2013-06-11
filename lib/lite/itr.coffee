@@ -20,7 +20,7 @@ class EnumerableMethods
 
   all: (coll, block) ->
     @catch_break (breaker) ->
-      callback = _blockify(block, coll)
+      callback = __blockify(block, coll)
       @each coll, ->
         result = callback.invoke(arguments)
         breaker.break(false) if R.falsey(result)
@@ -29,7 +29,7 @@ class EnumerableMethods
 
   any: (coll, block) ->
     @catch_break (breaker) ->
-      callback = _blockify(block, coll)
+      callback = __blockify(block, coll)
       @each coll, ->
         result = callback.invoke(arguments)
         breaker.break(true) unless R.falsey( result )
@@ -37,7 +37,7 @@ class EnumerableMethods
 
 
   collect_concat: (coll, block = null) ->
-    callback = _blockify(block, this)
+    callback = __blockify(block, this)
 
     ary = []
     @each coll, ->
@@ -56,7 +56,7 @@ class EnumerableMethods
     else if block is null
       @each coll, (el) -> counter += 1 if el is null
     else if block.call?
-      callback = _blockify(block, coll)
+      callback = __blockify(block, coll)
       @each coll, ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
@@ -81,7 +81,7 @@ class EnumerableMethods
 
     return coll.to_enum('cycle', n) unless block
 
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     cache = new R.Array([])
     @each coll, ->
@@ -114,7 +114,7 @@ class EnumerableMethods
 
 
   drop_while: (coll, block) ->
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     ary = []
     dropping = true
@@ -130,7 +130,7 @@ class EnumerableMethods
 
   each_cons: (coll, n, block) ->
     # TODO: use callback
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
     len = block.length
     ary = []
     @each coll, ->
@@ -161,7 +161,7 @@ class EnumerableMethods
 
 
   each_slice: (coll, n, block) ->
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
     len      = block.length
     ary      = []
 
@@ -188,7 +188,7 @@ class EnumerableMethods
   each_with_index: (coll, block) ->
     return new R.Enumerator(_itr, 'each_with_index', [coll]) unless block?.call?
 
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     idx = 0
     @each coll, ->
@@ -200,7 +200,7 @@ class EnumerableMethods
 
 
   each_with_object: (coll, obj, block) ->
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
 
     @each coll, ->
       args = BlockMulti.prototype.args(arguments)
@@ -214,7 +214,7 @@ class EnumerableMethods
       block  = ifnone
       ifnone = null
 
-    callback = _blockify(block, this)
+    callback = __blockify(block, this)
     @catch_break (breaker) ->
       @each coll, ->
         unless R.falsey(callback.invoke(arguments))
@@ -225,7 +225,7 @@ class EnumerableMethods
 
   find_all: (coll, block) ->
     ary = []
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
     @each coll, ->
       unless R.falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
@@ -240,7 +240,7 @@ class EnumerableMethods
       block = (el) -> R.is_equal(value, el)
 
     idx = 0
-    callback = _blockify(block, coll)
+    callback = __blockify(block, coll)
     @catch_break (breaker) ->
       @each coll, ->
         breaker.break(idx) if callback.invoke(arguments)
@@ -288,7 +288,7 @@ class EnumerableMethods
   inject: (coll, init, sym, block) ->
     [init, sym, block] = @__inject_args__(init, sym, block)
 
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
     @each coll, ->
       if init is undefined
         init = callback.args(arguments)
@@ -302,7 +302,7 @@ class EnumerableMethods
   grep: (coll, pattern, block) ->
     ary      = []
     pattern  = R(pattern)
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
     if block
       @each coll, (el) ->
         if pattern['==='](el)
@@ -314,7 +314,7 @@ class EnumerableMethods
 
 
   group_by: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     h = {}
     @each coll, ->
@@ -328,7 +328,7 @@ class EnumerableMethods
 
 
   map: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     arr = []
     @each coll, ->
@@ -420,7 +420,7 @@ class EnumerableMethods
 
   none: (coll, block) ->
     @catch_break (breaker) ->
-      callback = R.blockify(block, coll)
+      callback = __blockify(block, coll)
       @each coll, (args) ->
         result = callback.invoke(arguments)
         breaker.break(false) unless R.falsey(result)
@@ -431,7 +431,7 @@ class EnumerableMethods
     counter  = 0
 
     @catch_break (breaker) ->
-      callback = R.blockify(block, coll)
+      callback = __blockify(block, coll)
       @each coll, (args) ->
         result = callback.invoke(arguments)
         counter += 1 unless R.falsey(result)
@@ -444,7 +444,7 @@ class EnumerableMethods
     left  = []
     right = []
 
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     @each coll, ->
       args = BlockMulti.prototype.args(arguments)
@@ -458,7 +458,7 @@ class EnumerableMethods
 
 
   reject: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     ary = []
     @each coll, ->
@@ -507,7 +507,7 @@ class EnumerableMethods
 
 
   sort_by: (coll, block) ->
-    callback = R.blockify(block, coll)
+    callback = __blockify(block, coll)
 
     ary = []
     @each coll, (value) ->
@@ -544,8 +544,8 @@ class EnumerableMethods
     ary = []
 
     @each coll, ->
-      # args = if arguments.length == 1 then arguments[0] else nativeSlice.call(arguments)
-      ary.push(BlockMulti.prototype.args(arguments))
+      args = if arguments.length > 1 then nativeSlice.call(arguments, 0) else arguments[0]
+      ary.push(args)
       null
 
     ary

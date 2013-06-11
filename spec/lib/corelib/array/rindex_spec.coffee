@@ -3,6 +3,7 @@
 # http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/23633
 
 describe "Array#rindex", ->
+
   it "returns the first index backwards from the end where element == to object", ->
     key = 3
     uno  =

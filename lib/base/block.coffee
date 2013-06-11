@@ -9,7 +9,7 @@ class Block
   # a single block argument.
   #
   @create: (block, thisArg) ->
-    if block && block.call? #block_given
+    if block?.call? #block_given
       if block.length != 1
         new BlockMulti(block, thisArg)
       else
@@ -17,38 +17,20 @@ class Block
     else
       new BlockArgs(block, thisArg)
 
+  # handles block argument splatting
+  # reverse_each([[1,2]], (a,b) -> )
   # if block has multiple arguments, returns a wrapper
   # function that applies arguments to block instead of passing.
   # Otherwise it returns the block itself.
-  #
-  @supportMultipleArgs: (block) ->
-    if block.length is 1
-      block
-    else
+  @splat_arguments: (block) ->
+    if block.length > 1
       (item) ->
-        if typeof item is 'object' && R.Array.isNativeArray(item)
-          block.apply(this, item)
+        if typeof item is 'object' && __isArr(item)
+          block.apply(null, item)
         else
           block(item)
-
-
-  invoke: () ->
-    throw "Calling #invoke on an abstract Block instance"
-
-  # Use invokeSplat applies the arguments to the block.
-  #
-  # E.g.
-  #
-  #     each_with_object: (obj) ->
-  #        @each (el) ->
-  #          callback.invokeSplat(el, obj)
-  #
-  invokeSplat: ->
-    throw "Calling #invokeSplat on an abstract Block instance"
-
-  # @abstract
-  args: () ->
-    throw "Calling #args on an abstract Block instance"
+    else
+      block
 
 # @private
 class BlockArgs
@@ -56,6 +38,7 @@ class BlockArgs
 
   invoke: (args) ->
     RCoerce.single_block_args(args, @block)
+
 
 # @private
 class BlockMulti
@@ -70,10 +53,11 @@ class BlockMulti
       @block.apply(@thisArg, args)
     else
       arg = args[0]
-      if typeof arg is 'object' && R.Array.isNativeArray(arg)
+      if typeof arg is 'object' && __isArr(arg)
         @block.apply(@thisArg, arg)
       else
         @block.call(@thisArg, arg)
+
 
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
@@ -93,5 +77,6 @@ class BlockSingle
   invokeSplat: ->
     @block.apply(@thisArg, arguments)
 
+
 R.Block = Block
-R.blockify = _blockify = Block.create
+R.blockify = __blockify = Block.create

@@ -142,8 +142,7 @@ class ArrayMethods extends EnumerableMethods
   each: (arr, block) ->
     return _arr.to_enum('each', [arr]) unless block?
 
-    if block.length > 0 # 'if' needed for to_a
-      block = Block.supportMultipleArgs(block)
+    block = Block.splat_arguments(block)
 
     idx = -1
     len = arr.length
@@ -293,6 +292,8 @@ class ArrayMethods extends EnumerableMethods
   keep_if: (arr, block) ->
     return _arr.to_enum('keep_if', [arr]) unless block?
 
+    block = Block.splat_arguments(block)
+
     ary = []
     idx = -1
     len = arr.length
@@ -412,8 +413,7 @@ class ArrayMethods extends EnumerableMethods
   reverse_each: (arr, block) ->
     return _arr.to_enum('reverse_each', [arr]) unless block?
 
-    if block.length > 0 # if needed for to_a
-      block = Block.supportMultipleArgs(block)
+    block = Block.splat_arguments(block)
 
     idx = arr.length
     while idx--
@@ -428,7 +428,7 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     ridx = arr.length
     if other.call?
-      block = other
+      block = Block.splat_arguments(other)
       while ridx--
         el = arr[ridx]
         unless R.falsey(block(el))
