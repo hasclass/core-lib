@@ -22,9 +22,9 @@ describe "Array#|", ->
   #     (array | array).should == [1, 'two', 3.0, array]
   #     (array | empty).should == [1, 'two', 3.0, array, empty]
 
-  it "tries to convert the passed argument to an Array using #to_ary", ->
+  it "tries to convert the passed argument to an Array using #valueOf", ->
     obj =
-      to_ary: -> R([1, 2, 3])
+      valueOf: -> [1, 2, 3]
     expect(R([0]).union obj).toEqual R([0]).union([1, 2, 3])
 
   # MRI follows hashing semantics here, so doesn't actually call eql?/hash for Fixnum/Symbol

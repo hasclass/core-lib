@@ -810,14 +810,9 @@ class RubyJS.Array extends RubyJS.Object
     throw R.ArgumentError.new() if arguments.length > 1
 
     if many is undefined
-      @__native__.pop()
+      _arr.pop(@__native__)
     else
-      many = RCoerce.to_int_native(many)
-      throw R.ArgumentError.new("negative array size") if many < 0
-      first = @__size__() - many
-      first = 0 if first < 0
-      @slice_bang(first, many)
-
+      new RArray(_arr.pop(@__native__, many))
 
   # Returns an array of all combinations of elements from all arrays. The
   # length of the returned array is the product of the length of self and the
@@ -1016,6 +1011,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.select (v) -> v.match /[aeiou]/   #=> ["a", "e"]
   #
   #
+
 
   # Returns the first element of self and removes it (shifting all other
   # elements down by one). Returns nil if the array is empty.
@@ -1248,8 +1244,8 @@ class RubyJS.Array extends RubyJS.Object
   #     a.unshift("a")   #=> ["a", "b", "c", "d"]
   #     a.unshift(1, 2)  #=> [ 1, 2, "a", "b", "c", "d"]
   #
-  unshift: (args...) ->
-    @replace(args.concat(@__native__))
+  unshift: ->
+    @replace(__call(_arr.unshift, @__native__, arguments))
 
 
   # Set Union—Returns a new array by joining this array with other_ary,
@@ -1259,7 +1255,7 @@ class RubyJS.Array extends RubyJS.Object
   #       #=> [ "a", "b", "c", "d" ]
   #
   union: (other) ->
-    @plus(other).uniq()
+    new RArray(_arr.union(@__native__, other))
 
 
   to_a: ->
@@ -1331,14 +1327,6 @@ class RubyJS.Array extends RubyJS.Object
   tryConvert:   @prototype.try_convert
   valuesAt:     @prototype.values_at
 
-  # ---- Private --------------------------------------------------------------
-
-  __native_array_with__: (size, obj) ->
-    ary = nativeArray(RCoerce.to_int_native(size))
-    idx = -1
-    while ++idx < size
-      ary[idx] = obj
-    ary
 
 
 RArray = R.Array = RubyJS.Array

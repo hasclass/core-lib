@@ -354,6 +354,19 @@ class ArrayMethods extends EnumerableMethods
       ary
 
 
+  pop: (arr, many) ->
+    if many is undefined
+      arr.pop()
+    else
+      many = __int(many)
+      throw R.ArgumentError.new("negative array size") if many < 0
+      ary = []
+      len = arr.length
+      many = len if many > len
+      while many--
+        ary[many] = arr.pop()
+      ary
+
 
   product: (arr, args...) ->
     result = []
@@ -535,6 +548,7 @@ class ArrayMethods extends EnumerableMethods
 
     out
 
+
   uniq: (arr) ->
     ary = []
     _arr.each arr, (el) ->
@@ -542,9 +556,18 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+  unshift: (arr, args...) ->
+    args.concat(arr)
+
+
   # values_at2: (arr, args...) ->
   #   for idx in args
   #     _arr.at(arr, __int(idx)) || null
+
+
+  union: (arr, other) ->
+    _arr.uniq(arr.concat(__arr(other)))
+
 
 
   values_at: (arr) ->

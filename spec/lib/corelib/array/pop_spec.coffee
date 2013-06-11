@@ -104,12 +104,12 @@ describe "Array#pop", ->
       it "raises an ArgumentError if n is negative", ->
         expect( -> R([1, 2, 3]).pop(-1) ).toThrow('ArgumentError')
 
-      it "tries to convert n to an Integer using #to_int", ->
+      it "tries to convert n to an Integer using #valueOf", ->
         a = R [1, 2, 3, 4]
         expect( a.pop(2.3) ).toEqual R([3, 4])
 
         obj =
-          to_int: -> R(2)
+          valueOf: -> 2
         expect( a ).toEqual R([1, 2])
         expect( a.pop(obj) ).toEqual R([1, 2])
         expect( a ).toEqual R([])
