@@ -657,16 +657,16 @@ http://www.rubyjs.org/LICENSE.txt
       if (typeof a === 'object') {
         if (a.equals != null) {
           return a.equals(b);
-        } else if (a['=='] != null) {
-          return a['=='](b);
+        } else if (a.equals != null) {
+          return a.equals(b);
         } else {
           return false;
         }
       } else if (typeof b === 'object') {
         if (b.equals != null) {
           return b.equals(a);
-        } else if (b['=='] != null) {
-          return b['=='](a);
+        } else if (b.equals != null) {
+          return b.equals(a);
         } else {
           return false;
         }
@@ -708,16 +708,16 @@ http://www.rubyjs.org/LICENSE.txt
         if (typeof a === 'object') {
           if (a.equals != null) {
             return a.equals(b);
-          } else if (a['=='] != null) {
-            return a['=='](b);
+          } else if (a.equals != null) {
+            return a.equals(b);
           } else {
             return false;
           }
         } else if (typeof b === 'object') {
           if (b.equals != null) {
             return b.equals(a);
-          } else if (b['=='] != null) {
-            return b['=='](a);
+          } else if (b.equals != null) {
+            return b.equals(a);
           } else {
             return false;
           }
@@ -3870,20 +3870,17 @@ http://www.rubyjs.org/LICENSE.txt
       if (proto['<<'] != null) {
         proto.append = proto['<<'];
       }
-      if (proto['=='] != null) {
-        proto.equals = proto['=='];
-      }
       if (proto['==='] != null) {
         proto.equal_case = proto['==='];
       }
+      if (proto.minus != null) {
+        proto['-'] = proto.minus;
+      }
+      if (proto.plus != null) {
+        proto['+'] = proto.plus;
+      }
       if (proto['%'] != null) {
         proto.modulo = proto['%'];
-      }
-      if (proto['+'] != null) {
-        proto.plus = proto['+'];
-      }
-      if (proto['-'] != null) {
-        proto.minus = proto['-'];
       }
       if (proto['*'] != null) {
         proto.multiply = proto['*'];
@@ -4046,7 +4043,7 @@ http://www.rubyjs.org/LICENSE.txt
       return cmp <= 0;
     };
 
-    Comparable.prototype['>='] = function(other) {
+    Comparable.prototype.gteq = function(other) {
       var cmp;
       cmp = this.cmp(other);
       if (cmp === null) {
@@ -4056,7 +4053,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Comparable.prototype.between = function(min, max) {
-      return this['>='](min) && this.lteq(max);
+      return this.gteq(min) && this.lteq(max);
     };
 
     Comparable.cmp = function(a, b) {
@@ -4104,7 +4101,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Comparable.prototype.gteq = Comparable.prototype['>='];
+    Comparable.prototype.gteq = Comparable.prototype.gteq;
 
     return Comparable;
 
@@ -4806,7 +4803,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Array.prototype['=='] = function(other) {
+    Array.prototype.equals = function(other) {
       other = R(other);
       if (other.is_array == null) {
         if (other.to_ary == null) {
@@ -5784,14 +5781,12 @@ http://www.rubyjs.org/LICENSE.txt
       return arr;
     };
 
-    Range.prototype['=='] = function(other) {
+    Range.prototype.equals = function(other) {
       if (!(other instanceof R.Range)) {
         return false;
       }
-      return this.__end__['=='](other.end()) && this.__start__['=='](other.start()) && this.exclusive === other.exclude_end();
+      return this.__end__.equals(other.end()) && this.__start__.equals(other.start()) && this.exclusive === other.exclude_end();
     };
-
-    Range.prototype.equals = Range.prototype['=='];
 
     Range.prototype.begin = function(obj) {
       return this.__start__;
@@ -5954,7 +5949,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Range.__add_default_aliases__(Range.prototype);
 
-    Range.prototype.eql = Range.prototype['=='];
+    Range.prototype.eql = Range.prototype.equals;
 
     Range.prototype.include = Range.prototype['==='];
 
@@ -5991,11 +5986,11 @@ http://www.rubyjs.org/LICENSE.txt
       return true;
     };
 
-    MatchData.prototype['=='] = function(other) {
+    MatchData.prototype.equals = function(other) {
       if (other.is_match_data == null) {
         return false;
       }
-      return this.regexp()['=='](other.regexp()) && this.string()['=='](other.string()) && this.__offset__ === other.__offset__;
+      return this.regexp().equals(other.regexp()) && this.string().equals(other.string()) && this.__offset__ === other.__offset__;
     };
 
     MatchData.prototype.begin = function(offset) {
@@ -6013,7 +6008,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     MatchData.prototype.eql = function(other) {
-      return this['=='](other);
+      return this.equals(other);
     };
 
     MatchData.prototype.get = function() {
@@ -6200,7 +6195,7 @@ http://www.rubyjs.org/LICENSE.txt
       return new RString(_str.multiply(this.__native__, num));
     };
 
-    String.prototype['+'] = function(other) {
+    String.prototype.plus = function(other) {
       other = RCoerce.to_str_native(other);
       return new R.String(this.to_native() + other);
     };
@@ -6227,13 +6222,13 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    String.prototype['=='] = function(other) {
+    String.prototype.equals = function(other) {
       if (other.is_string != null) {
         return this.to_native() === other.to_native();
       } else if (String.isString(other)) {
         return this.to_native() === other;
       } else if (other.to_str != null) {
-        return other['=='](this.to_native());
+        return other.equals(this.to_native());
       } else {
         return false;
       }
@@ -6868,7 +6863,7 @@ http://www.rubyjs.org/LICENSE.txt
       return R("/" + src + "/" + (this.__flags__()));
     };
 
-    Regexp.prototype['=='] = function(other) {
+    Regexp.prototype.equals = function(other) {
       other = R(other);
       return (other.to_native().source === this.to_native().source) && (other.casefold() === this.casefold());
     };
@@ -6892,7 +6887,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Regexp.prototype.eql = function() {
-      return this['=='].apply(this, arguments);
+      return this.equals.apply(this, arguments);
     };
 
     Regexp.prototype.fixed_encoding = function() {
@@ -7154,7 +7149,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (this.__proto__ !== other.__proto__) {
         return false;
       }
-      if (this['=='](other)) {
+      if (this.equals(other)) {
         return true;
       } else {
         return false;
@@ -7180,7 +7175,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Numeric.prototype.modulo = function(other) {
       other = this.box(other);
-      return this['-'](other['*'](this.div(other)));
+      return this.minus(other['*'](this.div(other)));
     };
 
     Numeric.prototype.nonzero = function() {
@@ -7214,8 +7209,8 @@ http://www.rubyjs.org/LICENSE.txt
       var mod;
       other = this.box(other);
       mod = this['%'](other);
-      if (!mod['=='](0) && ((this.lt(0) && other.gt(0)) || (this.gt(0) && other['lt'](0)))) {
-        return mod['-'](other);
+      if (!mod.equals(0) && ((this.lt(0) && other.gt(0)) || (this.gt(0) && other.lt(0)))) {
+        return mod.minus(other);
       } else {
         return mod;
       }
@@ -7251,7 +7246,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Numeric.prototype.zero = function() {
-      return this['=='](0);
+      return this.equals(0);
     };
 
     return Numeric;
@@ -7469,15 +7464,15 @@ http://www.rubyjs.org/LICENSE.txt
       return Fixnum["new"](this.to_native());
     };
 
-    Fixnum.prototype['=='] = function(other) {
+    Fixnum.prototype.equals = function(other) {
       if (R(other).is_fixnum == null) {
-        return R(other)['=='](this);
+        return R(other).equals(this);
       } else {
         return this.cmp(other) === 0;
       }
     };
 
-    Fixnum.prototype['==='] = Fixnum.prototype['=='];
+    Fixnum.prototype['==='] = Fixnum.prototype.equals;
 
     Fixnum.prototype.cmp = function(other) {
       if (typeof other !== 'number') {
@@ -7499,11 +7494,11 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Fixnum.prototype['+'] = function(other) {
+    Fixnum.prototype.plus = function(other) {
       return R.Numeric.typecast(this.to_native() + RCoerce.to_num_native(other));
     };
 
-    Fixnum.prototype['-'] = function(other) {
+    Fixnum.prototype.minus = function(other) {
       return R.Numeric.typecast(this.to_native() - RCoerce.to_num_native(other));
     };
 
@@ -7657,16 +7652,16 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Float.prototype['=='] = function(other) {
+    Float.prototype.equals = function(other) {
       other = this.box(other);
       return this.to_native() === other.to_native();
     };
 
-    Float.prototype['+'] = function(other) {
+    Float.prototype.plus = function(other) {
       return new Float(this.to_native() + RCoerce.to_num_native(other));
     };
 
-    Float.prototype['-'] = function(other) {
+    Float.prototype.minus = function(other) {
       return new Float(this.to_native() - RCoerce.to_num_native(other));
     };
 
@@ -7842,7 +7837,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Float.prototype.truncate = Float.prototype.to_i;
 
-    Float.prototype['==='] = Float.prototype['=='];
+    Float.prototype['==='] = Float.prototype.equals;
 
     Float.__add_default_aliases__(Float.prototype);
 
@@ -8055,7 +8050,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Time.prototype['=='] = function(other) {
+    Time.prototype.equals = function(other) {
       other = R(other);
       if (other.is_time == null) {
         return false;
@@ -8063,7 +8058,7 @@ http://www.rubyjs.org/LICENSE.txt
       return this.cmp(other) === 0;
     };
 
-    Time.prototype['-'] = function(other) {
+    Time.prototype.minus = function(other) {
       var tmstmp;
       if (other == null) {
         throw R.TypeError["new"]();
@@ -8079,7 +8074,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Time.prototype['+'] = function(other) {
+    Time.prototype.plus = function(other) {
       var tmstmp, tpcast;
       if (other == null) {
         throw R.TypeError["new"]();
@@ -8378,7 +8373,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Time.__add_default_aliases__(Time.prototype);
 
-    Time.prototype.eql = Time.prototype['=='];
+    Time.prototype.eql = Time.prototype.equals;
 
     return Time;
 

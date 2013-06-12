@@ -612,15 +612,15 @@ class RubyJS.Base
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
-      else if a['==']?
-        a['=='](b)
+      else if a.equals?
+        a.equals(b)
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
-      else if b['==']?
-        b['=='](a)
+      else if b.equals?
+        b.equals(a)
       else
         false
     else
@@ -654,15 +654,15 @@ class RubyJS.Base
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
-      else if a['==']?
-        a['=='](b)
+      else if a.equals?
+        a.equals(b)
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
-      else if b['==']?
-        b['=='](a)
+      else if b.equals?
+        b.equals(a)
       else
         false
     else
@@ -852,8 +852,8 @@ class NumericMethods
   #   other = @box(other)
   #   mod = @['%'](other)
 
-  #   if !mod['=='](0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
-  #     mod['-'](other)
+  #   if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
+  #     mod.minus(other)
   #   else
   #     mod
 
@@ -1663,7 +1663,7 @@ class ArrayMethods extends EnumerableMethods
 
     unless RArray.isNativeArray(other)
       return false unless other.to_ary?
-      # return other['=='] arr
+      # return other.equals arr
 
     return false unless arr.length is other.length
 
@@ -3242,11 +3242,10 @@ class RubyJS.Object
   #
   @__add_default_aliases__: (proto) ->
     proto.append     = proto['<<']  if proto['<<']?
-    proto.equals     = proto['==']  if proto['==']?
     proto.equal_case = proto['==='] if proto['===']?
+    proto['-']       = proto.minus  if proto.minus?
+    proto['+']       = proto.plus   if proto.plus?
     proto.modulo     = proto['%']   if proto['%']?
-    proto.plus       = proto['+']   if proto['+']?
-    proto.minus      = proto['-']   if proto['-']?
     proto.multiply   = proto['*']   if proto['*']?
     proto.exp        = proto['**']  if proto['**']?
     proto.divide     = proto['/']   if proto['/']?
@@ -3397,7 +3396,7 @@ class RubyJS.Comparable
     throw R.TypeError.new() if cmp is null
     cmp <= 0
 
-  '>=': (other) ->
+  gteq: (other) ->
     cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp >= 0
@@ -3413,7 +3412,8 @@ class RubyJS.Comparable
   #     R('gnu').between('ant', 'dog')   # => false
   #
   between: (min, max) ->
-    @['>='](min) and @lteq(max)
+    @gteq(min) and @lteq(max)
+
 
   # Equivalent of calling
   # R(a).cmp(b) but faster for natives.
@@ -3447,7 +3447,7 @@ class RubyJS.Comparable
 
 
   # aliases
-  gteq: @prototype['>=']
+  gteq: @prototype.gteq
 
 # Enumerable is a module of iterator methods that all rely on #each for
 # iterating. Classes that include Enumerable are Enumerator, Range, Array.
@@ -4235,7 +4235,7 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
 #      R(["a", "c", 7]).equals(["a", "c", 7])     #=> true
 #      R(["a", "c", 7]).equals(["a", "d", "f"])   #=> false
 #      # #equals is an alias to #==
-#      R(["a", "c"]   )['=='](["a", "c", 7])     #=> false
+#      R(["a", "c"]   ).equals(["a", "c", 7])     #=> false
 #   @return [Boolean]
 #   @alias #==
 #
@@ -4419,7 +4419,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
-  '==': (other) ->
+  equals: (other) ->
     other = R(other)
     unless other.is_array?
       return false unless other.to_ary?
@@ -5006,7 +5006,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @example
   #     R([ 1, 2, 3 ]).plus [ 3, 4 ]     #=> [ 1, 2, 3, 3, 4 ]
-  #     R([ 1, 2, 3 ])['+']([ 3, 4 ])    #=> [ 1, 2, 3, 3, 4 ]
+  #     R([ 1, 2, 3 ]).plus([ 3, 4 ])    #=> [ 1, 2, 3, 3, 4 ]
   #
   # @note recursive arrays untested.
   #
@@ -6111,25 +6111,12 @@ class RubyJS.Range extends RubyJS.Object
   #     R.rng(0, 2).equals( R.r(0, 2, true)       #=> false # -> (0...2)
   #
   # @param other
-  # @alias #equals
   # @return true, false
   #
-  '==': (other) ->
+  equals: (other) ->
     return false unless other instanceof R.Range
-    @__end__['=='](other.end()) and @__start__['=='](other.start()) and @exclusive is other.exclude_end()
+    @__end__.equals(other.end()) and @__start__.equals(other.start()) and @exclusive is other.exclude_end()
 
-  # Returns true only if obj is a Range, has equivalent beginning and end items
-  # (by comparing them with ==), and has the same exclude_end? setting as rng.
-  #
-  #     R.rng(0, 2).equals( R.r(0,2) )            #=> true
-  #     R.rng(0, 2).equals( R.Range.new(0,2) )    #=> true
-  #     R.rng(0, 2).equals( R.r(0, 2, true)       #=> false # -> (0...2)
-  #
-  # @param other
-  # @alias #equals
-  # @return true, false
-  #
-  equals: @prototype['==']
 
   # Returns the first object in rng
   #
@@ -6340,7 +6327,7 @@ class RubyJS.Range extends RubyJS.Object
   @__add_default_aliases__(@prototype)
 
   # @alias #==
-  eql:        @prototype['==']
+  eql:        @prototype.equals
 
   # @alias #===
   include:    @prototype['===']
@@ -6385,11 +6372,11 @@ class RubyJS.MatchData extends RubyJS.Object
   #
   # @alias #eql, #equals
   #
-  '==': (other) ->
+  equals: (other) ->
     return false if !other.is_match_data?
 
-    @regexp()['=='](other.regexp()) &&
-      @string()['=='](other.string()) &&
+    @regexp().equals(other.regexp()) &&
+      @string().equals(other.string()) &&
       @__offset__ == other.__offset__
 
 
@@ -6439,7 +6426,7 @@ class RubyJS.MatchData extends RubyJS.Object
   # @see #==
   #
   eql: (other) ->
-    @['=='](other)
+    @equals(other)
 
   # Match Reference—MatchData acts as an array, and may be accessed using the
   # normal array indexing techniques. mtch is equivalent to the special
@@ -6701,7 +6688,7 @@ class RubyJS.String extends RubyJS.Object
   #      R("Hello from ").plus("self")
   #      #=> "Hello from main"
   #
-  '+': (other) ->
+  plus: (other) ->
     other = RCoerce.to_str_native(other)
     new R.String(@to_native() + other) # don't return subclasses
 
@@ -6745,13 +6732,13 @@ class RubyJS.String extends RubyJS.Object
   #
   # @alias #equals
   #
-  '==': (other) ->
+  equals: (other) ->
     if other.is_string?
       @to_native() == other.to_native()
     else if String.isString(other)
       @to_native() == other
     else if other.to_str?
-      other['=='] @to_native()
+      other.equals @to_native()
     else
       false
 
@@ -8102,10 +8089,10 @@ class RubyJS.Regexp extends RubyJS.Object
   #
   # @example Basics (wrong online doc in ruby-doc.org)
   #
-  #     R(/abc/)['=='](/abc/)   #=> false
-  #     R(/abc/)['=='](/abc/)   #=> false
-  #     R(/abc/)['=='](/abc/)   #=> false
-  #     R(/abc/)['=='](/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
   #
   # @example aliased by #equals
   #
@@ -8114,7 +8101,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #
   # @alias #equals, #eql
   #
-  '==': (other) ->
+  equals: (other) ->
     other = R(other)
     (other.to_native().source is @to_native().source) and (other.casefold() is @casefold())
 
@@ -8158,7 +8145,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
 
   # @alias to #==
-  eql: -> @['=='].apply(this, arguments)
+  eql: -> @equals.apply(this, arguments)
 
 
   # @unsupported currently no support for encodings in RubyJS
@@ -8560,7 +8547,7 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     return false unless other
     return false unless @__proto__ is other.__proto__
-    if @['=='](other) then true else false
+    if @equals(other) then true else false
 
 
   # @return [R.String]
@@ -8600,7 +8587,7 @@ class RubyJS.Numeric extends RubyJS.Object
   modulo: (other) ->
     other = @box(other)
     # self - other * self.div(other)
-    @['-']( other['*']( @div(other)) )
+    @minus( other['*']( @div(other)) )
 
 
   # Returns self if num is not zero, nil otherwise. This behavior is useful
@@ -8637,8 +8624,8 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     mod = @['%'](other)
 
-    if !mod['=='](0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
-      mod['-'](other)
+    if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other.lt(0)))
+      mod.minus(other)
     else
       mod
 
@@ -8710,7 +8697,7 @@ class RubyJS.Numeric extends RubyJS.Object
   #
   # @return [Boolean]
   zero: ->
-    @['=='](0)
+    @equals(0)
 
 
 
@@ -9056,9 +9043,9 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   # @alias #equals
   #
-  '==': (other) ->
+  equals: (other) ->
     if !R(other).is_fixnum?
-      R(other)['=='](this)
+      R(other).equals(this)
     else
       @cmp(other) == 0
 
@@ -9068,7 +9055,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #     1 == 2      #=> false
   #     1 == 1.0    #=> true
   #
-  '===': @prototype['==']
+  '===': @prototype.equals
 
 
   # Returns -1, 0, +1 or nil depending on whether fix is less
@@ -9098,7 +9085,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   # @alias #plus
   #
-  '+': (other) ->
+  plus: (other) ->
     R.Numeric.typecast(@to_native() + RCoerce.to_num_native(other))
 
   # Performs subtraction: the class of the resulting object depends on the
@@ -9110,7 +9097,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   # @alias #minus
   #
-  '-': (other) ->
+  minus: (other) ->
     R.Numeric.typecast(@to_native() - RCoerce.to_num_native(other))
 
   # Performs division: the class of the resulting object depends on the class
@@ -9267,16 +9254,16 @@ class RubyJS.Float extends RubyJS.Numeric
     return  1 if @to_native() > other
 
 
-  '==': (other) ->
+  equals: (other) ->
     other = @box(other)
     @to_native() is other.to_native()
 
 
-  '+': (other) ->
+  plus: (other) ->
     new Float(@to_native() + RCoerce.to_num_native(other))
 
 
-  '-': (other) ->
+  minus: (other) ->
     new Float(@to_native() - RCoerce.to_num_native(other))
 
 
@@ -9544,7 +9531,7 @@ class RubyJS.Float extends RubyJS.Numeric
   to_int:     @prototype.to_i
   truncate:   @prototype.to_i
 
-  '===': @prototype['==']
+  '===': @prototype.equals
   @__add_default_aliases__(@prototype)
 
 
@@ -9820,7 +9807,7 @@ class RubyJS.Time extends RubyJS.Object
       0
 
 
-  '==': (other) ->
+  equals: (other) ->
     other = R(other)
     return false unless other.is_time?
     @cmp(other) is 0
@@ -9834,7 +9821,7 @@ class RubyJS.Time extends RubyJS.Object
   # t2 - t             #=> 2592000.0
   # t2 - 2592000       #=> 2007-11-19 08:23:10 -0600
   #
-  '-': (other) ->
+  minus: (other) ->
     throw R.TypeError.new() unless other?
     other = R(other)
 
@@ -9855,7 +9842,7 @@ class RubyJS.Time extends RubyJS.Object
   #     t = Time.now()       #=> 2007-11-19 08:22:21 -0600
   #     t + (60 * 60 * 24)   #=> 2007-11-20 08:22:21 -0600
   #
-  '+': (other) ->
+  plus: (other) ->
     throw R.TypeError.new() unless other?
 
     tpcast = R(other)
@@ -10259,7 +10246,7 @@ class RubyJS.Time extends RubyJS.Object
 
   @__add_default_aliases__(@prototype)
 
-  eql: @prototype['==']
+  eql: @prototype.equals
 
 
 # This file is included at the end of the compiled javascript and
