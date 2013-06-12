@@ -1,7 +1,6 @@
 describe "Array#delete", ->
   it "removes elements that are #== to object", ->
     x =
-      '==': (other) -> R(3).equals other
       equals: (other) -> R(3).equals other
 
     a = R([1, 2, 3, x, 4, 3, 5, x])

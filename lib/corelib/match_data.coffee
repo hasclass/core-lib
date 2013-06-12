@@ -30,11 +30,11 @@ class RubyJS.MatchData extends RubyJS.Object
   #
   # @alias #eql, #equals
   #
-  '==': (other) ->
+  equals: (other) ->
     return false if !other.is_match_data?
 
-    @regexp()['=='](other.regexp()) &&
-      @string()['=='](other.string()) &&
+    @regexp().equals(other.regexp()) &&
+      @string().equals(other.string()) &&
       @__offset__ == other.__offset__
 
 
@@ -84,7 +84,7 @@ class RubyJS.MatchData extends RubyJS.Object
   # @see #==
   #
   eql: (other) ->
-    @['=='](other)
+    @equals(other)
 
   # Match Reference—MatchData acts as an array, and may be accessed using the
   # normal array indexing techniques. mtch is equivalent to the special

@@ -269,7 +269,7 @@ class RubyJS.Time extends RubyJS.Object
       0
 
 
-  '==': (other) ->
+  equals: (other) ->
     other = R(other)
     return false unless other.is_time?
     @cmp(other) is 0
@@ -708,4 +708,4 @@ class RubyJS.Time extends RubyJS.Object
 
   @__add_default_aliases__(@prototype)
 
-  eql: @prototype['==']
+  eql: @prototype.equals

@@ -4,7 +4,7 @@ describe "Numeric#remainder", ->
     @result = {} #mock("Numeric#% result")
     @other  = {} #mock("Passed Object")
     @obj['%'] = ->
-    @result['=='] = ->
+    @result.equals = ->
     @obj['lt'] = ->
     @obj.gt = ->
     @other.gt = ->
@@ -12,7 +12,7 @@ describe "Numeric#remainder", ->
     @result['-'] = ->
   it "returns the result of calling self#% with other if self is 0", ->
     spy1 = spyOn( @obj, '%').andReturn(@result)
-    spy2 = spyOn( @result, '==').andReturn(true)
+    spy2 = spyOn( @result, 'equals').andReturn(true)
 
     # @obj.should_receive(:%).with(@other).and_return(@result)
     # @result.should_receive(:==).with(0).and_return(true)
@@ -25,7 +25,7 @@ describe "Numeric#remainder", ->
 
   it "returns the result of calling self#% with other if self and other are greater than 0", ->
     spy1 = spyOn( @obj, '%').andReturn(@result)
-    spy2 = spyOn( @result, '==').andReturn(false)
+    spy2 = spyOn( @result, 'equals').andReturn(false)
     spy3 = spyOn( @obj, 'lt').andReturn(false)
     spy4 = spyOn( @obj, 'gt').andReturn(true)
     spy5 = spyOn( @other, 'lt').andReturn(false)
@@ -40,7 +40,7 @@ describe "Numeric#remainder", ->
 
   it "returns the result of calling self#% with other if self and other are less than 0", ->
     spy1 = spyOn( @obj,    '%').andReturn(@result)
-    spy2 = spyOn( @result, '==').andReturn(false)
+    spy2 = spyOn( @result, 'equals').andReturn(false)
     spy3 = spyOn( @obj,    'lt').andReturn(true)
     spy4 = spyOn( @other,  'gt').andReturn(false)
     # spy5 = spyOn( @obj,    'gt').andReturn(false)
@@ -56,7 +56,7 @@ describe "Numeric#remainder", ->
 
   it "returns the result of calling self#% with other - other if self is greater than 0 and other is less than 0", ->
     spy1 = spyOn( @obj,    '%').andReturn(@result)
-    spy2 = spyOn( @result, '==').andReturn(false)
+    spy2 = spyOn( @result, 'equals').andReturn(false)
     spy3 = spyOn( @obj,    'lt').andReturn(false)
     spy5 = spyOn( @obj,    'gt').andReturn(true)
     spy6 = spyOn( @other,  'lt').andReturn(true)
@@ -73,7 +73,7 @@ describe "Numeric#remainder", ->
 
   it "returns the result of calling self#% with other - other if self is less than 0 and other is greater than 0", ->
     spy1 = spyOn( @obj,    '%').andReturn(@result)
-    spy2 = spyOn( @result, '==').andReturn(false)
+    spy2 = spyOn( @result, 'equals').andReturn(false)
     spy3 = spyOn( @obj,    'lt').andReturn(true)
     spy5 = spyOn( @other,  'gt').andReturn(true)
     spy7 = spyOn( @result, '-').andReturn(123)

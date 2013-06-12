@@ -21,7 +21,7 @@ describe "String#==", ->
   it "returns obj == self if obj responds to to_str", ->
     obj =
       to_str: -> 'hello'
-      '==': -> true
+      equals: -> true
     # String#== merely checks if #to_str is defined. It does
     # not call it.
     expect(R('hello').equals(obj)).toEqual  true

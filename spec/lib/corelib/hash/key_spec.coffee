@@ -17,5 +17,5 @@ describe "Hash#key", ->
     expect( R.hashify(1: 0.0).key(0) ).toEqual '1'
 
     # TODO:
-    # inhash = {'==': -> true}
+    # inhash = {equals: -> true}
     # expect( R.hashify(1: inhash).key("foo") ).toEqual '1'

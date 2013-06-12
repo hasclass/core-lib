@@ -7,11 +7,11 @@ describe "Array#rindex", ->
   it "returns the first index backwards from the end where element == to object", ->
     key = 3
     uno  =
-      '==': -> throw 'do not go here'
+      equals: -> throw 'do not go here'
     dos  =
-      '==': -> true
+      equals: -> true
     tres =
-      '==': -> false
+      equals: -> false
     ary = R [uno, dos, tres]
 
     expect( ary.rindex(key) ).toEqual R(1)

@@ -31,7 +31,6 @@ describe "Array#==", ->
     # expect( a.equals(b) ).toEqual false
 
     c =
-      '==': -> false
       equals: -> false
     expect( R(["a", "b", c]).equals a).toEqual false
 
@@ -43,7 +42,6 @@ describe "Array#==", ->
     expect( R([1, 2, 3]).equals [1.0, 2.0, 3.0]).toEqual true
 
     obj =
-      "==": -> true
       equals: -> true
     expect( R([obj]).equals [5] ).toEqual true
 

@@ -50,7 +50,7 @@ class NumericMethods
   #   other = @box(other)
   #   mod = @['%'](other)
 
-  #   if !mod['=='](0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
+  #   if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
   #     mod['-'](other)
   #   else
   #     mod

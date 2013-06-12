@@ -6,7 +6,7 @@ describe 'ruby_version_is "1.8.8"', ->
 
     xit "returns the pattern used in the match", ->
       m = R('haystack').match(/hay/)
-      expect( m.regexp()['=='](/hay/) ).toEqual true
+      expect( m.regexp().equals(/hay/) ).toEqual true
 
   describe "MatchData#regexp", ->
     it "returns a Regexp object", ->
@@ -15,5 +15,5 @@ describe 'ruby_version_is "1.8.8"', ->
 
     it "returns the pattern used in the match", ->
       m = R(/hay/).match('haystack')
-      expect( m.regexp()['=='](/hay/) ).toEqual true
+      expect( m.regexp().equals(/hay/) ).toEqual true
 

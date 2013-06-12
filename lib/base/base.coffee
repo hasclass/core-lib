@@ -178,15 +178,15 @@ class RubyJS.Base
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
-      else if a['==']?
-        a['=='](b)
+      else if a.equals?
+        a.equals(b)
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
-      else if b['==']?
-        b['=='](a)
+      else if b.equals?
+        b.equals(a)
       else
         false
     else
@@ -220,15 +220,15 @@ class RubyJS.Base
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
-      else if a['==']?
-        a['=='](b)
+      else if a.equals?
+        a.equals(b)
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
-      else if b['==']?
-        b['=='](a)
+      else if b.equals?
+        b.equals(a)
       else
         false
     else

@@ -26,7 +26,7 @@ class RubyJS.Object
   #
   @__add_default_aliases__: (proto) ->
     proto.append     = proto['<<']  if proto['<<']?
-    proto.equals     = proto['==']  if proto['==']?
+    proto.equals     = proto.equals  if proto.equals?
     proto.equal_case = proto['==='] if proto['===']?
     proto.modulo     = proto['%']   if proto['%']?
     proto.plus       = proto['+']   if proto['+']?

@@ -55,9 +55,9 @@ class RubyJS.Range extends RubyJS.Object
   # @alias #equals
   # @return true, false
   #
-  '==': (other) ->
+  equals: (other) ->
     return false unless other instanceof R.Range
-    @__end__['=='](other.end()) and @__start__['=='](other.start()) and @exclusive is other.exclude_end()
+    @__end__.equals(other.end()) and @__start__.equals(other.start()) and @exclusive is other.exclude_end()
 
   # Returns true only if obj is a Range, has equivalent beginning and end items
   # (by comparing them with ==), and has the same exclude_end? setting as rng.
@@ -70,7 +70,7 @@ class RubyJS.Range extends RubyJS.Object
   # @alias #equals
   # @return true, false
   #
-  equals: @prototype['==']
+  equals: @prototype.equals
 
   # Returns the first object in rng
   #
@@ -281,7 +281,7 @@ class RubyJS.Range extends RubyJS.Object
   @__add_default_aliases__(@prototype)
 
   # @alias #==
-  eql:        @prototype['==']
+  eql:        @prototype.equals
 
   # @alias #===
   include:    @prototype['===']

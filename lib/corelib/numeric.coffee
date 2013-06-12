@@ -146,7 +146,7 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     return false unless other
     return false unless @__proto__ is other.__proto__
-    if @['=='](other) then true else false
+    if @equals(other) then true else false
 
 
   # @return [R.String]
@@ -223,7 +223,7 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     mod = @['%'](other)
 
-    if !mod['=='](0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
+    if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
       mod['-'](other)
     else
       mod
@@ -296,6 +296,6 @@ class RubyJS.Numeric extends RubyJS.Object
   #
   # @return [Boolean]
   zero: ->
-    @['=='](0)
+    @equals(0)
 
 

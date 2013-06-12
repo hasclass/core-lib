@@ -1,7 +1,7 @@
 describe "Hash#eql?", ->
   it "does not compare values when keys don't match", ->
     value = {
-      '==': -> throw "should not receive"
+      equals: -> throw "should not receive"
       eql:  -> throw "should not receive"
     }
 
@@ -10,7 +10,7 @@ describe "Hash#eql?", ->
 
   xit "returns false when the numbers of keys differ without comparing any elements", ->
     # obj = {
-    #   '==': -> throw "should not receive"
+    #   equals: -> throw "should not receive"
     #   eql:  -> throw "should not receive"
     # }
     # h = R.hashify(obj: obj)

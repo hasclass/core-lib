@@ -28,7 +28,7 @@ describe "String#==", ->
   it "returns obj == self if obj responds to to_str", ->
     obj =
       to_str: -> throw 'should not be called'
-      '==': -> true
+      equals: -> true
 
     # String#== merely checks if #to_str is defined. It does
     # not call it.

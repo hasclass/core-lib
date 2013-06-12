@@ -68,10 +68,10 @@ class RubyJS.Regexp extends RubyJS.Object
   #
   # @example Basics (wrong online doc in ruby-doc.org)
   #
-  #     R(/abc/)['=='](/abc/)   #=> false
-  #     R(/abc/)['=='](/abc/)   #=> false
-  #     R(/abc/)['=='](/abc/)   #=> false
-  #     R(/abc/)['=='](/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
+  #     R(/abc/).equals(/abc/)   #=> false
   #
   # @example aliased by #equals
   #
@@ -80,7 +80,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #
   # @alias #equals, #eql
   #
-  '==': (other) ->
+  equals: (other) ->
     other = R(other)
     (other.to_native().source is @to_native().source) and (other.casefold() is @casefold())
 
@@ -124,7 +124,7 @@ class RubyJS.Regexp extends RubyJS.Object
 
 
   # @alias to #==
-  eql: -> @['=='].apply(this, arguments)
+  eql: -> @equals.apply(this, arguments)
 
 
   # @unsupported currently no support for encodings in RubyJS

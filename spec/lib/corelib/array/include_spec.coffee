@@ -5,11 +5,11 @@ describe "Array#include?", ->
 
   it "determines presence by using element == obj", ->
     o = {}
-    o['=='] = -> false
+    o.equals = -> false
     expect( R([1, 2, "a", "b"]).include(o) ).toEqual false
 
     obj = {}
-    obj['=='] = (other) -> other == 'a'
+    obj.equals = (other) -> other == 'a'
 
     expect( R([1, 2, obj, "b"]).include('a')).toEqual true
     expect( R([1, 2.0, 3]).include(2) ).toEqual true

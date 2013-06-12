@@ -52,7 +52,7 @@ class RubyJS.Float extends RubyJS.Numeric
     return  1 if @to_native() > other
 
 
-  '==': (other) ->
+  equals: (other) ->
     other = @box(other)
     @to_native() is other.to_native()
 
@@ -329,6 +329,6 @@ class RubyJS.Float extends RubyJS.Numeric
   to_int:     @prototype.to_i
   truncate:   @prototype.to_i
 
-  '===': @prototype['==']
+  '===': @prototype.equals
   @__add_default_aliases__(@prototype)
 

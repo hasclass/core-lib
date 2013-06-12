@@ -11,9 +11,9 @@ describe "Numeric#eql?", ->
 
   it "returns the result of calling self#== with other when self's and other's types match", ->
     other = NumericSpecs.Subclass.new()
-    @obj['=='] = -> 'result'
+    @obj.equals = -> 'result'
     # @obj.should_receive(:==).with(other).and_return("result", nil)
     expect( @obj.eql(other) ).toEqual true
 
-    @obj['=='] = -> null
+    @obj.equals = -> null
     expect( @obj.eql(other) ).toEqual false

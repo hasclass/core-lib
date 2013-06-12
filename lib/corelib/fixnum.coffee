@@ -58,9 +58,9 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   # @alias #equals
   #
-  '==': (other) ->
+  equals: (other) ->
     if !R(other).is_fixnum?
-      R(other)['=='](this)
+      R(other).equals(this)
     else
       @cmp(other) == 0
 
@@ -70,7 +70,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #     1 == 2      #=> false
   #     1 == 1.0    #=> true
   #
-  '===': @prototype['==']
+  '===': @prototype.equals
 
 
   # Returns -1, 0, +1 or nil depending on whether fix is less

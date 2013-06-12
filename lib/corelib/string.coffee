@@ -147,13 +147,13 @@ class RubyJS.String extends RubyJS.Object
   #
   # @alias #equals
   #
-  '==': (other) ->
+  equals: (other) ->
     if other.is_string?
       @to_native() == other.to_native()
     else if String.isString(other)
       @to_native() == other
     else if other.to_str?
-      other['=='] @to_native()
+      other.equals @to_native()
     else
       false
 

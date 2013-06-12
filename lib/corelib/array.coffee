@@ -14,7 +14,7 @@
 #      R(["a", "c", 7]).equals(["a", "c", 7])     #=> true
 #      R(["a", "c", 7]).equals(["a", "d", "f"])   #=> false
 #      # #equals is an alias to #==
-#      R(["a", "c"]   )['=='](["a", "c", 7])     #=> false
+#      R(["a", "c"]   ).equals(["a", "c", 7])     #=> false
 #   @return [Boolean]
 #   @alias #==
 #
@@ -198,7 +198,7 @@ class RubyJS.Array extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
-  '==': (other) ->
+  equals: (other) ->
     other = R(other)
     unless other.is_array?
       return false unless other.to_ary?

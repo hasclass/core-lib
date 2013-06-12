@@ -10,7 +10,7 @@ class ArrayMethods extends EnumerableMethods
 
     unless RArray.isNativeArray(other)
       return false unless other.to_ary?
-      # return other['=='] arr
+      # return other.equals arr
 
     return false unless arr.length is other.length
 
