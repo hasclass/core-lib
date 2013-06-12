@@ -26,9 +26,10 @@ class NumericMethods
   downto: (num, stop, block) ->
     stop = Math.ceil(stop)
 
-    while num >= stop
-      block( num )
-      num -= 1
+    idx = num
+    while idx >= stop
+      block( idx )
+      idx -= 1
 
     num
 
