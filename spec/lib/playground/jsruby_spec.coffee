@@ -1,11 +1,12 @@
-class FooString extends RubyJS.String
-  constructor: (@data) ->
-    super(@data)
-  valueOf:  ->  @data
-  toString: -> @data
 
 
 describe "RubyJS", ->
+  class FooString extends RubyJS.String
+    constructor: (@data) ->
+      super(@data)
+    valueOf:  ->  @data
+    toString: -> @data
+
   it "R exists", ->
     expect(R).toBeDefined
 

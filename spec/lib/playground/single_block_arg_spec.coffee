@@ -1,7 +1,8 @@
 
-R.args = R.RCoerce.single_block_args
 
 describe "RubyJS.single_block_arg", ->
+  R.args = R.RCoerce.single_block_args
+
   describe "R.args", ->
     a = 'a'
     b = 'b'

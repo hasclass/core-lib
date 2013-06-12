@@ -1,5 +1,3 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-
 describe "1.9", ->
   describe "Time#tuesday?", ->
     it "returns true if time represents Tuesday", ->

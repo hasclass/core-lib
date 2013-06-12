@@ -1,0 +1,5 @@
+require('./ruby.js')
+require('./corelib/string/fixtures/classes.js')
+require('./corelib/numeric/fixtures/classes.js')
+require('./corelib/enumerable/fixtures/classes.js')
+require('./corelib/time/fixtures/classes.js')
