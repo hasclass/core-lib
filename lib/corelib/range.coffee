@@ -23,7 +23,7 @@ class RubyJS.Range extends RubyJS.Object
       catch err
         throw R.ArgumentError.new()
 
-    @comparison = if @exclusive then '<' else '<='
+    @comparison = if @exclusive then 'lt' else '<='
 
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -178,7 +178,7 @@ class RubyJS.Range extends RubyJS.Object
     return R.Enumerable.prototype.min.call(this, block) if block?.call?
     b = @begin()
     e = @end()
-    return null if e['<'](b) || (@exclusive && e.equals(b))
+    return null if e['lt'](b) || (@exclusive && e.equals(b))
     return b.valueOf() if b.is_float?
     R.Enumerable.prototype.min.call(this)
 
@@ -194,7 +194,7 @@ class RubyJS.Range extends RubyJS.Object
     return R.Enumerable.prototype.max.call(this, block) if block?.call?
     b = @begin()
     e = @end()
-    return null if e['<'](b) || (@exclusive && e.equals(b))
+    return null if e['lt'](b) || (@exclusive && e.equals(b))
     return e.valueOf() if e.is_float? || (e.is_float? && !@exclusive)
     R.Enumerable.prototype.max.call(this)
 
@@ -242,7 +242,7 @@ class RubyJS.Range extends RubyJS.Object
       throw R.ArgumentError.new() # step can't be negative or zero
 
     cnt = first
-    cmp = if @exclude_end() then '<' else '<='
+    cmp = if @exclude_end() then 'lt' else '<='
     if first.is_float?
       # TODO: add float math error check
       while cnt[cmp](last)
@@ -260,6 +260,7 @@ class RubyJS.Range extends RubyJS.Object
         cnt += 1
 
     this
+
 
   to_a: () ->
     throw R.TypeError.new() if @__end__.is_float? && @__start__.is_float?

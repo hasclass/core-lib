@@ -8,7 +8,7 @@
 #
 class RubyJS.Comparable
 
-  '<': (other) ->
+  lt: (other) ->
     cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp < 0
@@ -73,7 +73,6 @@ class RubyJS.Comparable
 
 
   # aliases
-  lt:   @prototype['<']
   lteq: @prototype['<=']
   gt:   @prototype['>']
   gteq: @prototype['>=']

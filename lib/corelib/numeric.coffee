@@ -57,7 +57,7 @@ class RubyJS.Numeric extends RubyJS.Object
   # @return [R.Numeric]
   #
   abs: ->
-    if @['<'](0) then @uminus() else this
+    if @lt(0) then @uminus() else this
 
 
   # Returns square of self.
@@ -223,7 +223,7 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     mod = @['%'](other)
 
-    if !mod['=='](0) and ((@['<'](0) && other['>'](0)) or (@['>'](0) && other['<'](0)))
+    if !mod['=='](0) and ((@lt(0) && other['>'](0)) or (@['>'](0) && other['lt'](0)))
       mod['-'](other)
     else
       mod

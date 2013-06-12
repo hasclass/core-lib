@@ -48,7 +48,7 @@ describe "Time#cmp", ->
         t = R.Time.now()
         r =
           '>': -> false
-          '<': -> true
+          lt: -> true
         obj =
           cmp: -> r
         expect(t.cmp(obj)).toEqual 1
@@ -57,7 +57,7 @@ describe "Time#cmp", ->
         t = R.Time.now()
         r =
           '>': -> false
-          '<': -> false
+          lt: -> false
         obj =
           cmp: -> r
         expect(t.cmp(obj)).toEqual 0
