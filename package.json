@@ -27,6 +27,6 @@
     }
   ],
   "scripts": {
-
+      "test": "jasmine-node spec"
   }
 }
