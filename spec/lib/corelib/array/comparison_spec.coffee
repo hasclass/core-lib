@@ -82,7 +82,7 @@ describe "Array#<=>", ->
   it "tries to convert the passed argument to an Array using #to_ary", ->
     obj =
       to_ary: -> R([1, 2, 3])
-    expect( R([4, 5])["<=>"] obj).toEqual (R([4, 5])['<=>'] obj.to_ary())
+    expect( R([4, 5])['<=>'] obj).toEqual (R([4, 5])['<=>'] obj.to_ary())
 
   # it "does not call #to_ary on Array subclasses", ->
   #   obj = ArraySpecs.ToAryArray[5, 6, 7]

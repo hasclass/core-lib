@@ -1,10 +1,8 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
 
-appFiles  = [
-  # omit src/ and .coffee to make the below lines a little shorter
-  'ruby'
 
+liteFiles = [
   'base/aliases'
   'base/block'
   'base/breaker'
@@ -18,7 +16,9 @@ appFiles  = [
   'lite/arr'
   'lite/str'
   'lite/hsh'
+]
 
+chainFiles = [
   'corelib/object'
   'corelib/coerce'
   'corelib/comparable'
@@ -40,9 +40,9 @@ appFiles  = [
   'corelib/float'
 
   'corelib/time'
-
-  'boot'
 ]
+
+appFiles = ['ruby'].concat(liteFiles).concat(chainFiles).concat(['boot'])
 
 task 'stats', '', ->
   require './lib/rubyjs'
