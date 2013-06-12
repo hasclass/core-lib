@@ -106,9 +106,10 @@ class NumericMethods
   upto: (num, stop, block) ->
     stop = Math.floor(stop)
 
-    while num <= stop
-      block( num ) #for i in [@to_native()..stop]
-      num += 1
+    idx = num
+    while idx <= stop
+      block( idx )
+      idx += 1
 
     num
 
@@ -221,7 +222,7 @@ class NumericMethods
   round: (num, n) ->
     return num if n is undefined
 
-    multiplier = Math.pow(10, n)
+    multiplier = Math.pow(10, __int(n))
     Math.round(num * multiplier) / multiplier
 
 
