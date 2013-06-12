@@ -98,7 +98,6 @@ class Block
     else
       block
 
-
 # @private
 class BlockArgs
   constructor: (@block, @thisArg) ->
@@ -469,7 +468,7 @@ class RubyJS.Base
   # TODO: TEST
   pollute_global: (prefix = "_") ->
     if arguments.length is 0
-      args = ['w', 'fn', '_str', '_arr', '_itr', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
+      args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
     else
       args = arguments
 
@@ -829,9 +828,10 @@ class NumericMethods
   downto: (num, stop, block) ->
     stop = Math.ceil(stop)
 
-    while num >= stop
-      block( num )
-      num -= 1
+    idx = num
+    while idx >= stop
+      block( idx )
+      idx -= 1
 
     num
 
@@ -909,9 +909,10 @@ class NumericMethods
   upto: (num, stop, block) ->
     stop = Math.floor(stop)
 
-    while num <= stop
-      block( num ) #for i in [@to_native()..stop]
-      num += 1
+    idx = num
+    while idx <= stop
+      block( idx )
+      idx += 1
 
     num
 
@@ -1024,7 +1025,7 @@ class NumericMethods
   round: (num, n) ->
     return num if n is undefined
 
-    multiplier = Math.pow(10, n)
+    multiplier = Math.pow(10, __int(n))
     Math.round(num * multiplier) / multiplier
 
 
@@ -5513,7 +5514,6 @@ class RubyJS.Array extends RubyJS.Object
 
 
   # ---- Aliases --------------------------------------------------------------
-
 
   @__add_default_aliases__(@prototype)
 

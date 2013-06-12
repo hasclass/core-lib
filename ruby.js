@@ -502,7 +502,7 @@ http://www.rubyjs.org/LICENSE.txt
         prefix = "_";
       }
       if (arguments.length === 0) {
-        args = ['w', 'fn', '_str', '_arr', '_itr', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
+        args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
       } else {
         args = arguments;
       }
@@ -926,10 +926,12 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     NumericMethods.prototype.downto = function(num, stop, block) {
+      var idx;
       stop = Math.ceil(stop);
-      while (num >= stop) {
-        block(num);
-        num -= 1;
+      idx = num;
+      while (idx >= stop) {
+        block(idx);
+        idx -= 1;
       }
       return num;
     };
@@ -1002,10 +1004,12 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     NumericMethods.prototype.upto = function(num, stop, block) {
+      var idx;
       stop = Math.floor(stop);
-      while (num <= stop) {
-        block(num);
-        num += 1;
+      idx = num;
+      while (idx <= stop) {
+        block(idx);
+        idx += 1;
       }
       return num;
     };
@@ -1078,7 +1082,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (n === void 0) {
         return num;
       }
-      multiplier = Math.pow(10, n);
+      multiplier = Math.pow(10, __int(n));
       return Math.round(num * multiplier) / multiplier;
     };
 
