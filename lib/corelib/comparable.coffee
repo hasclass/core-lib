@@ -23,7 +23,7 @@ class RubyJS.Comparable
     throw R.TypeError.new() if cmp is null
     cmp <= 0
 
-  '>=': (other) ->
+  gteq: (other) ->
     cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp >= 0
@@ -39,7 +39,8 @@ class RubyJS.Comparable
   #     R('gnu').between('ant', 'dog')   # => false
   #
   between: (min, max) ->
-    @['>='](min) and @lteq(max)
+    @gteq(min) and @lteq(max)
+
 
   # Equivalent of calling
   # R(a).cmp(b) but faster for natives.
@@ -73,4 +74,4 @@ class RubyJS.Comparable
 
 
   # aliases
-  gteq: @prototype['>=']
+  gteq: @prototype.gteq
