@@ -32,7 +32,7 @@ describe "Time#<=>", ->
       it "returns nil if argument <=> self returns nil", ->
         t = R.Time.now()
         obj =
-          '<=>': -> null
+          cmp: -> null
         expect(t.cmp(obj)).toEqual null
 
 
@@ -41,7 +41,7 @@ describe "Time#<=>", ->
         r =
           '>': -> true
         obj =
-          '<=>': -> r
+          cmp: -> r
         expect(t.cmp(obj)).toEqual -1
 
       it "returns 1 if argument <=> self is not greater than 0 and is less than 0", ->
@@ -50,7 +50,7 @@ describe "Time#<=>", ->
           '>': -> false
           '<': -> true
         obj =
-          '<=>': -> r
+          cmp: -> r
         expect(t.cmp(obj)).toEqual 1
 
       it "returns 0 if argument <=> self is neither greater than 0 nor less than 0", ->
@@ -59,5 +59,5 @@ describe "Time#<=>", ->
           '>': -> false
           '<': -> false
         obj =
-          '<=>': -> r
+          cmp: -> r
         expect(t.cmp(obj)).toEqual 0

@@ -49,8 +49,8 @@
 #   element is equal to the value of the corresponding element in the other
 #   array.
 #   @example
-#     R([ "a", "a", "c" ]   )['<=>'] [ "a", "b", "c" ]   #=> -1
-#     R([ 1, 2, 3, 4, 5, 6 ])['<=>'] [ 1, 2 ]            #=> +1
+#     R([ "a", "a", "c" ]   )['cmp'] [ "a", "b", "c" ]   #=> -1
+#     R([ 1, 2, 3, 4, 5, 6 ])['cmp'] [ 1, 2 ]            #=> +1
 #   @param [Array] other
 #   @return [R.Array]
 #
@@ -221,7 +221,7 @@ class RubyJS.Array extends RubyJS.Object
 
 
   # @private
-  '<=>': (other) ->
+  cmp: (other) ->
     return null unless other?
     try
       other = RCoerce.to_ary(other)
@@ -235,14 +235,14 @@ class RubyJS.Array extends RubyJS.Object
     total = if other_total.lt(@size()) then other_total else @size()
 
     while total.gt(i)
-      diff = R(@__native__[i])['<=>'] other.__native__[i]
+      diff = R(@__native__[i])['cmp'] other.__native__[i]
       return diff unless diff == 0
       i += 1
 
     # subtle: if we are recursing on that pair, then let's
     # no go any further down into that pair;
     # any difference will be found elsewhere if need be
-    @size()['<=>'] other_total
+    @size()['cmp'] other_total
 
 
   # Returns the element at index. A negative index counts from the end of

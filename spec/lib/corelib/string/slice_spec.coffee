@@ -201,11 +201,11 @@ describe "String#slice with range", ->
 
   it "calls valueOf on range arguments", ->
     from = {
-      '<=>': -> 0,
+      cmp: -> 0,
       valueOf: -> 1
     }
     to =   {
-      '<=>': -> 1,
+      cmp: -> 1,
       valueOf: -> -2
     }
 

@@ -153,7 +153,7 @@ describe "Range#step", ->
 
       xit "calls #succ on begin and each element returned by #succ", ->
         # obj =
-        #   '<=>').exactly(3).times.and_return(-1, -1, -1, 0)
+        #   'cmp').exactly(3).times.and_return(-1, -1, -1, 0)
         # obj.should_receive(:succ).exactly(2).times.and_return(obj)
 
         # acc = []

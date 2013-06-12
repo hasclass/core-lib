@@ -44,5 +44,5 @@ describe "Range.new", ->
 
     b = {}
     a =
-      '<=>': -> null
+      cmp: -> null
     expect( -> R.Range.new(a, b) ).toThrow('ArgumentError')

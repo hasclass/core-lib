@@ -258,7 +258,7 @@ class RubyJS.Time extends RubyJS.Object
   # ---- Javascript primitives --------------------------------------------------
 
 
-  '<=>': (other) ->
+  cmp: (other) ->
     secs = @valueOf()
     other = other.valueOf()
     if secs < other
@@ -268,13 +268,13 @@ class RubyJS.Time extends RubyJS.Object
     else
       0
 
-  cmp: @prototype['<=>']
+  cmp: @prototype['cmp']
 
 
   '==': (other) ->
     other = R(other)
     return false unless other.is_time?
-    @['<=>'](other) is 0
+    @['cmp'](other) is 0
 
 
   # Difference—Returns a new time that represents the difference between two

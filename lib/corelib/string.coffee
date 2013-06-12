@@ -126,10 +126,10 @@ class RubyJS.String extends RubyJS.Object
   #
   # @alias #cmp
   #
-  '<=>': (other) ->
+  cmp: (other) ->
     other = R(other)
     return null unless other.to_str?
-    return null unless other['<=>']?
+    return null unless other['cmp']?
 
     if other.is_string?
       other = other.to_native()
@@ -140,7 +140,7 @@ class RubyJS.String extends RubyJS.Object
       else
         1
     else
-      - other['<=>'](this)
+      - other['cmp'](this)
 
   # Equality—If obj is not a String, returns false. Otherwise, returns true if
   # str <=> obj returns zero.
@@ -540,7 +540,7 @@ class RubyJS.String extends RubyJS.Object
   # @return true/false
   #
   eql: (other) ->
-    @['<=>'](other) is 0
+    @['cmp'](other) is 0
 
 
   #equal?

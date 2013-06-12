@@ -43,7 +43,7 @@ class RubyJS.Numeric extends RubyJS.Object
 
   # ---- Instance methods -----------------------------------------------------
 
-  '<=>': (other) ->
+  cmp: (other) ->
     if this is other then 0 else null
 
 

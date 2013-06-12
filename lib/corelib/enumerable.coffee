@@ -411,7 +411,7 @@ class RubyJS.Enumerable
   #     a = R.w('albatross dog horse')
   #     a.max()                                #=> "horse"
   #     # Not recommended at the moment:
-  #     a.max (a,b) -> R(a.length)['<=>'] b.length }   #=> "albatross"
+  #     a.max (a,b) -> R(a.length).cmp b.length }   #=> "albatross"
   #
   max: (block) ->
     _itr.max(this, block)
@@ -438,7 +438,7 @@ class RubyJS.Enumerable
   #     a = R.w('albatross dog horse')
   #     a.min()                                  #=> "albatross"
   #     # Not recommended at the moment:
-  #     a.min (a,b) -> R(a.length)['<=>'] b.length }   #=> "dog"
+  #     a.min (a,b) -> R(a.length).cmp b.length }   #=> "dog"
   #
   min: (block) ->
     _itr.min(this, block)
@@ -649,8 +649,8 @@ class RubyJS.Enumerable
 class RubyJS.Enumerable.SortedElement
   constructor: (@value, @sort_by) ->
 
-  '<=>': (other) ->
-    @sort_by?['<=>'](other.sort_by)
+  cmp: (other) ->
+    @sort_by?.cmp(other.sort_by)
 
 
 

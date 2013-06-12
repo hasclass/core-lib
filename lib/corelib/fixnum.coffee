@@ -62,7 +62,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     if !R(other).is_fixnum?
       R(other)['=='](this)
     else
-      @['<=>'](other) == 0
+      @['cmp'](other) == 0
 
   # Return true if fix equals other numerically.
   #
@@ -77,7 +77,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # than, equal to, or greater than numeric. This is the basis for the
   # tests in Comparable.
   #
-  '<=>': (other) ->
+  cmp: (other) ->
     unless typeof other is 'number'
       other = R(other)
       return null                  unless other.is_numeric?

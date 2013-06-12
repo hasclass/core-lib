@@ -43,7 +43,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # ---- Instance methods -----------------------------------------------------
 
 
-  '<=>': (other) ->
+  cmp: (other) ->
     return null if !@box(other).is_numeric?
     other = RCoerce.to_num_native(other)
 

@@ -584,8 +584,8 @@ class EnumerableMethods
 class SortedElement
   constructor: (@value, @sort_by) ->
 
-  '<=>': (other) ->
-    @sort_by?['<=>'](other.sort_by)
+  cmp: (other) ->
+    @sort_by?['cmp'](other.sort_by)
 
 
 _itr = R._itr = new EnumerableMethods()

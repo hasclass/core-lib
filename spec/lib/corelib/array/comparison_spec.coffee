@@ -13,24 +13,24 @@ describe "Array#<=>", ->
     #   (lhs <=> rhs).should == result
 
   it "returns 0 if the arrays are equal", ->
-    expect( R([])['<=>'] []).toEqual  0
-    expect( R([1, 2, 3, 4, 5, 6])['<=>'] [1, 2, 3, 4, 5.0, 6.0]).toEqual  0
+    expect( R([])['cmp'] []).toEqual  0
+    expect( R([1, 2, 3, 4, 5, 6])['cmp'] [1, 2, 3, 4, 5.0, 6.0]).toEqual  0
 
   it "returns -1 if the array is shorter than the other array", ->
-    expect( R([])['<=>'] [1]).toEqual -1
-    expect( R([1, 1])['<=>'] [1, 1, 1]).toEqual -1
+    expect( R([])['cmp'] [1]).toEqual -1
+    expect( R([1, 1])['cmp'] [1, 1, 1]).toEqual -1
 
   it "returns +1 if the array is longer than the other array", ->
-    expect( R([1])['<=>'] []).toEqual +1
-    expect( R([1, 1, 1])['<=>'] [1, 1]).toEqual +1
+    expect( R([1])['cmp'] []).toEqual +1
+    expect( R([1, 1, 1])['cmp'] [1, 1]).toEqual +1
 
   it "returns -1 if the other array has a higher number", ->
-    expect( R([1])['<=>'] [2]).toEqual -1
-    expect( R([1, 1, 1])['<=>'] [1, 1, 2]).toEqual -1
+    expect( R([1])['cmp'] [2]).toEqual -1
+    expect( R([1, 1, 1])['cmp'] [1, 1, 2]).toEqual -1
 
   it "returns +1 if the other array has a lower number", ->
-    expect( R([1])['<=>'] [0]).toEqual +1
-    expect( R([1, 1, 1])['<=>'] [1, 1, 0]).toEqual +1
+    expect( R([1])['cmp'] [0]).toEqual +1
+    expect( R([1, 1, 1])['cmp'] [1, 1, 0]).toEqual +1
 
   # it "returns -1 if the arrays have same length and a pair of corresponding elements returns -1 for <=>", ->
   #   eq_l = mock('an object equal to the other')
@@ -82,7 +82,7 @@ describe "Array#<=>", ->
   it "tries to convert the passed argument to an Array using #to_ary", ->
     obj =
       to_ary: -> R([1, 2, 3])
-    expect( R([4, 5])['<=>'] obj).toEqual (R([4, 5])['<=>'] obj.to_ary())
+    expect( R([4, 5])['cmp'] obj).toEqual (R([4, 5])['cmp'] obj.to_ary())
 
   # it "does not call #to_ary on Array subclasses", ->
   #   obj = ArraySpecs.ToAryArray[5, 6, 7]
@@ -91,4 +91,4 @@ describe "Array#<=>", ->
 
   # ruby_bug "redmine:2276", "1.9.1", ->
   it "returns nil when the argument is not array-like", ->
-    expect(R([])['<=>'] false).toEqual null
+    expect(R([])['cmp'] false).toEqual null

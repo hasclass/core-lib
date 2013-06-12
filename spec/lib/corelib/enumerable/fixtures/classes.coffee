@@ -73,8 +73,8 @@ class EnumerableSpecs.ComparesByVowelCount
     all_vowels = ['a', 'e' , 'i' , 'o', 'u']
     @vowels = R(@value.replace(/[^aeiou]/g,'').length)
 
-  '<=>': (other) ->
-    @vowels['<=>'] other.vowels
+  cmp: (other) ->
+    @vowels['cmp'] other.vowels
 
   unbox: -> @value
   to_native: -> @value

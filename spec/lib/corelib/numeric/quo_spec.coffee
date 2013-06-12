@@ -21,10 +21,10 @@ describe "Numeric#quo", ->
 
     it "returns the result of calling self#/ with other", ->
       obj = NumericSpecs.Subclass.new()
-      obj['<=>'] = ->
+      obj['cmp'] = ->
       obj['/'] = ->
       spy1 = spyOn(obj, 'coerce').andReturn(R [19, 19])
-      spy2 = spyOn(obj, '<=>').andReturn(1)
+      spy2 = spyOn(obj, 'cmp').andReturn(1)
       spy3 = spyOn(obj, '/').andReturn(20)
 
       # obj.should_receive(:coerce).twice.and_return([19,19])

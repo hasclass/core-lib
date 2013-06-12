@@ -37,7 +37,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   # @private
-  '<=>': (other) ->
+  cmp: (other) ->
     # TODO
 
 

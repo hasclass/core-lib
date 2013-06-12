@@ -34,8 +34,8 @@ describe 'ruby_version_is "1.8.7"', ->
         ).toThrow()
 
     it "return the minimun when using a block rule", ->
-      expect( @enum.minmax( (a,b) -> b['<=>'] a )               ).toEqual R.$Array_r([10, 4])
-      expect( @strs.minmax( (a,b) -> a.size()['<=>'] b.size() ) ).toEqual R.$Array_r(["2", "55555"])
+      expect( @enum.minmax( (a,b) -> b['cmp'] a )               ).toEqual R.$Array_r([10, 4])
+      expect( @strs.minmax( (a,b) -> a.size()['cmp'] b.size() ) ).toEqual R.$Array_r(["2", "55555"])
 
     it "gathers whole arrays as elements when each yields multiple", ->
       # multi = EnumerableSpecs.YieldsMulti.new

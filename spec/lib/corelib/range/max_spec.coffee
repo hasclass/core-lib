@@ -49,5 +49,5 @@ describe 'ruby_version_is "1.8.7"', ->
       expect( R.Range.new(1, 3).max (a,b) -> -3 ).toEqual 1
 
     it "returns nil when the endpoint is less than the start point", ->
-      expect( R.Range.new(100, 10 ).max (x,y) -> x['<=>'](y) ).toEqual null
-      expect( R.Range.new('z', 'l').max (x,y) -> x['<=>'](y) ).toEqual null
+      expect( R.Range.new(100, 10 ).max (x,y) -> x['cmp'](y) ).toEqual null
+      expect( R.Range.new('z', 'l').max (x,y) -> x['cmp'](y) ).toEqual null

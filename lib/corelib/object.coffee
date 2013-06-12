@@ -28,7 +28,7 @@ class RubyJS.Object
     proto.append     = proto['<<']  if proto['<<']?
     proto.equals     = proto['==']  if proto['==']?
     proto.equal_case = proto['==='] if proto['===']?
-    proto.cmp        = proto['<=>'] if proto['<=>']?
+    proto.cmp        = proto['cmp'] if proto['cmp']?
     proto.modulo     = proto['%']   if proto['%']?
     proto.plus       = proto['+']   if proto['+']?
     proto.minus      = proto['-']   if proto['-']?

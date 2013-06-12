@@ -51,12 +51,12 @@ describe "String#<=>", ->
   it "calls #to_str to convert the argument to a String and calls #<=> to compare with self", ->
     obj =
       to_str: -> throw 'do not call this'
-      '<=>': -> 1
+      cmp: -> 1
     # String#<=> merely checks if #to_str is defined on the object. It
     # does not call the method.
 
     # obj.stub!(:to_str)
 
-    spy = spyOn(obj, '<=>').andReturn(1)
+    spy = spyOn(obj, 'cmp').andReturn(1)
     expect( R("abc").cmp(obj) ).toEqual -1
     expect( spy ).wasCalled()

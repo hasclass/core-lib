@@ -46,22 +46,22 @@ describe "Enumerable#min", ->
     expect( -> EnumerableSpecs.Numerous.new(11,12,22,33).min () -> null ).toThrow("ArgumentError")
 
   it "return the minimun when using a block rule", ->
-    expect( EnumerableSpecs.Numerous.new("2","33","4","11").min (a,b) -> a['<=>'] b ).toEqual R("11")
-    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).min (a,b) -> a['<=>'] b ).toEqual R(2)
+    expect( EnumerableSpecs.Numerous.new("2","33","4","11").min (a,b) -> a['cmp'] b ).toEqual R("11")
+    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).min (a,b) -> a['cmp'] b ).toEqual R(2)
 
-    expect( EnumerableSpecs.Numerous.new("2","33","4","11").min (a,b) -> b['<=>'] a ).toEqual R("4")
-    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).min (a,b) -> b['<=>'] a ).toEqual R(33)
+    expect( EnumerableSpecs.Numerous.new("2","33","4","11").min (a,b) -> b['cmp'] a ).toEqual R("4")
+    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).min (a,b) -> b['cmp'] a ).toEqual R(33)
 
     expect( EnumerableSpecs.Numerous.new( 1, 2, 3, 4 ).min  (a,b) -> 15 ).toEqual R( 1)
     expect( EnumerableSpecs.Numerous.new(11,12,22,33).min (a, b) -> 2 ).toEqual R(11)
     i = -2
     expect( EnumerableSpecs.Numerous.new(11,12,22,33).min (a, b) -> i += 1 ).toEqual R(12)
 
-    expect( @e_strs.min (a,b) -> a.size()['<=>'] b.size() ).toEqual R("1")
-    expect( @e_strs.min (a,b) -> a['<=>'] b               ).toEqual R("1")
-    expect( @e_strs.min (a,b) -> a.to_i()['<=>'] b.to_i() ).toEqual R("1")
-    expect( @e_ints.min (a,b) -> a['<=>'] b               ).toEqual R(22)
-    expect( @e_ints.min (a,b) -> a.to_s()['<=>'] b.to_s() ).toEqual R(1010101010)
+    expect( @e_strs.min (a,b) -> a.size()['cmp'] b.size() ).toEqual R("1")
+    expect( @e_strs.min (a,b) -> a['cmp'] b               ).toEqual R("1")
+    expect( @e_strs.min (a,b) -> a.to_i()['cmp'] b.to_i() ).toEqual R("1")
+    expect( @e_ints.min (a,b) -> a['cmp'] b               ).toEqual R(22)
+    expect( @e_ints.min (a,b) -> a.to_s()['cmp'] b.to_s() ).toEqual R(1010101010)
 
   xit "returns the minimum for enumerables that contain nils", ->
     # arr = EnumerableSpecs.Numerous.new(nil, nil, true)
