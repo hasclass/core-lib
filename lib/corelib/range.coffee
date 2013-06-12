@@ -23,7 +23,7 @@ class RubyJS.Range extends RubyJS.Object
       catch err
         throw R.ArgumentError.new()
 
-    @comparison = if @exclusive then 'lt' else '<='
+    @comparison = if @exclusive then 'lt' else 'lteq'
 
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -242,7 +242,7 @@ class RubyJS.Range extends RubyJS.Object
       throw R.ArgumentError.new() # step can't be negative or zero
 
     cnt = first
-    cmp = if @exclude_end() then 'lt' else '<='
+    cmp = if @exclude_end() then 'lt' else 'lteq'
     if first.is_float?
       # TODO: add float math error check
       while cnt[cmp](last)

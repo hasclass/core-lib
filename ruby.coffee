@@ -3392,7 +3392,7 @@ class RubyJS.Comparable
     throw R.TypeError.new() if cmp is null
     cmp > 0
 
-  '<=': (other) ->
+  lteq: (other) ->
     cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp <= 0
@@ -3413,7 +3413,7 @@ class RubyJS.Comparable
   #     R('gnu').between('ant', 'dog')   # => false
   #
   between: (min, max) ->
-    @['>='](min) and @['<='](max)
+    @['>='](min) and @lteq(max)
 
   # Equivalent of calling
   # R(a).cmp(b) but faster for natives.
@@ -3447,7 +3447,6 @@ class RubyJS.Comparable
 
 
   # aliases
-  lteq: @prototype['<=']
   gteq: @prototype['>=']
 
 # Enumerable is a module of iterator methods that all rely on #each for
@@ -6083,7 +6082,7 @@ class RubyJS.Range extends RubyJS.Object
       catch err
         throw R.ArgumentError.new()
 
-    @comparison = if @exclusive then 'lt' else '<='
+    @comparison = if @exclusive then 'lt' else 'lteq'
 
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -6302,7 +6301,7 @@ class RubyJS.Range extends RubyJS.Object
       throw R.ArgumentError.new() # step can't be negative or zero
 
     cnt = first
-    cmp = if @exclude_end() then 'lt' else '<='
+    cmp = if @exclude_end() then 'lt' else 'lteq'
     if first.is_float?
       # TODO: add float math error check
       while cnt[cmp](last)

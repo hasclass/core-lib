@@ -4037,7 +4037,7 @@ http://www.rubyjs.org/LICENSE.txt
       return cmp > 0;
     };
 
-    Comparable.prototype['<='] = function(other) {
+    Comparable.prototype.lteq = function(other) {
       var cmp;
       cmp = this.cmp(other);
       if (cmp === null) {
@@ -4056,7 +4056,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Comparable.prototype.between = function(min, max) {
-      return this['>='](min) && this['<='](max);
+      return this['>='](min) && this.lteq(max);
     };
 
     Comparable.cmp = function(a, b) {
@@ -4103,8 +4103,6 @@ http://www.rubyjs.org/LICENSE.txt
         return cmp;
       }
     };
-
-    Comparable.prototype.lteq = Comparable.prototype['<='];
 
     Comparable.prototype.gteq = Comparable.prototype['>='];
 
@@ -5770,7 +5768,7 @@ http://www.rubyjs.org/LICENSE.txt
           throw R.ArgumentError["new"]();
         }
       }
-      this.comparison = this.exclusive ? 'lt' : '<=';
+      this.comparison = this.exclusive ? 'lt' : 'lteq';
     }
 
     Range.prototype.is_range = function() {
@@ -5922,7 +5920,7 @@ http://www.rubyjs.org/LICENSE.txt
         throw R.ArgumentError["new"]();
       }
       cnt = first;
-      cmp = this.exclude_end() ? 'lt' : '<=';
+      cmp = this.exclude_end() ? 'lt' : 'lteq';
       if (first.is_float != null) {
         while (cnt[cmp](last)) {
           block(cnt.valueOf());
