@@ -1,4 +1,4 @@
-describe "String#<=> with String", ->
+describe "String#cmp with String", ->
   xit "compares individual characters based on their ascii value", ->
     # TODO
     # ascii_order = Array.new(256) { |x| x.chr }
@@ -33,26 +33,26 @@ describe "String#<=> with String", ->
     # (a <=> b).should == 0
     # (b <=> a).should == 0
 
-# Note: This is inconsistent with Array#<=> which calls #to_ary instead of
+# Note: This is inconsistent with Array#cmp which calls #to_ary instead of
 # just using it as an indicator.
-describe "String#<=>", ->
+describe "String#cmp", ->
   it "returns nil if its argument does not provide #to_str", ->
     expect( R("abc").cmp 1).toEqual null
     expect( R("abc").cmp( new Object())).toEqual null
     # ("abc" <=> :abc).should == nil
     # ("abc" <=> mock('x')).should == nil
 
-  it "returns nil if its argument does not provide #<=>", ->
+  it "returns nil if its argument does not provide #cmp", ->
     # CHECK this has no effect because obj has no to_str either
     obj =
       to_str: -> {}
     expect(R("abc").cmp obj).toEqual null
 
-  it "calls #to_str to convert the argument to a String and calls #<=> to compare with self", ->
+  it "calls #to_str to convert the argument to a String and calls #cmp to compare with self", ->
     obj =
       to_str: -> throw 'do not call this'
       cmp: -> 1
-    # String#<=> merely checks if #to_str is defined on the object. It
+    # String#cmp merely checks if #to_str is defined on the object. It
     # does not call the method.
 
     # obj.stub!(:to_str)

@@ -1,4 +1,4 @@
-describe "Float#<=>", ->
+describe "Float#cmp", ->
   it "returns -1, 0, 1 when self is less than, equal, or greater than other", ->
     expect( R(1.5).cmp 5).toEqual -1
     expect( R(2.45).cmp 2.45).toEqual 0

@@ -1,4 +1,4 @@
-describe "Time#<=>", ->
+describe "Time#cmp", ->
   it "returns 1 if the first argument is a point in time after the second argument", ->
     expect(R.Time.now().cmp(R.Time.at(0))).toEqual 1
     expect(R.Time.at(0, 1000).cmp(R.Time.at(0, 0))).toEqual 1

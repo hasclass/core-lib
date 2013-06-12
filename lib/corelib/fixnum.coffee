@@ -62,7 +62,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     if !R(other).is_fixnum?
       R(other)['=='](this)
     else
-      @['cmp'](other) == 0
+      @cmp(other) == 0
 
   # Return true if fix equals other numerically.
   #

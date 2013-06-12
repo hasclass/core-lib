@@ -21,7 +21,7 @@ describe "Numeric#quo", ->
 
     it "returns the result of calling self#/ with other", ->
       obj = NumericSpecs.Subclass.new()
-      obj['cmp'] = ->
+      obj.cmp = ->
       obj['/'] = ->
       spy1 = spyOn(obj, 'coerce').andReturn(R [19, 19])
       spy2 = spyOn(obj, 'cmp').andReturn(1)

@@ -35,7 +35,7 @@ describe "Range#each", ->
     b = R('x')
     b.succ = undefined
     a = R('1')
-    a['cmp'] = -> 1
+    a.cmp = -> 1
     a.succ = undefined
 
     expect( -> RubyJS.Range.new(a, b).each (i) -> i  ).toThrow("TypeError")

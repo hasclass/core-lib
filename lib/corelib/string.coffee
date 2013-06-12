@@ -129,7 +129,7 @@ class RubyJS.String extends RubyJS.Object
   cmp: (other) ->
     other = R(other)
     return null unless other.to_str?
-    return null unless other['cmp']?
+    return null unless other.cmp?
 
     if other.is_string?
       other = other.to_native()
@@ -140,7 +140,7 @@ class RubyJS.String extends RubyJS.Object
       else
         1
     else
-      - other['cmp'](this)
+      - other.cmp(this)
 
   # Equality—If obj is not a String, returns false. Otherwise, returns true if
   # str <=> obj returns zero.
@@ -238,7 +238,7 @@ class RubyJS.String extends RubyJS.Object
     if @__native__ is str then null else @replace(str)
 
 
-  # Case-insensitive version of String#<=>.
+  # Case-insensitive version of String#cmp.
   #
   # @example
   #     R("abcdef").casecmp("abcde")     #=> 1
@@ -540,7 +540,7 @@ class RubyJS.String extends RubyJS.Object
   # @return true/false
   #
   eql: (other) ->
-    @['cmp'](other) is 0
+    @cmp(other) is 0
 
 
   #equal?

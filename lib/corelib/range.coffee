@@ -19,7 +19,7 @@ class RubyJS.Range extends RubyJS.Object
     unless @__start__.is_fixnum? and @__end__.is_fixnum?
       try
         # ERROR_MSG: bad value for range
-        throw R.ArgumentError.new() if @__start__['cmp'](@__end__) is null
+        throw R.ArgumentError.new() if @__start__.cmp(@__end__) is null
       catch err
         throw R.ArgumentError.new()
 
@@ -95,8 +95,8 @@ class RubyJS.Range extends RubyJS.Object
 
   '===': (other) ->
     other = R(other)
-    s = other['cmp'](@__start__)
-    e = other['cmp'](@__end__)
+    s = other.cmp(@__start__)
+    e = other.cmp(@__end__)
     return false if s is null and e is null
     # other was compared to self (other <=> self), so negate results to get
     # behaviour of self <=> other

@@ -9,22 +9,22 @@
 class RubyJS.Comparable
 
   '<': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp < 0
 
   '>': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp > 0
 
   '<=': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp <= 0
 
   '>=': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp >= 0
 
@@ -51,8 +51,8 @@ class RubyJS.Comparable
         if a < b then -1 else 1
     else
       a = R(a)
-      throw 'NoMethodError' unless a['cmp']?
-      a['cmp'](b)
+      throw 'NoMethodError' unless a.cmp?
+      a.cmp(b)
 
 
   # Same as cmp, but throws ArgumentError if it cannot
@@ -65,8 +65,8 @@ class RubyJS.Comparable
         if a < b then -1 else 1
     else
       a = R(a)
-      throw 'NoMethodError' unless a['cmp']?
-      cmp = a['cmp'](b)
+      throw 'NoMethodError' unless a.cmp?
+      cmp = a.cmp(b)
       throw R.ArgumentError.new() if cmp is null
       cmp
 

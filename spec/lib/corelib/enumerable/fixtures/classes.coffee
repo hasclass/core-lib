@@ -74,7 +74,7 @@ class EnumerableSpecs.ComparesByVowelCount
     @vowels = R(@value.replace(/[^aeiou]/g,'').length)
 
   cmp: (other) ->
-    @vowels['cmp'] other.vowels
+    @vowels.cmp other.vowels
 
   unbox: -> @value
   to_native: -> @value

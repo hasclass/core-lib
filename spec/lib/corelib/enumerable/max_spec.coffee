@@ -31,13 +31,13 @@ describe "Enumerable#max", ->
     expect( EnumerableSpecs.Empty.new().max() ).toEqual null
 
   # ruby_version_is ""..."1.9", ->
-  #   it "raises a NoMethodError for elements without #<=>", ->
+  #   it "raises a NoMethodError for elements without #cmp", ->
   #     lambda do
   #       EnumerableSpecs.Numerous.new(Object.new, Object.new).max
   #     end.should raise_error(NoMethodError)
 
   describe 'ruby_version_is "1.9"', ->
-    it "raises a NoMethodError for elements without #<=>", ->
+    it "raises a NoMethodError for elements without #cmp", ->
       # TODO: change to toThrow("NoMethodError")
       expect( -> EnumerableSpecs.Numerous.new(new Object(), new Object() ).max() ).toThrow()
 
@@ -46,17 +46,17 @@ describe "Enumerable#max", ->
     expect( -> EnumerableSpecs.Numerous.new(11,12,22,33).max () -> null ).toThrow("ArgumentError")
 
   it "return the maximun when using a block rule", ->
-    expect( EnumerableSpecs.Numerous.new("2","33","4","11").max (a,b) -> a['cmp'] b ).toEqual R("4")
-    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).max (a,b) -> a['cmp'] b ).toEqual R(33)
+    expect( EnumerableSpecs.Numerous.new("2","33","4","11").max (a,b) -> a.cmp b ).toEqual R("4")
+    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).max (a,b) -> a.cmp b ).toEqual R(33)
 
-    expect( EnumerableSpecs.Numerous.new("2","33","4","11").max (a,b) -> b['cmp'] a ).toEqual R("11")
-    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).max (a,b) -> b['cmp'] a ).toEqual R(2)
+    expect( EnumerableSpecs.Numerous.new("2","33","4","11").max (a,b) -> b.cmp a ).toEqual R("11")
+    expect( EnumerableSpecs.Numerous.new( 2 , 33 , 4 , 11 ).max (a,b) -> b.cmp a ).toEqual R(2)
 
-    expect( @e_strs.max (a,b) -> a.size()['cmp'] b.size() ).toEqual R("1010101010")
-    expect( @e_strs.max (a,b) -> a['cmp'] b               ).toEqual R("666666")
-    expect( @e_strs.max (a,b) -> a.to_i()['cmp'] b.to_i() ).toEqual R("1010101010")
-    expect( @e_ints.max (a,b) -> a['cmp'] b               ).toEqual R(1010101010)
-    expect( @e_ints.max (a,b) -> a.to_s()['cmp'] b.to_s() ).toEqual R(666666)
+    expect( @e_strs.max (a,b) -> a.size().cmp b.size() ).toEqual R("1010101010")
+    expect( @e_strs.max (a,b) -> a.cmp b               ).toEqual R("666666")
+    expect( @e_strs.max (a,b) -> a.to_i().cmp b.to_i() ).toEqual R("1010101010")
+    expect( @e_ints.max (a,b) -> a.cmp b               ).toEqual R(1010101010)
+    expect( @e_ints.max (a,b) -> a.to_s().cmp b.to_s() ).toEqual R(666666)
 
 
 

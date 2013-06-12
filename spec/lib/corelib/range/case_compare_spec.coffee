@@ -21,6 +21,6 @@ describe "Range#===", ->
     rng = RubyJS.Range.new(1,5)
     m = R(1)
     m.coerce = -> [1, 2]
-    m['cmp'] = -> 1
+    m.cmp = -> 1
 
     expect( rng.equalss(m) ).toEqual false

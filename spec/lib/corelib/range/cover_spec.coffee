@@ -33,7 +33,7 @@ describe 'ruby_version_is "1.8.8"', ->
 
     it "uses the range element's <=> to make the comparison", ->
       a = R('a')
-      a['cmp'] = -> -1
+      a.cmp = -> -1
       expect( RubyJS.Range.new(a, 'z').cover('b')   ).toEqual true
 
     it "uses a continuous inclusion test", ->

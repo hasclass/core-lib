@@ -38,7 +38,7 @@ describe "Range.new", ->
     # expect( R.Range.new(1, 3, mock('[1,2]')).to_a().valueOf() ).toEqual  [1, 2]
     expect( R.Range.new(1, 3, 'test').to_a().valueOf() ).toEqual  [1, 2]
 
-  it "raises an ArgumentError when the given start and end can't be compared by using #<=>", ->
+  it "raises an ArgumentError when the given start and end can't be compared by using #cmp", ->
     expect( -> R.Range.new(1, {} ) ).toThrow('ArgumentError')
     expect( -> R.Range.new({}, {}) ).toThrow('ArgumentError')
 

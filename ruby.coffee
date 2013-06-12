@@ -1645,7 +1645,7 @@ class SortedElement
   constructor: (@value, @sort_by) ->
 
   cmp: (other) ->
-    @sort_by?['cmp'](other.sort_by)
+    @sort_by?.cmp(other.sort_by)
 
 
 _itr = R._itr = new EnumerableMethods()
@@ -3244,7 +3244,6 @@ class RubyJS.Object
     proto.append     = proto['<<']  if proto['<<']?
     proto.equals     = proto['==']  if proto['==']?
     proto.equal_case = proto['==='] if proto['===']?
-    proto.cmp        = proto['cmp'] if proto['cmp']?
     proto.modulo     = proto['%']   if proto['%']?
     proto.plus       = proto['+']   if proto['+']?
     proto.minus      = proto['-']   if proto['-']?
@@ -3384,22 +3383,22 @@ R.RCoerce = RCoerce
 class RubyJS.Comparable
 
   '<': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp < 0
 
   '>': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp > 0
 
   '<=': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp <= 0
 
   '>=': (other) ->
-    cmp = @['cmp'](other)
+    cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp >= 0
 
@@ -3426,8 +3425,8 @@ class RubyJS.Comparable
         if a < b then -1 else 1
     else
       a = R(a)
-      throw 'NoMethodError' unless a['cmp']?
-      a['cmp'](b)
+      throw 'NoMethodError' unless a.cmp?
+      a.cmp(b)
 
 
   # Same as cmp, but throws ArgumentError if it cannot
@@ -3440,8 +3439,8 @@ class RubyJS.Comparable
         if a < b then -1 else 1
     else
       a = R(a)
-      throw 'NoMethodError' unless a['cmp']?
-      cmp = a['cmp'](b)
+      throw 'NoMethodError' unless a.cmp?
+      cmp = a.cmp(b)
       throw R.ArgumentError.new() if cmp is null
       cmp
 
@@ -4265,17 +4264,17 @@ class RubyJS.Enumerator.Generator extends RubyJS.Object
 #   @todo Slow implementation, slight deviation Ruby implementation of equality check
 #
 # @method #cmp(other)
-#   Alias for {#<=>} - Returns an integer (-1, 0, or +1) if this array is less than,
+#   Alias for {#cmp} - Returns an integer (-1, 0, or +1) if this array is less than,
 #   equal to, or greater than other_ary. Each object in each array is compared
 #   (using <=>). If any value isn’t equal, then that inequality is the return
 #   value. If all the values found are equal, then the return is based on a
 #   comparison of the array lengths. Thus, two arrays are “equal” according to
-#   {R.Array#<=>} if and only if they have the same length and the value of each
+#   {R.Array#cmp} if and only if they have the same length and the value of each
 #   element is equal to the value of the corresponding element in the other
 #   array.
 #   @example
-#     R([ "a", "a", "c" ]   )['cmp'] [ "a", "b", "c" ]   #=> -1
-#     R([ 1, 2, 3, 4, 5, 6 ])['cmp'] [ 1, 2 ]            #=> +1
+#     R([ "a", "a", "c" ]   ).cmp [ "a", "b", "c" ]   #=> -1
+#     R([ 1, 2, 3, 4, 5, 6 ]).cmp [ 1, 2 ]            #=> +1
 #   @param [Array] other
 #   @return [R.Array]
 #
@@ -4460,14 +4459,14 @@ class RubyJS.Array extends RubyJS.Object
     total = if other_total.lt(@size()) then other_total else @size()
 
     while total.gt(i)
-      diff = R(@__native__[i])['cmp'] other.__native__[i]
+      diff = R(@__native__[i]).cmp other.__native__[i]
       return diff unless diff == 0
       i += 1
 
     # subtle: if we are recursing on that pair, then let's
     # no go any further down into that pair;
     # any difference will be found elsewhere if need be
-    @size()['cmp'] other_total
+    @size().cmp other_total
 
 
   # Returns the element at index. A negative index counts from the end of
@@ -6082,7 +6081,7 @@ class RubyJS.Range extends RubyJS.Object
     unless @__start__.is_fixnum? and @__end__.is_fixnum?
       try
         # ERROR_MSG: bad value for range
-        throw R.ArgumentError.new() if @__start__['cmp'](@__end__) is null
+        throw R.ArgumentError.new() if @__start__.cmp(@__end__) is null
       catch err
         throw R.ArgumentError.new()
 
@@ -6158,8 +6157,8 @@ class RubyJS.Range extends RubyJS.Object
 
   '===': (other) ->
     other = R(other)
-    s = other['cmp'](@__start__)
-    e = other['cmp'](@__end__)
+    s = other.cmp(@__start__)
+    e = other.cmp(@__end__)
     return false if s is null and e is null
     # other was compared to self (other <=> self), so negate results to get
     # behaviour of self <=> other
@@ -6730,7 +6729,7 @@ class RubyJS.String extends RubyJS.Object
   cmp: (other) ->
     other = R(other)
     return null unless other.to_str?
-    return null unless other['cmp']?
+    return null unless other.cmp?
 
     if other.is_string?
       other = other.to_native()
@@ -6741,7 +6740,7 @@ class RubyJS.String extends RubyJS.Object
       else
         1
     else
-      - other['cmp'](this)
+      - other.cmp(this)
 
   # Equality—If obj is not a String, returns false. Otherwise, returns true if
   # str <=> obj returns zero.
@@ -6839,7 +6838,7 @@ class RubyJS.String extends RubyJS.Object
     if @__native__ is str then null else @replace(str)
 
 
-  # Case-insensitive version of String#<=>.
+  # Case-insensitive version of String#cmp.
   #
   # @example
   #     R("abcdef").casecmp("abcde")     #=> 1
@@ -7141,7 +7140,7 @@ class RubyJS.String extends RubyJS.Object
   # @return true/false
   #
   eql: (other) ->
-    @['cmp'](other) is 0
+    @cmp(other) is 0
 
 
   #equal?
@@ -9063,7 +9062,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
     if !R(other).is_fixnum?
       R(other)['=='](this)
     else
-      @['cmp'](other) == 0
+      @cmp(other) == 0
 
   # Return true if fix equals other numerically.
   #
@@ -9822,13 +9821,11 @@ class RubyJS.Time extends RubyJS.Object
     else
       0
 
-  cmp: @prototype['cmp']
-
 
   '==': (other) ->
     other = R(other)
     return false unless other.is_time?
-    @['cmp'](other) is 0
+    @cmp(other) is 0
 
 
   # Difference—Returns a new time that represents the difference between two

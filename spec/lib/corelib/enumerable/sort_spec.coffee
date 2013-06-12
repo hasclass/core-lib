@@ -19,10 +19,10 @@ describe "Enumerable#sort", ->
 
   it "yields elements to the provided block", ->
     expect(
-      new EnumerableSpecs.Numerous().sort((a,b) -> b['cmp'](a) ).valueOf(true)
+      new EnumerableSpecs.Numerous().sort((a,b) -> b.cmp(a) ).valueOf(true)
     ).toEqual [6, 5, 4, 3, 2, 1]
     expect(
-      new EnumerableSpecs.Numerous(2,0,1,3,4).sort((n, m) -> -(n['cmp'] m)).valueOf(true)
+      new EnumerableSpecs.Numerous(2,0,1,3,4).sort((n, m) -> -(n.cmp m)).valueOf(true)
     ).toEqual [4,3,2,1,0]
 
   # ruby_version_is ""..."1.9", ->
@@ -48,7 +48,7 @@ describe "Enumerable#sort", ->
 
   it "compare values returned by block with 0", ->
     expect(
-      new EnumerableSpecs.Numerous().sort((n, m) -> -(n + +m) * (n['cmp'] m) ).valueOf(true)
+      new EnumerableSpecs.Numerous().sort((n, m) -> -(n + +m) * (n.cmp m) ).valueOf(true)
     ).toEqual [6, 5, 4, 3, 2, 1]
 
     # EnumerableSpecs::Numerous.new.sort { |n, m|
@@ -57,7 +57,7 @@ describe "Enumerable#sort", ->
 
   xit "Not implemented", ->
     expect( ->
-      new EnumerableSpecs.Numerous().sort((n, m) -> (n['cmp'] m).to_s() )
+      new EnumerableSpecs.Numerous().sort((n, m) -> (n.cmp m).to_s() )
     ).toThrow 'ArgumentError'
 
   xit "raises an error if objects can't be compared", ->

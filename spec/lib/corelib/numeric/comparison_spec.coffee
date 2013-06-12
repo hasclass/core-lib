@@ -1,15 +1,15 @@
-describe "Numeric#<=>", ->
+describe "Numeric#cmp", ->
   beforeEach ->
     @obj = NumericSpecs.Subclass.new()
 
   it "returns 0 if self equals other", ->
-    expect(@obj['cmp'] @obj).toEqual 0
+    expect(@obj.cmp @obj).toEqual 0
 
   it "returns nil if self does not equal other", ->
-    expect(@obj['cmp'] NumericSpecs.Subclass.new()).toEqual null
-    expect(@obj['cmp'] 10).toEqual null
-    expect(@obj['cmp'] -3.5).toEqual null
-    # expect(@obj['cmp'] bignum_value).toEqual null
+    expect(@obj.cmp NumericSpecs.Subclass.new()).toEqual null
+    expect(@obj.cmp 10).toEqual null
+    expect(@obj.cmp -3.5).toEqual null
+    # expect(@obj.cmp bignum_value).toEqual null
 
   # describe "with subclasses of Numeric", ->
   #   before :each do

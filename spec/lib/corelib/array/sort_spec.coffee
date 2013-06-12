@@ -39,7 +39,7 @@ describe "Array#sort", ->
 #     array = [[]]; array << array
 #     array.sort.should == [[], array]
 
-#   it "uses #<=> of elements in order to sort", ->
+#   it "uses #cmp of elements in order to sort", ->
 #     a = ArraySpecs.MockForCompared.new
 #     b = ArraySpecs.MockForCompared.new
 #     c = ArraySpecs.MockForCompared.new
@@ -48,7 +48,7 @@ describe "Array#sort", ->
 #     [a, b, c].sort.should == [c, b, a]
 #     ArraySpecs.MockForCompared.compared?.should == true
 
-#   it "does not deal with exceptions raised by unimplemented or incorrect #<=>", ->
+#   it "does not deal with exceptions raised by unimplemented or incorrect #cmp", ->
 #     o = Object.new
 
 #     expect( -> [o, 1].sort ).toThrow
@@ -61,13 +61,13 @@ describe "Array#sort", ->
 #   it "raises an error when a given block returns nil", ->
 #     expect( -> [1, 2].sort {} ).toThrow(ArgumentError)
 
-#   it "does not call #<=> on contained objects when invoked with a block", ->
+#   it "does not call #cmp on contained objects when invoked with a block", ->
 #     a = Array.new(25)
 #     (0...25).each {|i| a[i] = ArraySpecs.UFOSceptic.new }
 
 #     a.sort { -1 }.should be_kind_of(Array)
 
-#   it "does not call #<=> on elements when invoked with a block even if Array is large (Rubinius #412)", ->
+#   it "does not call #cmp on elements when invoked with a block even if Array is large (Rubinius #412)", ->
 #     a = Array.new(1500)
 #     (0...1500).each {|i| a[i] = ArraySpecs.UFOSceptic.new }
 
@@ -154,7 +154,7 @@ describe "Array#sort!", ->
 #     array = [[]]; array << array
 #     array.sort!.should == array
 
-#   it "uses #<=> of elements in order to sort", ->
+#   it "uses #cmp of elements in order to sort", ->
 #     a = ArraySpecs.MockForCompared.new
 #     b = ArraySpecs.MockForCompared.new
 #     c = ArraySpecs.MockForCompared.new
@@ -163,13 +163,13 @@ describe "Array#sort!", ->
 #     [a, b, c].sort!.should == [c, b, a]
 #     ArraySpecs.MockForCompared.compared?.should == true
 
-#   it "does not call #<=> on contained objects when invoked with a block", ->
+#   it "does not call #cmp on contained objects when invoked with a block", ->
 #     a = Array.new(25)
 #     (0...25).each {|i| a[i] = ArraySpecs.UFOSceptic.new }
 
 #     a.sort! { -1 }.should be_kind_of(Array)
 
-#   it "does not call #<=> on elements when invoked with a block even if Array is large (Rubinius #412)", ->
+#   it "does not call #cmp on elements when invoked with a block even if Array is large (Rubinius #412)", ->
 #     a = Array.new(1500)
 #     (0...1500).each {|i| a[i] = ArraySpecs.UFOSceptic.new }
 

@@ -1849,7 +1849,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     SortedElement.prototype.cmp = function(other) {
       var _ref1;
-      return (_ref1 = this.sort_by) != null ? _ref1['cmp'](other.sort_by) : void 0;
+      return (_ref1 = this.sort_by) != null ? _ref1.cmp(other.sort_by) : void 0;
     };
 
     return SortedElement;
@@ -3876,9 +3876,6 @@ http://www.rubyjs.org/LICENSE.txt
       if (proto['==='] != null) {
         proto.equal_case = proto['==='];
       }
-      if (proto['cmp'] != null) {
-        proto.cmp = proto['cmp'];
-      }
       if (proto['%'] != null) {
         proto.modulo = proto['%'];
       }
@@ -4024,7 +4021,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Comparable.prototype['<'] = function(other) {
       var cmp;
-      cmp = this['cmp'](other);
+      cmp = this.cmp(other);
       if (cmp === null) {
         throw R.TypeError["new"]();
       }
@@ -4033,7 +4030,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Comparable.prototype['>'] = function(other) {
       var cmp;
-      cmp = this['cmp'](other);
+      cmp = this.cmp(other);
       if (cmp === null) {
         throw R.TypeError["new"]();
       }
@@ -4042,7 +4039,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Comparable.prototype['<='] = function(other) {
       var cmp;
-      cmp = this['cmp'](other);
+      cmp = this.cmp(other);
       if (cmp === null) {
         throw R.TypeError["new"]();
       }
@@ -4051,7 +4048,7 @@ http://www.rubyjs.org/LICENSE.txt
 
     Comparable.prototype['>='] = function(other) {
       var cmp;
-      cmp = this['cmp'](other);
+      cmp = this.cmp(other);
       if (cmp === null) {
         throw R.TypeError["new"]();
       }
@@ -4075,10 +4072,10 @@ http://www.rubyjs.org/LICENSE.txt
         }
       } else {
         a = R(a);
-        if (a['cmp'] == null) {
+        if (a.cmp == null) {
           throw 'NoMethodError';
         }
-        return a['cmp'](b);
+        return a.cmp(b);
       }
     };
 
@@ -4096,10 +4093,10 @@ http://www.rubyjs.org/LICENSE.txt
         }
       } else {
         a = R(a);
-        if (a['cmp'] == null) {
+        if (a.cmp == null) {
           throw 'NoMethodError';
         }
-        cmp = a['cmp'](b);
+        cmp = a.cmp(b);
         if (cmp === null) {
           throw R.ArgumentError["new"]();
         }
@@ -4861,13 +4858,13 @@ http://www.rubyjs.org/LICENSE.txt
       i = 0;
       total = other_total.lt(this.size()) ? other_total : this.size();
       while (total.gt(i)) {
-        diff = R(this.__native__[i])['cmp'](other.__native__[i]);
+        diff = R(this.__native__[i]).cmp(other.__native__[i]);
         if (diff !== 0) {
           return diff;
         }
         i += 1;
       }
-      return this.size()['cmp'](other_total);
+      return this.size().cmp(other_total);
     };
 
     Array.prototype.at = function(index) {
@@ -5769,7 +5766,7 @@ http://www.rubyjs.org/LICENSE.txt
       this.__end__ = this.box(end);
       if (!((this.__start__.is_fixnum != null) && (this.__end__.is_fixnum != null))) {
         try {
-          if (this.__start__['cmp'](this.__end__) === null) {
+          if (this.__start__.cmp(this.__end__) === null) {
             throw R.ArgumentError["new"]();
           }
         } catch (_error) {
@@ -5820,8 +5817,8 @@ http://www.rubyjs.org/LICENSE.txt
     Range.prototype['==='] = function(other) {
       var e, s;
       other = R(other);
-      s = other['cmp'](this.__start__);
-      e = other['cmp'](this.__end__);
+      s = other.cmp(this.__start__);
+      e = other.cmp(this.__end__);
       if (s === null && e === null) {
         return false;
       }
@@ -6219,7 +6216,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (other.to_str == null) {
         return null;
       }
-      if (other['cmp'] == null) {
+      if (other.cmp == null) {
         return null;
       }
       if (other.is_string != null) {
@@ -6232,7 +6229,7 @@ http://www.rubyjs.org/LICENSE.txt
           return 1;
         }
       } else {
-        return -other['cmp'](this);
+        return -other.cmp(this);
       }
     };
 
@@ -6442,7 +6439,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.eql = function(other) {
-      return this['cmp'](other) === 0;
+      return this.cmp(other) === 0;
     };
 
     String.prototype.get = function() {
@@ -7482,7 +7479,7 @@ http://www.rubyjs.org/LICENSE.txt
       if (R(other).is_fixnum == null) {
         return R(other)['=='](this);
       } else {
-        return this['cmp'](other) === 0;
+        return this.cmp(other) === 0;
       }
     };
 
@@ -8064,14 +8061,12 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Time.prototype.cmp = Time.prototype['cmp'];
-
     Time.prototype['=='] = function(other) {
       other = R(other);
       if (other.is_time == null) {
         return false;
       }
-      return this['cmp'](other) === 0;
+      return this.cmp(other) === 0;
     };
 
     Time.prototype['-'] = function(other) {

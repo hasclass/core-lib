@@ -40,17 +40,17 @@
 #   @todo Slow implementation, slight deviation Ruby implementation of equality check
 #
 # @method #cmp(other)
-#   Alias for {#<=>} - Returns an integer (-1, 0, or +1) if this array is less than,
+#   Alias for {#cmp} - Returns an integer (-1, 0, or +1) if this array is less than,
 #   equal to, or greater than other_ary. Each object in each array is compared
 #   (using <=>). If any value isn’t equal, then that inequality is the return
 #   value. If all the values found are equal, then the return is based on a
 #   comparison of the array lengths. Thus, two arrays are “equal” according to
-#   {R.Array#<=>} if and only if they have the same length and the value of each
+#   {R.Array#cmp} if and only if they have the same length and the value of each
 #   element is equal to the value of the corresponding element in the other
 #   array.
 #   @example
-#     R([ "a", "a", "c" ]   )['cmp'] [ "a", "b", "c" ]   #=> -1
-#     R([ 1, 2, 3, 4, 5, 6 ])['cmp'] [ 1, 2 ]            #=> +1
+#     R([ "a", "a", "c" ]   ).cmp [ "a", "b", "c" ]   #=> -1
+#     R([ 1, 2, 3, 4, 5, 6 ]).cmp [ 1, 2 ]            #=> +1
 #   @param [Array] other
 #   @return [R.Array]
 #
@@ -235,14 +235,14 @@ class RubyJS.Array extends RubyJS.Object
     total = if other_total.lt(@size()) then other_total else @size()
 
     while total.gt(i)
-      diff = R(@__native__[i])['cmp'] other.__native__[i]
+      diff = R(@__native__[i]).cmp other.__native__[i]
       return diff unless diff == 0
       i += 1
 
     # subtle: if we are recursing on that pair, then let's
     # no go any further down into that pair;
     # any difference will be found elsewhere if need be
-    @size()['cmp'] other_total
+    @size().cmp other_total
 
 
   # Returns the element at index. A negative index counts from the end of
