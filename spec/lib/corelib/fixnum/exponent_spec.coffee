@@ -60,8 +60,8 @@ xdescribe "fixnum", ->
       expect( -> R(0)['**'](-1) ).toThrow("ZeroDivisionError")
 
   it "raises a TypeError when given a non-Integer", ->
-    expect( -> R(13)['-']("10")    ).toThrow("TypeError")
-    expect( -> R(13)['-']([])      ).toThrow("TypeError")
+    expect( -> R(13).minus("10")    ).toThrow("TypeError")
+    expect( -> R(13).minus([])      ).toThrow("TypeError")
 
   xit 'ruby_version_is 1.9', ->
     it "returns a complex number when negative and raised to a fractional power", ->

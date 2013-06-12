@@ -57,11 +57,11 @@ class RubyJS.Float extends RubyJS.Numeric
     @to_native() is other.to_native()
 
 
-  '+': (other) ->
+  plus: (other) ->
     new Float(@to_native() + RCoerce.to_num_native(other))
 
 
-  '-': (other) ->
+  minus: (other) ->
     new Float(@to_native() - RCoerce.to_num_native(other))
 
 

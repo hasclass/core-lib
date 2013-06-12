@@ -13,7 +13,7 @@ describe 'ruby_version_is "1.9"', ->
     it "returns self - other * self.div(other)", ->
       obj      = NumericSpecs.Subclass.new()
       obj.div  = ->
-      obj['-'] = ->
+      obj.minus = ->
       other    = NumericSpecs.Subclass.new()
       other['*'] = ->
       n3 = NumericSpecs.Subclass.new()
@@ -22,10 +22,10 @@ describe 'ruby_version_is "1.9"', ->
 
       spy1 = spyOn( obj, 'div').andReturn(n3) # with other
       spy2 = spyOn( other, '*').andReturn(n4) #(n3)
-      spy1 = spyOn( obj, '-').andReturn(n5) # with n4
-      
+      spy1 = spyOn( obj, 'minus').andReturn(n5) # with n4
+
       expect( obj.modulo(other) ).toEqual n5
-  
+
   describe "Numeric#modulo", ->
   #  it_behaves_like :numeric_modulo_19, :modulo
 

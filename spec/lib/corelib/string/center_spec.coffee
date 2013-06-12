@@ -38,7 +38,7 @@ describe "String#center with length, padding", ->
     expect( R("hello").center(4) ).toEqual  R("hello")
     expect( R("hello").center(-1) ).toEqual  R("hello")
     expect( R("this").center(3) ).toEqual  R("this")
-    expect( R("radiology").center(8, '-') ).toEqual  R("radiology")
+    expect( R("radiology").center(8, 'minus') ).toEqual  R("radiology")
 
   xit "taints result when self or padstr is tainted", ->
     # "x".taint.center(4).tainted?.should == true

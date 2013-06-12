@@ -51,7 +51,7 @@ class NumericMethods
   #   mod = @['%'](other)
 
   #   if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
-  #     mod['-'](other)
+  #     mod.minus(other)
   #   else
   #     mod
 

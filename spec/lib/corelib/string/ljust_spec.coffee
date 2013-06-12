@@ -22,7 +22,7 @@ describe "String#ljust with length, padding", ->
     expect(R("hello").ljust(4).valueOf()).toEqual("hello")
     expect(R("hello").ljust(-1).valueOf()).toEqual("hello")
     expect(R("this").ljust(3).valueOf()).toEqual("this")
-    expect(R("radiology").ljust(8, '-').valueOf()).toEqual("radiology")
+    expect(R("radiology").ljust(8, 'minus').valueOf()).toEqual("radiology")
 
   it "tries to convert length to an integer using to_int", ->
     expect(R("^").ljust(3.8, "_^").valueOf()).toEqual("^_^")

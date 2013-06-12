@@ -103,7 +103,7 @@ class RubyJS.String extends RubyJS.Object
   #      R("Hello from ").plus("self")
   #      #=> "Hello from main"
   #
-  '+': (other) ->
+  plus: (other) ->
     other = RCoerce.to_str_native(other)
     new R.String(@to_native() + other) # don't return subclasses
 

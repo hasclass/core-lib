@@ -283,7 +283,7 @@ class RubyJS.Time extends RubyJS.Object
   # t2 - t             #=> 2592000.0
   # t2 - 2592000       #=> 2007-11-19 08:23:10 -0600
   #
-  '-': (other) ->
+  minus: (other) ->
     throw R.TypeError.new() unless other?
     other = R(other)
 
@@ -304,7 +304,7 @@ class RubyJS.Time extends RubyJS.Object
   #     t = Time.now()       #=> 2007-11-19 08:22:21 -0600
   #     t + (60 * 60 * 24)   #=> 2007-11-20 08:22:21 -0600
   #
-  '+': (other) ->
+  plus: (other) ->
     throw R.TypeError.new() unless other?
 
     tpcast = R(other)

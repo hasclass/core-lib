@@ -22,7 +22,7 @@ describe "String#rjust with length, padding", ->
     expect( R("hello").rjust(4) ).toEqual R("hello")
     expect( R("hello").rjust(-1) ).toEqual R("hello")
     expect( R("this" ).rjust(3) ).toEqual R("this")
-    expect( R("radiology").rjust(8, '-') ).toEqual R("radiology")
+    expect( R("radiology").rjust(8, 'minus') ).toEqual R("radiology")
 
   # it "taints result when self or padstr is tainted", ->
   #   expect( R("x".taint).rjust(4).tainted? ).toEqual true

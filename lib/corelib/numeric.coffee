@@ -186,7 +186,7 @@ class RubyJS.Numeric extends RubyJS.Object
   modulo: (other) ->
     other = @box(other)
     # self - other * self.div(other)
-    @['-']( other['*']( @div(other)) )
+    @minus( other['*']( @div(other)) )
 
 
   # Returns self if num is not zero, nil otherwise. This behavior is useful
@@ -223,8 +223,8 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     mod = @['%'](other)
 
-    if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
-      mod['-'](other)
+    if !mod.equals(0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other.lt(0)))
+      mod.minus(other)
     else
       mod
 

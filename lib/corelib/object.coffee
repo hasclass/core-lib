@@ -27,9 +27,9 @@ class RubyJS.Object
   @__add_default_aliases__: (proto) ->
     proto.append     = proto['<<']  if proto['<<']?
     proto.equal_case = proto['==='] if proto['===']?
+    proto['-']       = proto.minus  if proto.minus?
+    proto['+']       = proto.plus   if proto.plus?
     proto.modulo     = proto['%']   if proto['%']?
-    proto.plus       = proto['+']   if proto['+']?
-    proto.minus      = proto['-']   if proto['-']?
     proto.multiply   = proto['*']   if proto['*']?
     proto.exp        = proto['**']  if proto['**']?
     proto.divide     = proto['/']   if proto['/']?

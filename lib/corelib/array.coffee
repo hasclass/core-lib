@@ -785,7 +785,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @example
   #     R([ 1, 2, 3 ]).plus [ 3, 4 ]     #=> [ 1, 2, 3, 3, 4 ]
-  #     R([ 1, 2, 3 ])['+']([ 3, 4 ])    #=> [ 1, 2, 3, 3, 4 ]
+  #     R([ 1, 2, 3 ]).plus([ 3, 4 ])    #=> [ 1, 2, 3, 3, 4 ]
   #
   # @note recursive arrays untested.
   #

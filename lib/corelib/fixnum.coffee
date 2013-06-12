@@ -100,7 +100,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   # @alias #plus
   #
-  '+': (other) ->
+  plus: (other) ->
     R.Numeric.typecast(@to_native() + RCoerce.to_num_native(other))
 
   # Performs subtraction: the class of the resulting object depends on the
@@ -112,7 +112,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   #
   # @alias #minus
   #
-  '-': (other) ->
+  minus: (other) ->
     R.Numeric.typecast(@to_native() - RCoerce.to_num_native(other))
 
   # Performs division: the class of the resulting object depends on the class
