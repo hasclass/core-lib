@@ -4019,7 +4019,7 @@ http://www.rubyjs.org/LICENSE.txt
   RubyJS.Comparable = (function() {
     function Comparable() {}
 
-    Comparable.prototype['<'] = function(other) {
+    Comparable.prototype.lt = function(other) {
       var cmp;
       cmp = this.cmp(other);
       if (cmp === null) {
@@ -4028,7 +4028,7 @@ http://www.rubyjs.org/LICENSE.txt
       return cmp < 0;
     };
 
-    Comparable.prototype['>'] = function(other) {
+    Comparable.prototype.gt = function(other) {
       var cmp;
       cmp = this.cmp(other);
       if (cmp === null) {
@@ -4104,11 +4104,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Comparable.prototype.lt = Comparable.prototype['<'];
-
     Comparable.prototype.lteq = Comparable.prototype['<='];
-
-    Comparable.prototype.gt = Comparable.prototype['>'];
 
     Comparable.prototype.gteq = Comparable.prototype['>='];
 
@@ -5774,7 +5770,7 @@ http://www.rubyjs.org/LICENSE.txt
           throw R.ArgumentError["new"]();
         }
       }
-      this.comparison = this.exclusive ? '<' : '<=';
+      this.comparison = this.exclusive ? 'lt' : '<=';
     }
 
     Range.prototype.is_range = function() {
@@ -5868,7 +5864,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
       b = this.begin();
       e = this.end();
-      if (e['<'](b) || (this.exclusive && e.equals(b))) {
+      if (e['lt'](b) || (this.exclusive && e.equals(b))) {
         return null;
       }
       if (b.is_float != null) {
@@ -5884,7 +5880,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
       b = this.begin();
       e = this.end();
-      if (e['<'](b) || (this.exclusive && e.equals(b))) {
+      if (e['lt'](b) || (this.exclusive && e.equals(b))) {
         return null;
       }
       if ((e.is_float != null) || ((e.is_float != null) && !this.exclusive)) {
@@ -5926,7 +5922,7 @@ http://www.rubyjs.org/LICENSE.txt
         throw R.ArgumentError["new"]();
       }
       cnt = first;
-      cmp = this.exclude_end() ? '<' : '<=';
+      cmp = this.exclude_end() ? 'lt' : '<=';
       if (first.is_float != null) {
         while (cnt[cmp](last)) {
           block(cnt.valueOf());
@@ -7096,7 +7092,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Numeric.prototype.abs = function() {
-      if (this['<'](0)) {
+      if (this.lt(0)) {
         return this.uminus();
       } else {
         return this;
@@ -7220,7 +7216,7 @@ http://www.rubyjs.org/LICENSE.txt
       var mod;
       other = this.box(other);
       mod = this['%'](other);
-      if (!mod['=='](0) && ((this['<'](0) && other['>'](0)) || (this['>'](0) && other['<'](0)))) {
+      if (!mod['=='](0) && ((this.lt(0) && other.gt(0)) || (this.gt(0) && other['lt'](0)))) {
         return mod['-'](other);
       } else {
         return mod;

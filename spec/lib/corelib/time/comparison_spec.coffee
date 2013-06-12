@@ -39,7 +39,7 @@ describe "Time#cmp", ->
       it "returns -1 if argument <=> self is greater than 0", ->
         t = R.Time.now()
         r =
-          '>': -> true
+          gt: -> true
         obj =
           cmp: -> r
         expect(t.cmp(obj)).toEqual -1
@@ -47,7 +47,7 @@ describe "Time#cmp", ->
       it "returns 1 if argument <=> self is not greater than 0 and is less than 0", ->
         t = R.Time.now()
         r =
-          '>': -> false
+          gt: -> false
           lt: -> true
         obj =
           cmp: -> r
@@ -56,7 +56,7 @@ describe "Time#cmp", ->
       it "returns 0 if argument <=> self is neither greater than 0 nor less than 0", ->
         t = R.Time.now()
         r =
-          '>': -> false
+          gt: -> false
           lt: -> false
         obj =
           cmp: -> r

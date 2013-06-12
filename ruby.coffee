@@ -852,7 +852,7 @@ class NumericMethods
   #   other = @box(other)
   #   mod = @['%'](other)
 
-  #   if !mod['=='](0) and ((@['<'](0) && other['>'](0)) or (@['>'](0) && other['<'](0)))
+  #   if !mod['=='](0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
   #     mod['-'](other)
   #   else
   #     mod
@@ -3382,12 +3382,12 @@ R.RCoerce = RCoerce
 #
 class RubyJS.Comparable
 
-  '<': (other) ->
+  lt: (other) ->
     cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp < 0
 
-  '>': (other) ->
+  gt: (other) ->
     cmp = @cmp(other)
     throw R.TypeError.new() if cmp is null
     cmp > 0
@@ -3447,9 +3447,7 @@ class RubyJS.Comparable
 
 
   # aliases
-  lt:   @prototype['<']
   lteq: @prototype['<=']
-  gt:   @prototype['>']
   gteq: @prototype['>=']
 
 # Enumerable is a module of iterator methods that all rely on #each for
@@ -6085,7 +6083,7 @@ class RubyJS.Range extends RubyJS.Object
       catch err
         throw R.ArgumentError.new()
 
-    @comparison = if @exclusive then '<' else '<='
+    @comparison = if @exclusive then 'lt' else '<='
 
 
   # ---- RubyJSism ------------------------------------------------------------
@@ -6240,7 +6238,7 @@ class RubyJS.Range extends RubyJS.Object
     return R.Enumerable.prototype.min.call(this, block) if block?.call?
     b = @begin()
     e = @end()
-    return null if e['<'](b) || (@exclusive && e.equals(b))
+    return null if e['lt'](b) || (@exclusive && e.equals(b))
     return b.valueOf() if b.is_float?
     R.Enumerable.prototype.min.call(this)
 
@@ -6256,7 +6254,7 @@ class RubyJS.Range extends RubyJS.Object
     return R.Enumerable.prototype.max.call(this, block) if block?.call?
     b = @begin()
     e = @end()
-    return null if e['<'](b) || (@exclusive && e.equals(b))
+    return null if e['lt'](b) || (@exclusive && e.equals(b))
     return e.valueOf() if e.is_float? || (e.is_float? && !@exclusive)
     R.Enumerable.prototype.max.call(this)
 
@@ -6304,7 +6302,7 @@ class RubyJS.Range extends RubyJS.Object
       throw R.ArgumentError.new() # step can't be negative or zero
 
     cnt = first
-    cmp = if @exclude_end() then '<' else '<='
+    cmp = if @exclude_end() then 'lt' else '<='
     if first.is_float?
       # TODO: add float math error check
       while cnt[cmp](last)
@@ -6322,6 +6320,7 @@ class RubyJS.Range extends RubyJS.Object
         cnt += 1
 
     this
+
 
   to_a: () ->
     throw R.TypeError.new() if @__end__.is_float? && @__start__.is_float?
@@ -8473,7 +8472,7 @@ class RubyJS.Numeric extends RubyJS.Object
   # @return [R.Numeric]
   #
   abs: ->
-    if @['<'](0) then @uminus() else this
+    if @lt(0) then @uminus() else this
 
 
   # Returns square of self.
@@ -8639,7 +8638,7 @@ class RubyJS.Numeric extends RubyJS.Object
     other = @box(other)
     mod = @['%'](other)
 
-    if !mod['=='](0) and ((@['<'](0) && other['>'](0)) or (@['>'](0) && other['<'](0)))
+    if !mod['=='](0) and ((@lt(0) && other.gt(0)) or (@gt(0) && other['lt'](0)))
       mod['-'](other)
     else
       mod

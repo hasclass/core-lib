@@ -6,8 +6,8 @@ describe "Numeric#remainder", ->
     @obj['%'] = ->
     @result['=='] = ->
     @obj['lt'] = ->
-    @obj['>'] = ->
-    @other['>'] = ->
+    @obj.gt = ->
+    @other.gt = ->
     @other['lt'] = ->
     @result['-'] = ->
   it "returns the result of calling self#% with other if self is 0", ->
@@ -27,7 +27,7 @@ describe "Numeric#remainder", ->
     spy1 = spyOn( @obj, '%').andReturn(@result)
     spy2 = spyOn( @result, '==').andReturn(false)
     spy3 = spyOn( @obj, 'lt').andReturn(false)
-    spy4 = spyOn( @obj, '>').andReturn(true)
+    spy4 = spyOn( @obj, 'gt').andReturn(true)
     spy5 = spyOn( @other, 'lt').andReturn(false)
 
     expect( @obj.remainder(@other)).toEqual @result
@@ -42,8 +42,8 @@ describe "Numeric#remainder", ->
     spy1 = spyOn( @obj,    '%').andReturn(@result)
     spy2 = spyOn( @result, '==').andReturn(false)
     spy3 = spyOn( @obj,    'lt').andReturn(true)
-    spy4 = spyOn( @other,  '>').andReturn(false)
-    # spy5 = spyOn( @obj,    '>').andReturn(false)
+    spy4 = spyOn( @other,  'gt').andReturn(false)
+    # spy5 = spyOn( @obj,    'gt').andReturn(false)
 
     expect( @obj.remainder(@other)).toEqual @result
 
@@ -58,7 +58,7 @@ describe "Numeric#remainder", ->
     spy1 = spyOn( @obj,    '%').andReturn(@result)
     spy2 = spyOn( @result, '==').andReturn(false)
     spy3 = spyOn( @obj,    'lt').andReturn(false)
-    spy5 = spyOn( @obj,    '>').andReturn(true)
+    spy5 = spyOn( @obj,    'gt').andReturn(true)
     spy6 = spyOn( @other,  'lt').andReturn(true)
     spy7 = spyOn( @result, '-').andReturn(123)
 
@@ -75,7 +75,7 @@ describe "Numeric#remainder", ->
     spy1 = spyOn( @obj,    '%').andReturn(@result)
     spy2 = spyOn( @result, '==').andReturn(false)
     spy3 = spyOn( @obj,    'lt').andReturn(true)
-    spy5 = spyOn( @other,  '>').andReturn(true)
+    spy5 = spyOn( @other,  'gt').andReturn(true)
     spy7 = spyOn( @result, '-').andReturn(123)
 
     expect( @obj.remainder(@other) ).toEqual 123
