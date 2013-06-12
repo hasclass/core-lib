@@ -52,25 +52,12 @@ class RubyJS.Range extends RubyJS.Object
   #     R.rng(0, 2).equals( R.r(0, 2, true)       #=> false # -> (0...2)
   #
   # @param other
-  # @alias #equals
   # @return true, false
   #
   equals: (other) ->
     return false unless other instanceof R.Range
     @__end__.equals(other.end()) and @__start__.equals(other.start()) and @exclusive is other.exclude_end()
 
-  # Returns true only if obj is a Range, has equivalent beginning and end items
-  # (by comparing them with ==), and has the same exclude_end? setting as rng.
-  #
-  #     R.rng(0, 2).equals( R.r(0,2) )            #=> true
-  #     R.rng(0, 2).equals( R.Range.new(0,2) )    #=> true
-  #     R.rng(0, 2).equals( R.r(0, 2, true)       #=> false # -> (0...2)
-  #
-  # @param other
-  # @alias #equals
-  # @return true, false
-  #
-  equals: @prototype.equals
 
   # Returns the first object in rng
   #
