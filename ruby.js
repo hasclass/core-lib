@@ -8,7 +8,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RHash, RString, SortedElement, StrProto, StringMethods, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __equals, __int, __isArr, __isStr, __num, __str, _arr, _coerce, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RHash, RString, SortedElement, StrProto, StringMethods, TimeMethods, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __equals, __int, __isArr, __isStr, __num, __str, _arr, _coerce, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str, _time,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice;
@@ -502,7 +502,7 @@ http://www.rubyjs.org/LICENSE.txt
         prefix = "_";
       }
       if (arguments.length === 0) {
-        args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
+        args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_time', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
       } else {
         args = arguments;
       }
@@ -525,7 +525,8 @@ http://www.rubyjs.org/LICENSE.txt
         _num: '_n',
         _str: '_s',
         _itr: '_i',
-        _hsh: '_h'
+        _hsh: '_h',
+        _time: '_t'
       };
       _results = [];
       for (k in shortcuts) {
@@ -3860,6 +3861,230 @@ http://www.rubyjs.org/LICENSE.txt
   };
 
   R.extend(_hsh, new HashMethods());
+
+  TimeMethods = (function() {
+    function TimeMethods() {}
+
+    TimeMethods.prototype._rjust = function(fixnum, str) {
+      if (str == null) {
+        str = '0';
+      }
+      return _str.rjust(fixnum + "", 2, str);
+    };
+
+    TimeMethods.prototype.strftime = function(date, format) {
+      var fill, locale, out;
+      locale = R.Time.LOCALE;
+      fill = _time._rjust;
+      out = format.replace(/%(.)/g, function(_, flag) {
+        var day, jtime;
+        switch (flag) {
+          case 'a':
+            return locale.DAYS_SHORT[_time.wday(date)];
+          case 'A':
+            return locale.DAYS[_time.wday(date)];
+          case 'b':
+            return locale.MONTHS_SHORT[_time.month(date)];
+          case 'B':
+            return locale.MONTHS[_time.month(date)];
+          case 'C':
+            return _time.year(date) % 100;
+          case 'd':
+            return fill(_time.day(date));
+          case 'D':
+            return _time.strftime(date, '%m/%d/%y');
+          case 'e':
+            return fill(_time.day(date), ' ');
+          case 'F':
+            return _time.strftime(date, '%Y-%m-%d');
+          case 'h':
+            return locale.MONTHS_SHORT[_time.month(date)];
+          case 'H':
+            return fill(_time.hour(date));
+          case 'I':
+            return fill(_time.hour12(date));
+          case 'j':
+            jtime = new Date(_time.year(date), 0, 1).getTime();
+            return Math.ceil((date.getTime() - jtime) / (1000 * 60 * 60 * 24));
+          case 'k':
+            return _str.rjust("" + _time.hour(date), 2, ' ');
+          case 'l':
+            return fill(_time.hour12(date), ' ');
+          case 'm':
+            return fill(_time.month(date));
+          case 'M':
+            return fill(_time.min(date));
+          case 'n':
+            return "\n";
+          case 'N':
+            throw R.NotImplementedError["new"]();
+            break;
+          case 'p':
+            if (_time.hour(date) < 12) {
+              return locale.AM;
+            } else {
+              return locale.PM;
+            }
+            break;
+          case 'P':
+            if (_time.hour(date) < 12) {
+              return locale.AM_LOW;
+            } else {
+              return locale.PM_LOW;
+            }
+            break;
+          case 'r':
+            return _time.strftime(date, '%I:%M:%S %p');
+          case 'R':
+            return _time.strftime(date, '%H:%M');
+          case 'S':
+            return fill(_time.sec(date));
+          case 's':
+            return Math.floor((date.getTime()) / 1000);
+          case 't':
+            return "\t";
+          case 'T':
+            return _time.strftime(date, '%H:%M:%S');
+          case 'u':
+            day = _time.wday(date);
+            if (day === 0) {
+              return 7;
+            } else {
+              return day;
+            }
+            break;
+          case 'v':
+            return _time.strftime(date, '%e-%b-%Y');
+          case 'w':
+            return _time.wday(date);
+          case 'y':
+            return _str.slice(_time.year(date) + "", -2, 2);
+          case 'Y':
+            return _time.year(date);
+          case 'x':
+            return _time.strftime(date, '%m/%d/%y');
+          case 'X':
+            return _time.strftime(date, '%H:%M:%S');
+          case 'z':
+            return _time._offset_str(date);
+          case 'Z':
+            return _time.zone(date);
+          default:
+            return flag;
+        }
+      });
+      return out;
+    };
+
+    TimeMethods.prototype.asctime = function(date) {
+      return _time.strftime(date, "%a %b %e %H:%M:%S %Y");
+    };
+
+    TimeMethods.prototype.ctime = TimeMethods.prototype.asctime;
+
+    TimeMethods.prototype.year = function(date) {
+      return date.getFullYear();
+    };
+
+    TimeMethods.prototype.month = function(date) {
+      return date.getMonth() + 1;
+    };
+
+    TimeMethods.prototype.mon = TimeMethods.prototype.month;
+
+    TimeMethods.prototype.monday = function(date) {
+      return _time.wday(date) === 1;
+    };
+
+    TimeMethods.prototype.tuesday = function(date) {
+      return _time.wday(date) === 2;
+    };
+
+    TimeMethods.prototype.wednesday = function(date) {
+      return _time.wday(date) === 3;
+    };
+
+    TimeMethods.prototype.thursday = function(date) {
+      return _time.wday(date) === 4;
+    };
+
+    TimeMethods.prototype.friday = function(date) {
+      return _time.wday(date) === 5;
+    };
+
+    TimeMethods.prototype.saturday = function(date) {
+      return _time.wday(date) === 6;
+    };
+
+    TimeMethods.prototype.sunday = function(date) {
+      return _time.wday(date) === 0;
+    };
+
+    TimeMethods.prototype.day = function(date) {
+      return date.getDate();
+    };
+
+    TimeMethods.prototype.mday = TimeMethods.prototype.day;
+
+    TimeMethods.prototype.hour = function(date) {
+      return date.getHours();
+    };
+
+    TimeMethods.prototype.hour12 = function(date) {
+      return date.getHours() % 12;
+    };
+
+    TimeMethods.prototype.min = function(date) {
+      return date.getMinutes();
+    };
+
+    TimeMethods.prototype.sec = function(date) {
+      return date.getSeconds();
+    };
+
+    TimeMethods.prototype.tv_usec = function(date) {
+      return (date.valueOf() % 1000) * 1000;
+    };
+
+    TimeMethods.prototype.usec = TimeMethods.prototype.tv_usec;
+
+    TimeMethods.prototype.wday = function(date) {
+      return date.getDay();
+    };
+
+    TimeMethods.prototype.yday = function(date) {
+      var secs;
+      secs = date.getTime();
+      return Math.floor(secs / 86400000);
+    };
+
+    TimeMethods.prototype.gmt_offset = function(date) {
+      return date.getTimezoneOffset() * -60;
+    };
+
+    TimeMethods.prototype._offset_str = function(date) {
+      var hour, mins, offset, sign;
+      offset = _time.gmt_offset(date);
+      mins = offset / 60;
+      if (mins === 0) {
+        return '+0000';
+      }
+      sign = mins > 0 ? '+' : '-';
+      mins = Math.abs(mins);
+      hour = this._rjust(Math.ceil(mins / 60));
+      mins = this._rjust(mins % 60);
+      return sign + hour + mins;
+    };
+
+    return TimeMethods;
+
+  })();
+
+  _time = R._time = function(arr) {
+    return new R.Time(arr);
+  };
+
+  R.extend(_time, new TimeMethods());
 
   RubyJS.Object = (function() {
     function Object() {}
@@ -7975,7 +8200,7 @@ http://www.rubyjs.org/LICENSE.txt
         hour = parseInt(hour.slice(1));
         secs = sign * (hour * 60 + mins) * 60;
       } else if ((offset.is_fixnum != null) || (offset.to_int != null)) {
-        secs = offset.to_int();
+        secs = offset.to_int().valueOf();
         if (Math.abs(secs) >= 86400) {
           throw R.ArgumentError["new"]();
         }
@@ -8102,45 +8327,45 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Time.prototype.year = function() {
-      return new R.Fixnum(this._tzdate.getFullYear());
+      return new R.Fixnum(_time.year(this._tzdate));
     };
 
     Time.prototype.month = function() {
-      return new R.Fixnum(this._tzdate.getMonth() + 1);
+      return new R.Fixnum(_time.month(this._tzdate));
     };
 
     Time.prototype.mon = Time.prototype.month;
 
     Time.prototype.monday = function() {
-      return this.wday().to_native() === 1;
+      return _time.monday(this._tzdate);
     };
 
     Time.prototype.tuesday = function() {
-      return this.wday().to_native() === 2;
+      return _time.tuesday(this._tzdate);
     };
 
     Time.prototype.wednesday = function() {
-      return this.wday().to_native() === 3;
+      return _time.wednesday(this._tzdate);
     };
 
     Time.prototype.thursday = function() {
-      return this.wday().to_native() === 4;
+      return _time.thursday(this._tzdate);
     };
 
     Time.prototype.friday = function() {
-      return this.wday().to_native() === 5;
+      return _time.friday(this._tzdate);
     };
 
     Time.prototype.saturday = function() {
-      return this.wday().to_native() === 6;
+      return _time.saturday(this._tzdate);
     };
 
     Time.prototype.sunday = function() {
-      return this.wday().to_native() === 0;
+      return _time.sunday(this._tzdate);
     };
 
     Time.prototype.day = function() {
-      return new R.Fixnum(this._tzdate.getDate());
+      return new R.Fixnum(_time.day(this._tzdate));
     };
 
     Time.prototype.mday = Time.prototype.day;
@@ -8172,11 +8397,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Time.prototype.hour = function() {
-      return new R.Fixnum(this._tzdate.getHours());
+      return new R.Fixnum(_time.hour(this._tzdate));
     };
 
     Time.prototype.hour12 = function() {
-      return new R.Fixnum(this._tzdate.getHours() % 12);
+      return new R.Fixnum(_time.hour12(this._tzdate));
     };
 
     Time.prototype.inspect = function() {
@@ -8188,15 +8413,18 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Time.prototype.min = function() {
-      return new R.Fixnum(this._tzdate.getMinutes());
+      return new R.Fixnum(_time.min(this._tzdate));
     };
 
     Time.prototype.sec = function() {
-      return new R.Fixnum(this._tzdate.getSeconds());
+      return new R.Fixnum(_time.sec(this._tzdate));
     };
 
     Time.prototype.strftime = function(format) {
       var fill, locale, out, self;
+      if (this.__utc_offset__ === new Date().getTimezoneOffset() * -60) {
+        return new RString(_time.strftime(this.__native__, format));
+      }
       locale = R.Time.LOCALE;
       fill = this._rjust;
       self = this;
@@ -8312,10 +8540,6 @@ http://www.rubyjs.org/LICENSE.txt
 
     Time.prototype.to_s = Time.prototype.inspect;
 
-    Time.prototype.__tz_delta__ = function() {
-      return this.__utc_offset__ + R.Time._local_timezone();
-    };
-
     Time.prototype.__utc_delta__ = function() {
       return this.gmt_offset() + R.Time._local_timezone();
     };
@@ -8329,7 +8553,7 @@ http://www.rubyjs.org/LICENSE.txt
     Time.prototype.usec = Time.prototype.tv_usec;
 
     Time.prototype.wday = function() {
-      return new R.Fixnum(this._tzdate.getDay());
+      return new R.Fixnum(_time.wday(this._tzdate));
     };
 
     Time.prototype.yday = function() {

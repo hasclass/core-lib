@@ -16,6 +16,7 @@ liteFiles = [
   'lite/arr'
   'lite/str'
   'lite/hsh'
+  'lite/time'
 ]
 
 chainFiles = [
