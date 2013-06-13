@@ -1,0 +1,14 @@
+src_dir: spec/lib
+
+src_files:
+  # not needed. defined in spechelper.coffee
+  # - ruby.coffee
+  # - corelib/string/fixtures/classes.coffee
+  # - corelib/numeric/fixtures/classes.coffee
+  # - corelib/enumerable/fixtures/classes.coffee
+  # - corelib/time/fixtures/classes.coffee
+
+spec_dir: spec/lib/corelib
+
+spec_files:
+  - '**/*_spec.coffee'
