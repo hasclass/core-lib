@@ -3,10 +3,10 @@ describe "Time#dup", ->
 	  t = R.Time.at(100)
 	  expect( t.dup().tv_sec() ).toEqual t.tv_sec()
 
-  it "copies the gmt state flag", ->
+  xit "copies the gmt state flag", ->
 	  expect( R.Time.now().gmtime().dup().gmt() ).toEqual true
 
-  it "returns an independent Time object", ->
+  xit "returns an independent Time object", ->
 	  t = R.Time.now()
 	  t2 = t.dup()
 	  t.gmtime()

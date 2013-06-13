@@ -24,6 +24,7 @@ describe "Regexp.union", ->
     it "accepts a single array of patterns as arguments", ->
       # TODO: help
       # expect( R.Regexp.union(["skiing", "sledding"]) ).toEqual R(/skiing|sledding/)
+
       # TODO: not supported:
       # expect( R.Regexp.union([/dogs/, /cats/i]) ).toEqual R(/(?-mix:dogs)|(?i-mx:cats)/)
       expect( ->

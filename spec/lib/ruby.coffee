@@ -9841,7 +9841,7 @@ class RubyJS.Time extends RubyJS.Object
       @_tzdate = R.Time._offset_to_local(@__native__, @__utc_offset__)
     else
       @_tzdate = @__native__
-      @__utc_offset__ = R.Time._local_timezone()
+      @__utc_offset__ = R.Time.__local_timezone__
 
 
   @now: ->
@@ -9875,7 +9875,7 @@ class RubyJS.Time extends RubyJS.Object
       date = @_local_to_offset(date, utc_offset)
     else
       date = new Date(year, month - 1, day, hour, min, sec)
-      utc_offset = @_local_timezone()
+      utc_offset = @__local_timezone__
 
     new R.Time(date, utc_offset)
 
@@ -9883,14 +9883,14 @@ class RubyJS.Time extends RubyJS.Object
   @_local_to_offset: (date, utc_offset) ->
     # utc_offset is the desired offset in seconds
     # Adjust the local date to the UTC date
-    date = date.valueOf() + R.Time._local_timezone() * 1000
+    date = date.valueOf() + R.Time.__local_timezone__ * 1000
     # remove the utc_offset:
     date = date - utc_offset * 1000
     new Date(date)
 
 
   @_offset_to_local: (date, utc_offset) ->
-    date = date.valueOf() - R.Time._local_timezone() * 1000
+    date = date.valueOf() - R.Time.__local_timezone__ * 1000
     date += utc_offset * 1000
     new Date(date)
 
@@ -9953,14 +9953,14 @@ class RubyJS.Time extends RubyJS.Object
     else if seconds.is_numeric?
       secs = seconds.valueOf()
       msecs = secs * 1000 + microseconds / 1000
-      new R.Time(new Date(msecs), @_local_timezone())
+      new R.Time(new Date(msecs), @__local_timezone__)
     else
       throw R.TypeError.new()
 
 
   @local: (year, month, day, hour, min, sec) ->
     # date = new Date(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0)
-    R.Time.new(year, month, day, hour, min, sec, @_local_timezone())
+    R.Time.new(year, month, day, hour, min, sec, @__local_timezone__)
 
 
   # Creates a time based on given values, interpreted as UTC (GMT). The year
@@ -10002,8 +10002,13 @@ class RubyJS.Time extends RubyJS.Object
   # UCT: (+00:00) ->          -> 0
   #
   @_local_timezone: ->
-    new Date().getTimezoneOffset() * -60
+    @__local_timezone__
 
+
+  @__local_timezone__: new Date().getTimezoneOffset() * -60
+
+  @__reset_local_timezone__: ->
+    @__local_timezone__ = new Date().getTimezoneOffset() * -60
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -10363,7 +10368,7 @@ class RubyJS.Time extends RubyJS.Object
   # Return 0 if local timezone matches gmt_offset.
   # otherwise the difference to UTC
   __utc_delta__: ->
-    @gmt_offset() + R.Time._local_timezone()
+    @gmt_offset() + R.Time.__local_timezone__
 
 
   tv_sec: @prototype.to_i

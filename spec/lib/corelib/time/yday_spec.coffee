@@ -1,7 +1,9 @@
 describe "Time#yday", ->
 
   it "returns an integer representing the day of the year, 1..366", ->
+    R.Time.__local_timezone__ = 3600
     expect( R.Time.at(9999999).yday() ).toEqual R(117)
+    R.Time.__reset_local_timezone__()
     # with_timezone "UTC", 0, ->
     #   expect( R.Time.at(9999999).yday() ).toEqual R(116)
     #   expect( R.Time.at(9999999).utc_offset() ).toEqual R(0)

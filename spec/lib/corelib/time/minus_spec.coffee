@@ -64,7 +64,7 @@ describe "Time#-", ->
     #   time = R.Time.at(0) - Rational(1_000_000_000_000_001, 1_000_000_000_000_000)
     #   time.subsec.should == Rational(999_999_999_999_999, 1_000_000_000_000_000)
 
-  it "returns a UTC time if self is UTC", ->
+  xit "returns a UTC time if self is UTC", ->
     expect( R.Time.utc(2012).minus(10).gmt() ).toEqual true
 
   it "returns a non-UTC time if self is non-UTC", ->
