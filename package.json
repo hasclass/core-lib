@@ -19,6 +19,7 @@
   "dependencies": {
   },
   "devDependencies": {
+    "jasmine": "1.2.0"
   },
   "licenses": [
     {
