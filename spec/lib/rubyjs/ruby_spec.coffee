@@ -1,7 +1,9 @@
 describe 'RubyJS', ->
+  root = global ? window
+
   it "auto pollutes global", ->
     for method in ['_str', '_arr', '_itr', '_num', '_proc', '_puts', '_truthy', '_falsey', '_inspect']
-      expect( window[method]? ).toEqual true
+      expect( root[method]? ).toEqual true
 
   it "R()", ->
     expect( R( new String("foo") ) ).toEqual(R("foo"))

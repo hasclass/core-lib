@@ -156,7 +156,7 @@ class RubyJS.Time extends RubyJS.Object
       hour = parseInt(hour.slice(1))
       secs = sign * (hour * 60 + mins) * 60
     else if offset.is_fixnum? or offset.to_int?
-      secs = offset.to_int()
+      secs = offset.to_int().valueOf()
       return throw R.ArgumentError.new() if Math.abs(secs) >= 86400
 
     else
@@ -600,9 +600,6 @@ class RubyJS.Time extends RubyJS.Object
 
   to_s: @prototype.inspect
 
-
-  __tz_delta__: ->
-    @__utc_offset__ + R.Time._local_timezone()
 
   # Return 0 if local timezone matches gmt_offset.
   # otherwise the difference to UTC
