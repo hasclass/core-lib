@@ -338,43 +338,43 @@ class RubyJS.Time extends RubyJS.Object
 
   year: ->
     # getYear() returns 2 or 3 digit year
-    new R.Fixnum(@_tzdate.getFullYear())
+    new R.Fixnum(_time.year(@_tzdate))
 
 
   # @alias #mon
   month: ->
-    new R.Fixnum(@_tzdate.getMonth() + 1)
+    new R.Fixnum(_time.month(@_tzdate))
 
 
   mon: @prototype.month
 
 
   monday: ->
-    @wday().to_native() is 1
+    _time.monday(@_tzdate)
 
 
   tuesday: ->
-    @wday().to_native() is 2
+    _time.tuesday(@_tzdate)
 
 
   wednesday: ->
-    @wday().to_native() is 3
+    _time.wednesday(@_tzdate)
 
 
   thursday: ->
-    @wday().to_native() is 4
+    _time.thursday(@_tzdate)
 
 
   friday: ->
-    @wday().to_native() is 5
+    _time.friday(@_tzdate)
 
 
   saturday: ->
-    @wday().to_native() is 6
+    _time.saturday(@_tzdate)
 
 
   sunday: ->
-    @wday().to_native() is 0
+    _time.sunday(@_tzdate)
 
 
 
@@ -389,7 +389,7 @@ class RubyJS.Time extends RubyJS.Object
   # @alias #mday
   #
   day: ->
-    new R.Fixnum(@_tzdate.getDate())
+    new R.Fixnum(_time.day(@_tzdate))
 
 
   # @alias #day
@@ -476,11 +476,11 @@ class RubyJS.Time extends RubyJS.Object
 
 
   hour: ->
-    new R.Fixnum(@_tzdate.getHours())
+    new R.Fixnum(_time.hour(@_tzdate))
 
 
   hour12: ->
-    new R.Fixnum(@_tzdate.getHours() % 12)
+    new R.Fixnum(_time.hour12(@_tzdate))
 
 
   inspect: ->
@@ -497,7 +497,7 @@ class RubyJS.Time extends RubyJS.Object
   #     t.min()            #=> 25
   #
   min: ->
-    new R.Fixnum(@_tzdate.getMinutes())
+    new R.Fixnum(_time.min(@_tzdate))
 
 
   # Returns the second of the minute (0..60)[Yes, seconds really can range
@@ -511,11 +511,14 @@ class RubyJS.Time extends RubyJS.Object
   #     t.sec()            #=> 2
   #
   sec: ->
-    new R.Fixnum(@_tzdate.getSeconds())
+    new R.Fixnum(_time.sec(@_tzdate))
 
 
   # @todo: implement %N
   strftime: (format) ->
+    if @__utc_offset__ == new Date().getTimezoneOffset() * -60
+      return new RString(_time.strftime(@__native__, format))
+
     locale = R.Time.LOCALE
 
     fill = @_rjust
@@ -644,7 +647,8 @@ class RubyJS.Time extends RubyJS.Object
   #
   wday: ->
     # time zone adjusted date
-    new R.Fixnum(@_tzdate.getDay())
+    new R.Fixnum(_time.wday(@_tzdate))
+    # new R.Fixnum(_time.wday(@_tzdate))
 
 
   # Returns an integer representing the day of the year, 1..366.
