@@ -8563,6 +8563,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #     R.Regexp.union(pats_ary) → new_regexp
   #
   @union: (args...) ->
+    # FIX: check specs...
     return R(/(?!)/) if args.length == 0
 
     first_arg = R(args[0])

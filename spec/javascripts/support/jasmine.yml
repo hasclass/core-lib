@@ -1,6 +1,7 @@
 src_dir: spec/javascripts
 
 src_files:
+  - helpers/SpecHelper.js
   - ruby.js
   - corelib/string/fixtures/classes.js
   - corelib/numeric/fixtures/classes.js

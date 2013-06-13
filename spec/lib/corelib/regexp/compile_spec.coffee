@@ -141,7 +141,7 @@ describe "R.Regexp.compile", ->
     it "raises a Regexp error if there is a trailing backslash", ->
       expect( -> R.Regexp.compile("\\") ).toThrow('RegexpError')
 
-    it "accepts a backspace followed by a character", ->
+    xit "accepts a backspace followed by a character", ->
       expect( R.Regexp.compile("\\N") ).toEqual R(/\\N/)
 
     xit "accepts a one-digit octal value", ->
@@ -178,22 +178,22 @@ describe "R.Regexp.compile", ->
   #   #   it "accepts an escaped string interpolation", ->
   #   #     R.Regexp.compile("\#{abc}").should == /#{"\#{abc}"}/
 
-    it "accepts '\\n'", ->
+    xit "accepts '\\n'", ->
       expect( R.Regexp.compile("\n") ).toEqual R(/\n/)
 
-    it "accepts '\\t'", ->
+    xit "accepts '\\t'", ->
       expect( R.Regexp.compile("\t") ).toEqual R(/\t/)
 
-    it "accepts '\\r'", ->
+    xit "accepts '\\r'", ->
       expect( R.Regexp.compile("\r") ).toEqual R(/\r/)
 
-    it "accepts '\\f'", ->
+    xit "accepts '\\f'", ->
       expect( R.Regexp.compile("\f") ).toEqual R(/\f/)
 
-    it "accepts '\\v'", ->
+    xit "accepts '\\v'", ->
       expect( R.Regexp.compile("\v") ).toEqual R(/\v/)
 
-    it "accepts '\\a'", ->
+    xit "accepts '\\a'", ->
       expect( R.Regexp.compile("\a") ).toEqual R(/\a/)
 
   #   #   it "accepts '\\e'", ->
