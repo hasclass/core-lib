@@ -11,6 +11,7 @@ liteFiles = [
   'base/base'
   'base/errors'
 
+  'lite/err'
   'lite/coerce'
   'lite/num'
   'lite/itr'

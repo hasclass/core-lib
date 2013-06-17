@@ -251,7 +251,7 @@ class EnumerableMethods
 
   first: (coll, n = null) ->
     if n != null
-      throw new R.ArgumentError('ArgumentError') if n < 0
+      _err.throw_argument() if n < 0
       _itr.take(coll, n)
     else
       _itr.take(coll, 1)[0]
@@ -347,7 +347,7 @@ class EnumerableMethods
         max = item
       else
         comp = block(item, max)
-        throw R.ArgumentError.new() if comp is null
+        _err.throw_argument() if comp is null
         max = item if comp > 0
 
     max or null
@@ -379,7 +379,7 @@ class EnumerableMethods
         min = item
       else
         comp = block.call(this, item, min)
-        throw R.ArgumentError.new() if comp is null
+        _err.throw_argument() if comp is null
         min = item if comp < 0
 
     min or null
@@ -466,7 +466,7 @@ class EnumerableMethods
   slice_before: (args...) ->
     # TODO
     # block = @__extract_block(args)
-    # # throw R.ArgumentError.new() if args.length == 1
+    # # _err.throw_argument() if args.length == 1
     # arg   = R(args[0])
 
     # if block
@@ -507,7 +507,7 @@ class EnumerableMethods
 
 
   take: (coll, n) ->
-    throw R.ArgumentError.new() if n < 0
+    _err.throw_argument() if n < 0
     ary = []
     _itr.catch_break (breaker) ->
       _itr.each coll, ->

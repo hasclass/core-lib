@@ -17,6 +17,7 @@ R.Support = {}
 #
 callFunctionWithThis = (func) ->
   (a, b, c, d, e, f) ->
+    # Ugly, but fast implementation.
     idx = arguments.length
     while idx--
       break if arguments[idx] isnt undefined

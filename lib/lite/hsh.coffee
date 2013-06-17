@@ -59,7 +59,7 @@ class HashMethods extends EnumerableMethods
 
   fetch: (hsh, key, default_value) ->
     if arguments.length <= 1
-      throw R.ArgumentError.new()
+      _err.throw_argument()
 
     if `key in hsh`
       hsh[key]
@@ -68,7 +68,7 @@ class HashMethods extends EnumerableMethods
     else if default_value != undefined
       default_value
     else
-      throw R.KeyError.new()
+      _err.throw_key()
 
 
   flatten: (hsh, recursion = 1) ->

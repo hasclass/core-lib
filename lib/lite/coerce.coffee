@@ -19,26 +19,26 @@ _coerce =
 
 
   str: (obj) ->
-    throw R.TypeError.new() if obj == null
+    _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid string") unless typeof obj is 'string'
-    throw R.TypeError.new() unless typeof obj is 'string'
+    _err.throw_type() unless typeof obj is 'string'
     obj
 
 
   num: (obj) ->
-    throw R.TypeError.new() if obj == null
+    _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid num") unless typeof obj is 'number'
-    throw R.TypeError.new() unless typeof obj is 'number'
+    _err.throw_type() unless typeof obj is 'number'
     obj
 
 
   int: (obj) ->
-    throw R.TypeError.new() if obj == null
+    _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid int") unless typeof obj is 'number'
-    throw R.TypeError.new() unless typeof obj is 'number'
+    _err.throw_type() unless typeof obj is 'number'
     Math.floor(obj)
 
 
@@ -56,10 +56,10 @@ _coerce =
 
 
   arr: (obj) ->
-    throw R.TypeError.new() if obj == null
-    throw R.TypeError.new() if typeof obj != 'object'
+    _err.throw_type() if obj == null
+    _err.throw_type() if typeof obj != 'object'
     obj = obj.valueOf()
-    throw R.TypeError.new() unless _coerce.isArray(obj)
+    _err.throw_type() unless _coerce.isArray(obj)
     obj
 
 

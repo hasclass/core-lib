@@ -7,7 +7,7 @@ class StringMethods
 
 
   center: (str, length, padString = ' ') ->
-    throw R.ArgumentError.new() if padString.length == 0
+    _err.throw_argument() if padString.length == 0
 
     size = str.length
     return str if size >= length
@@ -60,7 +60,7 @@ class StringMethods
 
 
   'delete': (str) ->
-    throw R.ArgumentError.new() if arguments.length == 1
+    _err.throw_argument() if arguments.length == 1
     args  = _coerce.split_args(arguments, 1)
     trash = _str.__matched__(str, args)
     str.replace(new RegExp("[#{trash}]", 'g'), '')
@@ -135,14 +135,14 @@ class StringMethods
 
 
   gsub: (str, pattern, replacement) ->
-    throw R.TypeError.new() if pattern is null
+    _err.throw_type() if pattern is null
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
 
     unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
+      _err.throw_type()
 
     unless pattern.global
       throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
@@ -162,7 +162,7 @@ class StringMethods
       offset = str.length + offset if offset < 0
 
     # unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
-    #   throw R.TypeError.new()
+    #   _err.throw_type()
 
     if offset? && (offset > str.length or offset < 0)
       return null
@@ -180,7 +180,7 @@ class StringMethods
       idx = str.length - Math.abs(idx) + 1
 
     if idx < 0 or idx > str.length
-      throw R.IndexError.new()
+      _err.throw_index()
 
     chrs = str.split("")
 
@@ -196,7 +196,7 @@ class StringMethods
     if len >= width
       str
     else
-      throw R.ArgumentError.new() if padString.length == 0
+      _err.throw_argument() if padString.length == 0
       pad_length = width - len
       idx = -1
       out = ""
@@ -216,7 +216,7 @@ class StringMethods
         offset = null
 
     # unless RString.isString(pattern) or R.Regexp.isRegexp(pattern)
-    #   throw R.TypeError.new()
+    #   _err.throw_type()
 
     opts = {}
 
@@ -242,7 +242,7 @@ class StringMethods
 
 
   multiply: (str, num) ->
-    throw R.ArgumentError.new() if num < 0
+    _err.throw_argument() if num < 0
     out = ""
     out += str for n in [0...num]
     out
@@ -310,7 +310,7 @@ class StringMethods
       str
     else
       pad_str = __str(pad_str)
-      throw R.ArgumentError.new() if pad_str.length == 0
+      _err.throw_argument() if pad_str.length == 0
       pad_len = width - len
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
@@ -397,14 +397,14 @@ class StringMethods
 
 
   sub: (str, pattern, replacement) ->
-    throw R.TypeError.new() if pattern is null
+    _err.throw_type() if pattern is null
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(R.Regexp.escape(pattern_lit))
 
     unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
+      _err.throw_type()
 
     if pattern.global
       throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
@@ -461,13 +461,13 @@ class StringMethods
 
 
   slice: (str, index, other) ->
-    throw R.TypeError.new() if index is null
+    _err.throw_type() if index is null
     # TODO: This methods needs some serious refactoring
 
     size = str.length
     unless other is undefined
       if index.is_regexp?
-        throw R.NotImplementedError.new()
+        _err.throw_not_implemented()
         # match, str = subpattern(index, other)
         # Regexp.last_match = match
         # return str
@@ -481,7 +481,7 @@ class StringMethods
         return nativeStrSlice.call(str, start, start + length)
 
     if index.is_regexp?
-      throw R.NotImplementedError.new()
+      _err.throw_not_implemented()
       # match_data = index.search_region(self, 0, _str.num_bytes, true)
       # Regexp.last_match = match_data
       # if match_data
@@ -572,7 +572,7 @@ class StringMethods
     base = __int(base)
 
     if base < 0 or base > 36 or base is 1
-      throw R.ArgumentError.new()
+      _err.throw_argument()
 
     # ignore whitespace
     lit = _str.strip(str)
@@ -651,7 +651,7 @@ class StringMethods
     try
       return new RegExp(r, 'g')
     catch e
-      throw R.ArgumentError.new()
+      _err.throw_argument()
 
 
 

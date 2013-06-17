@@ -29,7 +29,7 @@ class TimeMethods
         when 'm' then fill(_time.month(date))
         when 'M' then fill(_time.min(date))
         when 'n' then "\n"
-        when 'N' then throw R.NotImplementedError.new()
+        when 'N' then _err.throw_not_implemented()
         when 'p'
           if _time.hour(date) < 12 then locale.AM     else locale.PM
         when 'P'

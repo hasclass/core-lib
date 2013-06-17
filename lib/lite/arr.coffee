@@ -202,28 +202,28 @@ class ArrayMethods extends EnumerableMethods
       return default_or_block(orig) if default_or_block?.call?
       return default_or_block   unless default_or_block is undefined
 
-      throw R.IndexError.new()
+      _err.throw_index()
 
     arr[idx]
 
 
   # @destructive
   fill: (arr, args...) ->
-    throw R.ArgumentError.new() if args.length == 0
+    _err.throw_argument() if args.length == 0
     block = R.__extract_block(args)
 
     if block
-      throw R.ArgumentError.new() if args.length >= 3
+      _err.throw_argument() if args.length >= 3
       one = args[0]; two = args[1]
     else
-      throw R.ArgumentError.new() if args.length > 3
+      _err.throw_argument() if args.length > 3
       obj = args[0]; one = args[1]; two = args[2]
 
     size = arr.length
 
     if one?.is_range?
       # TODO: implement fill with range
-      throw R.NotImplementedError.new()
+      _err.throw_not_implemented()
 
     else if one isnt undefined && one isnt null
       left = __int(one)
@@ -234,7 +234,7 @@ class ArrayMethods extends EnumerableMethods
         try
           right = __int(two)
         catch e
-          throw R.ArgumentError.new("second argument must be a Fixnum")
+          _err.throw_argument("second argument must be a Fixnum")
         return arr if right is 0
         right = right + left
       else
@@ -267,7 +267,7 @@ class ArrayMethods extends EnumerableMethods
   # @destructive
   # @param items...
   insert: (arr, idx) ->
-    throw R.ArgumentError.new() if idx is undefined
+    _err.throw_argument() if idx is undefined
 
     return arr if arguments.length == 2
     items = _coerce.split_args(arguments, 2)
@@ -277,7 +277,7 @@ class ArrayMethods extends EnumerableMethods
     idx = idx + len + 1 if idx < 0 # Negatives add AFTER the element
 
     # TODO: add message "#{idx} out of bounds"
-    throw R.IndexError.new() if idx < 0
+    _err.throw_index() if idx < 0
 
     after  = arr.slice(idx)
 
@@ -327,7 +327,7 @@ class ArrayMethods extends EnumerableMethods
     if len is 0 or n is 0
       return []
 
-    throw R.ArgumentError.new("count must be positive") if n < 0
+    _err.throw_argument("count must be positive") if n < 0
 
     n = len if n > len
     arr[-n.. -1]
@@ -347,14 +347,14 @@ class ArrayMethods extends EnumerableMethods
 
 
   multiply: (arr, multiplier) ->
-    throw R.TypeError.new() if multiplier is null
+    _err.throw_type() if multiplier is null
 
     if __isStr(multiplier)
       return _arr.join(arr, __str(multiplier))
     else
       multiplier = __int(multiplier)
 
-      throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
+      _err.throw_argument("count cannot be negative") if multiplier < 0
 
       total = arr.length
       if total is 0
@@ -375,7 +375,7 @@ class ArrayMethods extends EnumerableMethods
       arr.pop()
     else
       many = __int(many)
-      throw R.ArgumentError.new("negative array size") if many < 0
+      _err.throw_argument("negative array size") if many < 0
       ary = []
       len = arr.length
       many = len if many > len
@@ -480,7 +480,7 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     return arr[R.rand(len)] if n is undefined
     n = __int(n)
-    throw R.ArgumentError.new() if n < 0
+    _err.throw_argument() if n < 0
 
     n    = len if n > len
 
@@ -508,7 +508,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   slice: (arr, idx, length) ->
-    throw new R.TypeError.new() if idx is null
+    _err.throw_type() if idx is null
     size = arr.length
 
     if idx?.is_range?
@@ -552,7 +552,7 @@ class ArrayMethods extends EnumerableMethods
 
       # Catches too-large as well as too-small (for which #fetch would suffice)
       # throw R.IndexError.new("All arrays must be same length") if ary.size != max
-      throw R.IndexError.new() unless ary.length == max
+      _err.throw_index() unless ary.length == max
 
       idx = -1
       len = ary.length
@@ -625,7 +625,7 @@ class ArrayMethods extends EnumerableMethods
 
   first: (arr, n) ->
     if n?
-      throw new R.ArgumentError('ArgumentError') if n < 0
+      _err.throw_argument() if n < 0
       arr.slice(0,n)
     else
       arr[0]

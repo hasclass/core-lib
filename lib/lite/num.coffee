@@ -63,7 +63,7 @@ class NumericMethods
       step  = 1
 
     if step is 0
-      throw new R.ArgumentError("ArgumentError")
+      _err.throw_argument()
 
     float_mode = num % 1 is 0 or limit % 1 is 0 or step % 1 is 0
     # eps = 0.0000000000000002220446049250313080847263336181640625
@@ -147,7 +147,7 @@ class NumericMethods
     @__ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    new R.Array([@gcd(other), @lcm(other)])
+    [@gcd(other), @lcm(other)]
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
