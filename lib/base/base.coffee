@@ -158,27 +158,34 @@ class RubyJS.Base
     obj[function_name] != undefined
 
 
-  # Optimized version of calling a.equals(b).
-  # Takes care of non rubyjs objects.
+  # Compares to objects.
+  #
+  #      // => true
+  #      R.is_equal(1,1)
+  #      R.is_equal(1, new Number(1))
+  #      R.is_equal(1, {valueOf: function () {return 1;}})
+  #      R.is_equal(1, {equals: function (n) {return n === 1;}})
+  #
   is_equal: (a, b) ->
     return true if a is b
 
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
-      else if a.equals?
-        a.equals(b)
+      else if a.valueOf?
+        a.valueOf() is b
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
-      else if b.equals?
-        b.equals(a)
+      else if b.valueOf?
+        b.valueOf() is a
       else
         false
     else
       a is b
+
 
   is_eql: (a, b) ->
     if typeof a is 'object'
