@@ -16,4 +16,4 @@ for error in errors
   do (error) ->
     errorClass     = class extends Error
     errorClass.new = -> new RubyJS[error](error)
-    RubyJS[error]  = errorClass
+    RubyJS[error] = this["R"+error] = errorClass

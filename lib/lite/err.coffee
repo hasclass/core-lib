@@ -1,17 +1,17 @@
 _err =
   throw_argument: (msg) ->
-    throw R.ArgumentError.new(msg)
+    throw RArgumentError.new(msg)
 
   throw_type: (msg) ->
-    throw R.TypeError.new(msg)
+    throw RTypeError.new(msg)
 
   throw_index: (msg) ->
-    throw R.IndexError.new(msg)
+    throw RIndexError.new(msg)
 
   throw_not_implemented: (msg) ->
-    throw R.NotImplementedError.new(msg)
+    throw RNotImplementedError.new(msg)
 
   throw_key: (msg) ->
-    throw R.KeyError.new(msg)
+    throw RKeyError.new(msg)
 
 R.Support.err = _err
