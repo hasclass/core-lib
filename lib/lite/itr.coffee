@@ -465,7 +465,7 @@ class EnumerableMethods
 
   slice_before: (args...) ->
     # TODO
-    # block = @__extract_block(args)
+    # block = __extract_block(args)
     # # _err.throw_argument() if args.length == 1
     # arg   = R(args[0])
 

@@ -221,7 +221,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [R.Float]
   #
   quo: (other) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
 
     other = @box(other)
     @divide(other)

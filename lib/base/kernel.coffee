@@ -88,6 +88,7 @@ class RubyJS.Kernel
   w: (str) ->
     new R.String(str).split(/\s+/)
 
+
   # Shortcut for creating a R.Range.
   #
   # @example
@@ -111,18 +112,6 @@ class RubyJS.Kernel
   # Shortcut for creating Ranges
   rng: @prototype.r
 
-  # Returns primitive from an object, returns obj otherwise.
-  #
-  # @example
-  #      str = R('rubyjs')
-  #      R.l(str)        # => 'rubyjs'
-  #      R.l('js_str')   # => 'js_str'
-  #
-  l: (obj, recursive = false) ->
-    if typeof obj is 'object'
-      if obj.to_native? then obj.to_native(true) else obj
-    else
-      obj
 
   catch_break: (block, context = this) ->
     breaker  = new R.Breaker()
@@ -130,6 +119,7 @@ class RubyJS.Kernel
       return block.call(context, breaker)
     catch e
       return breaker.handle_break(e)
+
 
   $Array:   (obj, recursive = false) ->
     if recursive is true
@@ -145,6 +135,7 @@ class RubyJS.Kernel
   # TODO: Remove from code
   $Array_r: (obj) ->
     @$Array(obj, true)
+
 
   $Float: (obj) ->
     obj = @box(obj)
@@ -163,6 +154,7 @@ class RubyJS.Kernel
       new R.Float(obj.to_native())
     else # is not a R object
       new R.Float(obj)
+
 
   $Integer: (obj) ->
     obj = R(obj)
@@ -183,6 +175,7 @@ class RubyJS.Kernel
     else # is not a R object
       new R.Fixnum(Math.floor(obj))
 
+
   $Integer: @prototype.$Integer
 
 
@@ -201,29 +194,3 @@ class RubyJS.Kernel
     r = R(Math.random())
     if limit then r.multiply(limit).to_i() else r
 
-
-
-  # RubyJS specific helper methods
-  # @private
-  __ensure_args_length: (args, length) ->
-    throw R.ArgumentError.new() unless args.length is length
-
-
-
-  # Finds, removes and returns the last block/function in arguments list.
-  # This is a destructive method.
-  #
-  # @example Use like this
-  #   foo = (args...) ->
-  #     console.log( args.length )     # => 2
-  #     block = @__extract_block(args)
-  #     console.log( args.length )     # => 1
-  #     other = args[0]
-  #
-  # @private
-  #
-  __extract_block: (args) ->
-    idx = args.length
-    while --idx >= 0
-      return args.pop() if args[idx]?.call?
-    null

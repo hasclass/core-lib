@@ -181,7 +181,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   fdiv: (other) ->
     other = R(other)
     throw R.TypeError.new() unless other.is_numeric?
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @to_f().divide(other.to_f())
 
 

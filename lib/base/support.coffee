@@ -34,4 +34,32 @@ callFunctionWithThis = (func) ->
       # Slow fallback when passed more than 6 arguments.
       else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
 
+
+# RubyJS specific helper methods
+# @private
+__ensure_args_length = (args, length) ->
+  throw R.ArgumentError.new() unless args.length is length
+
+
+# Finds, removes and returns the last block/function in arguments list.
+# This is a destructive method.
+#
+# @example Use like this
+#   foo = (args...) ->
+#     console.log( args.length )     # => 2
+#     block = __extract_block(args)
+#     console.log( args.length )     # => 1
+#     other = args[0]
+#
+# @private
+#
+__extract_block = (args) ->
+  idx = args.length
+  while --idx >= 0
+    return args.pop() if args[idx]?.call?
+  null
+
+
 R.Support.callFunctionWithThis = callFunctionWithThis
+R.Support.ensure_args_length = __ensure_args_length
+R.Support.extract_block = __extract_block

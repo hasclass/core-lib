@@ -94,7 +94,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   gcd: (other) ->
     other = R(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     n = _num.gcd(@__native__, other.to_native())
@@ -112,7 +112,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   gcdlcm: (other) ->
     other = @box(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     new R.Array([@gcd(other).valueOf(), @lcm(other).valueOf()])
@@ -129,7 +129,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   lcm: (other) ->
     other = R(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))

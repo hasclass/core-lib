@@ -100,7 +100,7 @@ class RubyJS.Array extends RubyJS.Object
   #     copy = R.Array.new(squares)
   #
   @new: (args...) ->
-    block = R.__extract_block(args)
+    block = __extract_block(args)
     throw R.ArgumentError.new() if args.length >= 3
     size = args[0]
     obj  = args[1]
@@ -256,7 +256,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return [Object]
   #
   at: (index) ->
-    # UNSUPPORTED: @__ensure_args_length(arguments, 1)
+    # UNSUPPORTED: __ensure_args_length(arguments, 1)
     index = RCoerce.to_int_native(index)
     _arr.at(@__native__, index)
 
@@ -270,7 +270,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return [R.Array]
   #
   clear: () ->
-    @__ensure_args_length(arguments, 0)
+    __ensure_args_length(arguments, 0)
     @__native__.length = 0
     @replace @__native__
     this
@@ -382,7 +382,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.delete("z", -> 'not found')   #=> "not found"
   #
   delete: (args...) ->
-    block   = @__extract_block(args)
+    block   = __extract_block(args)
     _arr.delete(@__native__, args[0], block)
 
 
@@ -579,7 +579,7 @@ class RubyJS.Array extends RubyJS.Object
   fill: (args...) ->
     throw R.ArgumentError.new() if args.length == 0
     # OPTIMIZE arguments
-    block = @__extract_block(args)
+    block = __extract_block(args)
 
     if block
       throw R.ArgumentError.new() if args.length >= 3
@@ -701,7 +701,7 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ 1, 2, 3 ]).multiply ","  # => "1,2,3"
   #
   multiply: (multiplier) ->
-    R.__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     # can be string or array
     R(_arr.multiply(@__native__, multiplier))
 
@@ -728,7 +728,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo Not yet implemented
   permutation: (args...) ->
     throw R.NotImplementedError.new()
-  #   block = @__extract_block(args)
+  #   block = __extract_block(args)
   #   num   = args[0]
   #   return @to_enum('permutation', num) unless block?.call?
 
@@ -924,7 +924,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.replace(R([1]))             # => [1]
   #
   replace: (val) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     # TODO: Use RCoerce.to_ary_native
     @__native__ = if val.to_ary? then val.to_ary().to_native().slice(0) else val.slice(0)
     this

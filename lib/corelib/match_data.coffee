@@ -54,7 +54,7 @@ class RubyJS.MatchData extends RubyJS.Object
   #     # m.begin(:bar)  #=> 2
   #
   begin: (offset) ->
-    @__ensure_args_length(1)
+    __ensure_args_length(1)
     R(@__source__[@__offset__..-1].indexOf(@__native__[offset]) + @__offset__)
 
 
@@ -77,7 +77,7 @@ class RubyJS.MatchData extends RubyJS.Object
 
 
   end: (offset) ->
-    @__ensure_args_length(1)
+    __ensure_args_length(1)
     R(@__source__[@__offset__..-1].indexOf(@__native__[offset]) + @__offset__ + @__native__[offset].length)
 
 

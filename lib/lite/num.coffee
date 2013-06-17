@@ -144,7 +144,7 @@ class NumericMethods
   #
   gcdlcm: (other) ->
     other = @box(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     [@gcd(other), @lcm(other)]
@@ -161,7 +161,7 @@ class NumericMethods
   #
   lcm: (other) ->
     other = R(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))

@@ -210,7 +210,7 @@ class ArrayMethods extends EnumerableMethods
   # @destructive
   fill: (arr, args...) ->
     _err.throw_argument() if args.length == 0
-    block = R.__extract_block(args)
+    block = __extract_block(args)
 
     if block
       _err.throw_argument() if args.length >= 3
@@ -386,7 +386,7 @@ class ArrayMethods extends EnumerableMethods
 
   product: (arr, args...) ->
     result = []
-    block = R.__extract_block(args)
+    block = __extract_block(args)
 
     args = for a in args
       __arr(a)

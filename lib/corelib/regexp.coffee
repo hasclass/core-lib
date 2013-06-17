@@ -168,7 +168,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #     match(str,pos) → matchdata or nil
   #
   match: (str, offset) ->
-    block   = @__extract_block(nativeSlice.call(arguments))
+    block   = __extract_block(nativeSlice.call(arguments))
 
     if str is null
       R['$~'] = null

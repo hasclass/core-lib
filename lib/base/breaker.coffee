@@ -21,7 +21,7 @@
 #
 #
 class RubyJS.Breaker
-  constructor: (@return_value = null, @broken = false) ->
+  constructor: (@return_value = null) ->
 
   # Breaks out of the loop by throwing itself. Accepts a return value.
   #
@@ -33,9 +33,9 @@ class RubyJS.Breaker
   # @param value Return value
   #
   break: (return_value) ->
-    @broken = true
     @return_value = return_value
     throw this
+
 
   handle_break: (e) ->
     if this is e

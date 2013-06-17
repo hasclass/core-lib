@@ -19,7 +19,7 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   @create: (args...) ->
-    if block = R.__extract_block(args)
+    if block = __extract_block(args)
       object = new RubyJS.Enumerator.Generator(block)
       iter = 'each'
       return Enumerator.new(object, iter)

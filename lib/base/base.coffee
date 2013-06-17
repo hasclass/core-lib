@@ -69,10 +69,10 @@ class RubyJS.Base
   #
   god_mode: (prefix = 'rb_', overwrite = false) ->
     overwrites = [
-      [Array.prototype, _arr],
+      [Array.prototype,  _arr],
       [Number.prototype, _num],
       [String.prototype, _str],
-      [Date.prototype, _time]
+      [Date.prototype,   _time]
     ]
 
     for [proto, methods] in overwrites
@@ -87,11 +87,10 @@ class RubyJS.Base
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
 
-    "harr harr"
-
 
   i_am_feeling_evil: ->
     @god_mode('', true)
+    "harr harr"
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
@@ -105,9 +104,7 @@ class RubyJS.Base
   #     R.w('foo bar').map( R.proc('capitalize') )
   #     R.w('foo bar').map( R.proc('ljust', 10) )
   #
-  proc:  ->
-    key = arguments[0]
-    # OPTIMIZE: dont use args... but arguments instead
+  proc: (key) ->
     if arguments.length == 1
       # Wrapper block doesnt need to mangle arguments
       (el) ->
@@ -115,6 +112,7 @@ class RubyJS.Base
         if typeof fn is 'function'
           fn.call(el)
         else if fn is undefined
+          # RELOADED: dont use R()
           R(el)[key]().valueOf()
         else
           fn
@@ -148,10 +146,6 @@ class RubyJS.Base
   #
   truthy: (obj) ->
     !@falsey(obj)
-
-
-  unbox: (obj, recursive = false) ->
-    obj.unbox(recursive)
 
 
   respond_to: (obj, function_name) ->
@@ -206,26 +200,6 @@ class RubyJS.Base
   argify: -> arguments
 
 
-  # LITE: remove '==' methods.
-  equals: -> (a,b) ->
-    return true if a is b
-
-    if typeof a is 'object'
-      if a.equals?
-        a.equals(b)
-      else if a.equals?
-        a.equals(b)
-      else
-        false
-    else if typeof b is 'object'
-      if b.equals?
-        b.equals(a)
-      else if b.equals?
-        b.equals(a)
-      else
-        false
-    else
-      a is b
 
 
 # adds all methods to the global R object

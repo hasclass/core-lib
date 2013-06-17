@@ -478,7 +478,7 @@ class RubyJS.String extends RubyJS.Object
   #
   each_line: (args...) ->
     # TODO
-    block = @__extract_block(args)
+    block = __extract_block(args)
 
     return @to_enum('lines', args[0]) unless block && block.call?
 

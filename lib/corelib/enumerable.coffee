@@ -107,7 +107,7 @@ class RubyJS.Enumerable
   #     a.drop(3)             #=> [4, 5, 0]
   #
   drop: (n) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
@@ -141,9 +141,9 @@ class RubyJS.Enumerable
   #      # [4, 5, 6]
   #
   each_cons: (args...) ->
-    block = @__extract_block(args)
+    block = __extract_block(args)
     return @to_enum('each_cons', args...) unless block && block.call?
-    @__ensure_args_length(args, 1)
+    __ensure_args_length(args, 1)
     n = RCoerce.to_int_native(args[0])
     throw R.ArgumentError.new() unless n > 0
 
@@ -522,7 +522,7 @@ class RubyJS.Enumerable
 
 
   slice_before: (args...) ->
-    block = @__extract_block(args)
+    block = __extract_block(args)
     # throw R.ArgumentError.new() if args.length == 1
     arg   = R(args[0])
 
@@ -556,7 +556,7 @@ class RubyJS.Enumerable
 
 
   take: (n) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
@@ -598,7 +598,7 @@ class RubyJS.Enumerable
   # @todo dont yield R.Arrays
   zip: (others...) ->
     # TODO: fix specs
-    block = @__extract_block(others)
+    block = __extract_block(others)
 
     others = for o in others
       if __isArr(o) then o.valueOf() else o
