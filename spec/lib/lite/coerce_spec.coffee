@@ -1,6 +1,7 @@
 
 describe "_coerce", ->
-  _coerce = R.coerce
+  _coerce = R.Support.coerce
+
   describe "call_with", ->
     call_with = _coerce.call_with
     arg = R.argify

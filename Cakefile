@@ -3,13 +3,13 @@ fs     = require 'fs'
 
 
 liteFiles = [
+  'base/support'
   'base/aliases'
   'base/block'
   'base/breaker'
   'base/kernel'
   'base/base'
   'base/errors'
-  'base/support'
 
   'lite/coerce'
   'lite/num'

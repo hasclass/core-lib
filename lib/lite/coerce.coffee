@@ -90,7 +90,7 @@ _coerce =
       else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
 
 
-R.coerce = _coerce
+R.Support.coerce = _coerce
 __str = _coerce.str
 __int = _coerce.int
 __num = _coerce.num

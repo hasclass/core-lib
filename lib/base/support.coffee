@@ -1,3 +1,5 @@
+R.Support = {}
+
 # Creates a wrapper method that calls a functional style
 # method with this as the first arguments
 #
@@ -30,6 +32,5 @@ callFunctionWithThis = (func) ->
       when 6 then func(val, a, b, c, d, e, f)
       # Slow fallback when passed more than 6 arguments.
       else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
-
 
 R.Support.callFunctionWithThis = callFunctionWithThis
