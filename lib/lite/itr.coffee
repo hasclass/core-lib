@@ -63,7 +63,7 @@ class EnumerableMethods
     else
       countable = block
       _itr.each coll, (el) ->
-        counter += 1 if R.is_equal(countable, el)
+        counter += 1 if __equals(countable, el)
     counter
 
 
@@ -237,7 +237,7 @@ class EnumerableMethods
     if value.call?
       block = value
     else
-      block = (el) -> R.is_equal(value, el)
+      block = (el) -> __equals(value, el)
 
     _itr.catch_break (breaker) ->
       idx = 0

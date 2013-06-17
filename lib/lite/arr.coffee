@@ -8,7 +8,7 @@ class ArrayMethods extends EnumerableMethods
     return true  if arr is other
     return false unless other?
 
-    unless RArray.isNativeArray(other)
+    unless __arr(other)
       return false unless other.to_ary?
       # return other.equals arr
 
@@ -17,7 +17,7 @@ class ArrayMethods extends EnumerableMethods
     i = 0
     total = i + arr.length
     while i < total
-      return false unless R.is_equal(arr[i], other[i])
+      return false unless __equals(arr[i], other[i])
       i += 1
 
     true
@@ -107,7 +107,7 @@ class ArrayMethods extends EnumerableMethods
     i = 0
     len = arr.length
     while i < len
-      if R.is_equal(obj, arr[i])
+      if __equals(obj, arr[i])
         deleted.push(i)
       i += 1
 
@@ -418,7 +418,7 @@ class ArrayMethods extends EnumerableMethods
       elem = arr[idx]
       try
         el = __arr(elem)
-        if R.is_equal(el[1], obj)
+        if __equals(el[1], obj)
           return elem
       catch e
         null
@@ -453,7 +453,7 @@ class ArrayMethods extends EnumerableMethods
       # TODO: 2012-11-06 use a while loop with idx counting down
       while ridx--
         el = arr[ridx]
-        if R.is_equal(el, other)
+        if __equals(el, other)
           return ridx
 
     null
@@ -611,7 +611,7 @@ class ArrayMethods extends EnumerableMethods
     if typeof value is 'function' or (typeof value is 'object' && value.call?)
       block = Block.splat_arguments(value)
     else if value != null && typeof value is 'object'
-      block = (el) -> R.is_equal(value, el)
+      block = (el) -> __equals(value, el)
     else
       while ++idx < len
         return idx if arr[idx] == value
@@ -657,5 +657,6 @@ class ArrayMethods extends EnumerableMethods
 
 _arr = R._arr = (arr) ->
   new RArray(arr)
+
 
 R.extend(_arr, new ArrayMethods())
