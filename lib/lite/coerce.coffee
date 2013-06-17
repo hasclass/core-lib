@@ -55,6 +55,11 @@ _coerce =
     typeof obj is 'object' && obj != null && typeof obj.valueOf() is 'string'
 
 
+  is_rgx: (obj) ->
+    return false unless obj?
+    nativeToString.call(obj.valueOf()) is '[object RegExp]'
+
+
   arr: (obj) ->
     _err.throw_type() if obj == null
     _err.throw_type() if typeof obj != 'object'
@@ -88,6 +93,8 @@ _coerce =
       when 6 then func(thisArg, a[0], a[1], a[2], a[3], a[4], a[5])
       # Slow fallback when passed more than 6 arguments.
       else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
+
+
 
 
 R.Support.coerce = _coerce
