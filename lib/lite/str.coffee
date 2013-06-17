@@ -1,4 +1,10 @@
 class StringMethods
+  equals: (str, other) ->
+    str   = str.valueOf()   if typeof str is 'object'
+    other = other.valueOf() if typeof other is 'object'
+    str is other
+
+
   capitalize: (str) ->
     return "" if str.length == 0
     b = _str.downcase(str)
@@ -32,7 +38,7 @@ class StringMethods
     if sep == null
       if _str.empty(str) then "" else null
     else
-      sep = _coerce.str(sep)
+      sep = __str(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
@@ -53,7 +59,7 @@ class StringMethods
 
 
   count: (str) ->
-    throw R.ArgumentError.new("String.count needs arguments") if arguments.length == 1
+    _err.throw_argument("String.count needs arguments") if arguments.length == 1
     args = _coerce.split_args(arguments, 1)
 
     _str.__matched__(str, args).length

@@ -1,4 +1,4 @@
-# Breaker is a R class for adding support to breaking out of functions
+# Breaker is a class for adding support to breaking out of functions
 # that act like loops. Because we mimick ruby block/procs/lambdas by passing
 # functions, so neither break nor return would work in JS.
 #

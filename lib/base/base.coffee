@@ -135,8 +135,6 @@ class RubyJS.Base
       func.apply(null, arguments)
 
 
-
-
   # Check wether an obj is falsey according to Ruby
   #
   falsey: (obj) -> obj is false or obj is null or obj is undefined
@@ -166,18 +164,23 @@ class RubyJS.Base
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
+      else if __isArr(a)
+        _arr.equals(a,b)
       else if a.valueOf?
-        a.valueOf() is b
+        a.valueOf() is b.valueOf()
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
+      else if __isArr(b)
+        _arr.equals(a,b)
       else if b.valueOf?
-        b.valueOf() is a
+        b.valueOf() is a.valueOf()
       else
         false
     else
+      # for elements that are literals
       a is b
 
 
@@ -207,5 +210,7 @@ for own name, method of RubyJS.Base.prototype
   RubyJS[name] = method
 
 
+__falsey = R.falsey
+__truthy = R.truthy
 __equals = R.is_equal
 

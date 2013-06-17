@@ -1,13 +1,5 @@
 # Singleton class for type coercion inside RubyJS.
 #
-# to_int(obj) converts obj to R.Fixnum
-#
-# to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
-#
-# There is a shortcut for Coerce.prototype: RCoerce.
-#
-#     RCoerce.to_num_native(1)
-#
 # @private
 _coerce =
 
@@ -95,13 +87,42 @@ _coerce =
       else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
 
 
+  cmp: (a, b) ->
+    if typeof a isnt 'object' and typeof a is typeof b
+      if a is b
+        0
+      else
+        if a < b then -1 else 1
+    else
+      a = R(a)
+      throw 'NoMethodError' unless a.cmp?
+      a.cmp(b)
+
+
+  cmpstrict: (a, b) ->
+    if typeof a is typeof b and typeof a isnt 'object'
+      if a is b
+        0
+      else
+        if a < b then -1 else 1
+    else
+      a = R(a)
+      throw 'NoMethodError' unless a.cmp?
+      cmp = a.cmp(b)
+      _err.throw_argument() if cmp is null
+      cmp
+
+
+
 
 
 R.Support.coerce = _coerce
-__str = _coerce.str
-__int = _coerce.int
-__num = _coerce.num
-__arr = _coerce.arr
+__str   = _coerce.str
+__int   = _coerce.int
+__num   = _coerce.num
+__arr   = _coerce.arr
 __isArr = _coerce.is_arr
 __isStr = _coerce.is_str
-__call = _coerce.call_with
+__call  = _coerce.call_with
+__cmp   = _coerce.cmp
+__cmpstrict   = _coerce.cmpstrict

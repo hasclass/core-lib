@@ -23,7 +23,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, ->
         result = callback.invoke(arguments)
-        breaker.break(false) if R.falsey(result)
+        breaker.break(false) if __falsey(result)
       true
 
 
@@ -32,7 +32,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, ->
         result = callback.invoke(arguments)
-        breaker.break(true) unless R.falsey( result )
+        breaker.break(true) unless __falsey( result )
       false
 
 
@@ -59,7 +59,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, ->
         result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
+        counter += 1 unless __falsey(result)
     else
       countable = block
       _itr.each coll, (el) ->
@@ -83,25 +83,24 @@ class EnumerableMethods
 
     callback = __blockify(block, coll)
 
-    cache = new R.Array([])
+    cache = []
     _itr.each coll, ->
-      args = callback.args(arguments)
-      cache.append args
+      cache.push(callback.args(arguments))
       callback.invoke(arguments)
 
-    return null if cache.empty()
+    return null if cache.length == 0
 
     if many > 0                                  # cycle(2, () -> ... )
       i = 0
       many -= 1
       while many > i
         # OPTIMIZE use normal arrays and for el in cache
-        cache.each ->
+        _arr.each cache, ->
           callback.invoke(arguments)
           i += 1
     else
       while true                                 # cycle(() -> ... )
-        cache.each ->
+        _arr.each cache, ->
           callback.invoke(arguments)
 
 
@@ -152,7 +151,7 @@ class EnumerableMethods
     len = block.length
     _itr.each coll, ->
       args = callback.args(arguments)
-      if len > 1 and R.Array.isNativeArray(args)
+      if len > 1 and __isArr(args)
         block.apply(coll, args)
       else
         block.call(coll, args)
@@ -217,7 +216,7 @@ class EnumerableMethods
     callback = __blockify(block, this)
     _itr.catch_break (breaker) ->
       _itr.each coll, ->
-        unless R.falsey(callback.invoke(arguments))
+        unless __falsey(callback.invoke(arguments))
           breaker.break(callback.args(arguments))
 
       ifnone?()
@@ -227,7 +226,7 @@ class EnumerableMethods
     ary = []
     callback = __blockify(block, coll)
     _itr.each coll, ->
-      unless R.falsey(callback.invoke(arguments))
+      unless __falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
     ary
@@ -338,7 +337,7 @@ class EnumerableMethods
   max: (coll, block) ->
     max = undefined
 
-    block ||= R.Comparable.cmp
+    block ||= __cmp
 
     _itr.each coll, (item) ->
       if max is undefined
@@ -358,14 +357,14 @@ class EnumerableMethods
       if max is undefined
         max = item
       else
-        cmp = R.Comparable.cmpstrict(block(item), block(max))
+        cmp = __cmpstrict(block(item), block(max))
         max = item if cmp > 0
     max or null
 
 
   min: (coll, block) ->
     min = undefined
-    block ||= R.Comparable.cmp
+    block ||= __cmp
 
     # Following Optimization won't complain if:
     # [1,2,'3']
@@ -391,7 +390,7 @@ class EnumerableMethods
       if min is undefined
         min = item
       else
-        cmp = R.Comparable.cmpstrict(block(item), block(min))
+        cmp = __cmpstrict(block(item), block(min))
         min = item if cmp < 0
     min or null
 
@@ -410,7 +409,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, (args) ->
         result = callback.invoke(arguments)
-        breaker.break(false) unless R.falsey(result)
+        breaker.break(false) unless __falsey(result)
       true
 
 
@@ -421,7 +420,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, (args) ->
         result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
+        counter += 1 unless __falsey(result)
         breaker.break(false) if counter > 1
       counter is 1
 
@@ -449,7 +448,7 @@ class EnumerableMethods
 
     ary = []
     _itr.each coll, ->
-      if R.falsey(callback.invoke(arguments))
+      if __falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
     ary
@@ -488,7 +487,7 @@ class EnumerableMethods
 
   sort: (coll, block) ->
     # TODO: throw Error when comparing different values.
-    block ||= R.Comparable.cmpstrict
+    block ||= __cmpstrict
     coll = coll.to_native() if coll.to_native?
     nativeSort.call(coll, block)
 
@@ -500,7 +499,7 @@ class EnumerableMethods
     _itr.each coll, (value) ->
       ary.push new SortedElement(value, callback.invoke(arguments))
 
-    ary = _arr.sort(ary, R.Comparable.cmpstrict)
+    ary = _arr.sort(ary, __cmpstrict)
     _arr.map(ary, (se) -> se.value)
 
 
@@ -521,7 +520,7 @@ class EnumerableMethods
 
     _itr.catch_break (breaker) ->
       _itr.each coll, ->
-        breaker.break() if R.falsey block.apply(coll, arguments)
+        breaker.break() if __falsey block.apply(coll, arguments)
         ary.push(BlockMulti.prototype.args(arguments))
 
     ary

@@ -16,4 +16,4 @@ nativeJoin     = ArrProto.join
 nativeSort     = ArrProto.sort
 nativeSlice    = ArrProto.slice
 nativeUnshift  = ArrProto.unshift
-nativePush  = ArrProto.push
+nativePush     = ArrProto.push

@@ -1,3 +1,6 @@
+# R.Support includes aliases for private methods. So that they can be used
+# outside RubyJS.
+#
 R.Support = {}
 
 # Creates a wrapper method that calls a functional style

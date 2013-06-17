@@ -1,4 +1,4 @@
-
+# methods are included in RubyJS classes. Most notably the Base object R.
 class RubyJS.Kernel
 
   # A method to easily check whether an object is a RubyJS object with CoffeeScript.
@@ -194,3 +194,5 @@ class RubyJS.Kernel
     r = R(Math.random())
     if limit then r.multiply(limit).to_i() else r
 
+
+__rand = RubyJS.Kernel.prototype.rand

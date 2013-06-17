@@ -50,6 +50,13 @@ describe "R.is_equal", ->
     expect( R.is_equal(obj, 2) ).toEqual false
 
 
+  it "compares arrays", ->
+    expect( R.is_equal([1], [1]) ).toEqual true
+    expect( R.is_equal([2], [1]) ).toEqual false
+    expect( R.is_equal([[1]], [[1]]) ).toEqual true
+    expect( R.is_equal([[1]], [[2]]) ).toEqual false
+
+
 describe "R.Support.extract_block", ->
   beforeEach ->
     @fn   = ->

@@ -23,8 +23,9 @@ describe "Enumerable#inject", ->
     it "ignores the block if two arguments", ->
       expect( EnumerableSpecs.Numerous.new(1, 2, 3).inject(R(10), "-", -> throw "we never get here") ).toEqual R(4)
 
-    it "can take a symbol argument", ->
-      expect( EnumerableSpecs.Numerous.new(10, 1, 2, 3).inject("-") ).toEqual R(4)
+    xit "can take a symbol argument", ->
+      # RELOADED
+      expect( EnumerableSpecs.Numerous.new(10, 1, 2, 3).inject("minus") ).toEqual R(4)
 
   it "without argument takes a block with an accumulator (with first element as initial value) and the current element. Value of block becomes new accumulator", ->
     a = R []

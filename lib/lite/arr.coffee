@@ -1,16 +1,13 @@
-# Rules:
-#
-# Do not call methods as instance methods, but through the singleton object "_arr".
-# This allows for painless method chaining: _arr.map(["foo"], _str.capitalize)
-#
 class ArrayMethods extends EnumerableMethods
+
   equals: (arr, other) ->
     return true  if arr is other
     return false unless other?
 
-    unless __arr(other)
-      return false unless other.to_ary?
-      # return other.equals arr
+    if __isArr(other)
+      other = __arr(other)
+    else
+      return false
 
     return false unless arr.length is other.length
 
@@ -21,6 +18,7 @@ class ArrayMethods extends EnumerableMethods
       i += 1
 
     true
+
 
   append: (arr, obj) ->
     arr.push(obj)
@@ -152,6 +150,7 @@ class ArrayMethods extends EnumerableMethods
       block(arr[idx])
 
     arr
+
 
   # @non-ruby
   each_with_context: (arr, thisArg, block) ->
@@ -314,7 +313,7 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     while ++idx < len
       el = arr[idx]
-      ary.push(el) unless R.falsey(block(el))
+      ary.push(el) unless __falsey(block(el))
 
     ary
 
@@ -446,7 +445,7 @@ class ArrayMethods extends EnumerableMethods
       block = Block.splat_arguments(other)
       while ridx--
         el = arr[ridx]
-        unless R.falsey(block(el))
+        unless __falsey(block(el))
           return ridx
 
     else
@@ -478,7 +477,7 @@ class ArrayMethods extends EnumerableMethods
 
   sample: (arr, n, range = undefined) ->
     len = arr.length
-    return arr[R.rand(len)] if n is undefined
+    return arr[__rand(len)] if n is undefined
     n = __int(n)
     _err.throw_argument() if n < 0
 
@@ -487,7 +486,7 @@ class ArrayMethods extends EnumerableMethods
     ary = arr.slice(0)
     idx = -1
     while ++idx < n
-      ridx = idx + R.rand(len - idx) # Random idx
+      ridx = idx + __rand(len - idx) # Random idx
       tmp  = ary[idx]
       ary[idx]  = ary[ridx]
       ary[ridx] = tmp
@@ -500,7 +499,7 @@ class ArrayMethods extends EnumerableMethods
     ary = new Array(len)
     idx = -1
     while ++idx < len
-      rnd = idx + R.rand(len - idx)
+      rnd = idx + __rand(len - idx)
       tmp = arr[idx]
       ary[idx] = arr[rnd]
       ary[rnd] = tmp
@@ -547,11 +546,11 @@ class ArrayMethods extends EnumerableMethods
 
     # TODO: dogfood
     for ary in arr
-      ary = _coerce.arr(ary)
+      ary = __arr(ary)
       max ||= ary.length
 
       # Catches too-large as well as too-small (for which #fetch would suffice)
-      # throw R.IndexError.new("All arrays must be same length") if ary.size != max
+      # _err.throw_index("All arrays must be same length") if ary.size != max
       _err.throw_index() unless ary.length == max
 
       idx = -1

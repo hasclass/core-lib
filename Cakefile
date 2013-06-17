@@ -10,9 +10,9 @@ liteFiles = [
   'base/kernel'
   'base/base'
   'base/errors'
+  'base/coerce'
 
   'lite/err'
-  'lite/coerce'
   'lite/num'
   'lite/itr'
   'lite/arr'

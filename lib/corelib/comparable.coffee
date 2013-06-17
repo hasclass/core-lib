@@ -44,33 +44,12 @@ class RubyJS.Comparable
 
   # Equivalent of calling
   # R(a).cmp(b) but faster for natives.
-  @cmp: (a, b) ->
-    if typeof a isnt 'object' and typeof a is typeof b
-      if a is b
-        0
-      else
-        if a < b then -1 else 1
-    else
-      a = R(a)
-      throw 'NoMethodError' unless a.cmp?
-      a.cmp(b)
+  @cmp: __cmp
 
 
   # Same as cmp, but throws ArgumentError if it cannot
   # coerce elements.
-  @cmpstrict: (a, b) ->
-    if typeof a is typeof b and typeof a isnt 'object'
-      if a is b
-        0
-      else
-        if a < b then -1 else 1
-    else
-      a = R(a)
-      throw 'NoMethodError' unless a.cmp?
-      cmp = a.cmp(b)
-      throw R.ArgumentError.new() if cmp is null
-      cmp
-
+  @cmpstrict: __cmpstrict
 
 
   # aliases
