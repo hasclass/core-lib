@@ -1,4 +1,4 @@
-require('./ruby')
+require('../../ruby')
 require('./helpers/SpecHelper')
 require('./corelib/string/fixtures/classes')
 require('./corelib/numeric/fixtures/classes')

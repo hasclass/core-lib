@@ -10,11 +10,10 @@ describe "1.9", ->
     expect( R.Time.new(2000,1,1,12,0,0, "+06:00")._tzdate).toEqual new Date(2000,0,1,12,0,0,0)
 
   it "Time.new without a utc_offset", ->
-    mock = Date.prototype.getTimezoneOffset
-    Date.prototype.getTimezoneOffset = -> -420 # "+07:00"
-    expect( R.Time.new(2000,1,1,12,30,0).__utc_offset__.valueOf() ).toEqual( 420*60)
+    R.Time.__local_timezone__ = 420 * 60
+    expect( R.Time.new(2000,1,1,12,30,0).__utc_offset__ ).toEqual( 420*60)
     expect( R.Time._local_timezone() ).toEqual( 420*60)
-    Date.prototype.getTimezoneOffset = mock
+    R.Time.__reset_local_timezone__()
 
   it "Time.new with a utc_offset of local zone", ->
     expect( R.Time.new(2000,1,1,12,30,0, nowtz).__utc_offset__.valueOf() ).toEqual( nowtz )

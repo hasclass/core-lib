@@ -9,6 +9,7 @@ liteFiles = [
   'base/kernel'
   'base/base'
   'base/errors'
+  'base/support'
 
   'lite/coerce'
   'lite/num'
@@ -88,7 +89,7 @@ task 'build', 'Build single application file from source files', ->
   # Compiles to ~/ and copies to spec/javascripts
   process = ->
     fs.writeFile 'ruby.coffee', appContents.join('\n\n'), 'utf8', (err) ->
-      exec 'cp ruby.coffee spec/lib/ruby.coffee', defaultExecHandler
+      # exec 'cp ruby.coffee spec/lib/ruby.coffee', defaultExecHandler
       throw err if err
       exec 'coffee --compile ruby.coffee', (err, stdout, stderr) ->
         throw err if err

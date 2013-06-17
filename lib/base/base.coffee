@@ -67,8 +67,13 @@ class RubyJS.Base
   #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
   #     # =>['oof', 'rab']
   #
-  i_am_feeling_evil: (prefix = 'rb_', overwrite = false) ->
-    overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]]
+  god_mode: (prefix = 'rb_', overwrite = false) ->
+    overwrites = [
+      [Array.prototype, _arr],
+      [Number.prototype, _num],
+      [String.prototype, _str],
+      [Date.prototype, _time]
+    ]
 
     for [proto, methods] in overwrites
       for name, func of methods
@@ -76,35 +81,17 @@ class RubyJS.Base
 
         if typeof func == 'function'
           if overwrite or proto[new_name] is undefined
-
             do (new_name, func) ->
               # The following is 100x faster than slicing.
-              proto[new_name] = (a, b, c, d, e, f) ->
-                idx = arguments.length
-                while idx--
-                  break if arguments[idx] isnt undefined
-
-                val = this.valueOf()
-                switch idx + 1
-                  when 0 then func(val)
-                  when 1 then func(val, a)
-                  when 2 then func(val, a, b)
-                  when 3 then func(val, a, b, c)
-                  when 4 then func(val, a, b, c, d)
-                  when 5 then func(val, a, b, c, d, e)
-                  when 6 then func(val, a, b, c, d, e, f)
-                  # Slow fallback when passed more than 6 arguments.
-                  else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
-
-
+              proto[new_name] = callFunctionWithThis(func)
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
 
     "harr harr"
 
 
-  god_mode: ->
-    @i_am_feeling_evil('', true)
+  i_am_feeling_evil: ->
+    @god_mode('', true)
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.

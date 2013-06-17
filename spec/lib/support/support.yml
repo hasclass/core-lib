@@ -8,7 +8,7 @@ src_files:
   # - corelib/enumerable/fixtures/classes.coffee
   # - corelib/time/fixtures/classes.coffee
 
-spec_dir: spec/lib/corelib
+spec_dir: spec/lib
 
 spec_files:
   - '**/*_spec.coffee'
