@@ -4,3 +4,4 @@
 /doc/*
 npm-debug.log
 node_modules/*
+.rbenv-version
