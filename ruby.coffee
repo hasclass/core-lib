@@ -44,6 +44,73 @@ if typeof(exports) != 'undefined'
 
 
 
+R.Support = {}
+
+# Creates a wrapper method that calls a functional style
+# method with this as the first arguments
+#
+#     callFunctionWithThis(_s.ljust)
+#     // creates a function similar to this:
+#     // function (len, pad) {
+#     //    return _s.ljust(this, len, pad)
+#     // }
+#
+# This can be used to extend native classes/prototypes with functional
+# methods.
+#
+#     String.prototype.capitalize = callFunctionWithThis(_s.capitalize)
+#     "foo".capitalize() // => "Foo"
+#
+callFunctionWithThis = (func) ->
+  (a, b, c, d, e, f) ->
+    # Ugly, but fast implementation.
+    idx = arguments.length
+    while idx--
+      break if arguments[idx] isnt undefined
+
+    val = this.valueOf()
+    switch idx + 1
+      when 0 then func(val)
+      when 1 then func(val, a)
+      when 2 then func(val, a, b)
+      when 3 then func(val, a, b, c)
+      when 4 then func(val, a, b, c, d)
+      when 5 then func(val, a, b, c, d, e)
+      when 6 then func(val, a, b, c, d, e, f)
+      # Slow fallback when passed more than 6 arguments.
+      else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
+
+
+# RubyJS specific helper methods
+# @private
+__ensure_args_length = (args, length) ->
+  throw R.ArgumentError.new() unless args.length is length
+
+
+# Finds, removes and returns the last block/function in arguments list.
+# This is a destructive method.
+#
+# @example Use like this
+#   foo = (args...) ->
+#     console.log( args.length )     # => 2
+#     block = __extract_block(args)
+#     console.log( args.length )     # => 1
+#     other = args[0]
+#
+# @private
+#
+__extract_block = (args) ->
+  idx = args.length
+  while --idx >= 0
+    return args.pop() if args[idx]?.call?
+  null
+
+
+R.Support.callFunctionWithThis = callFunctionWithThis
+R.Support.ensure_args_length = __ensure_args_length
+R.Support.extract_block = __extract_block
+
+
 # Native classes, to avoid naming conflicts inside RubyJS classes.
 nativeArray  = Array
 nativeNumber = Number
@@ -170,7 +237,7 @@ R.blockify = __blockify = Block.create
 #
 #
 class RubyJS.Breaker
-  constructor: (@return_value = null, @broken = false) ->
+  constructor: (@return_value = null) ->
 
   # Breaks out of the loop by throwing itself. Accepts a return value.
   #
@@ -182,9 +249,9 @@ class RubyJS.Breaker
   # @param value Return value
   #
   break: (return_value) ->
-    @broken = true
     @return_value = return_value
     throw this
+
 
   handle_break: (e) ->
     if this is e
@@ -283,6 +350,7 @@ class RubyJS.Kernel
   w: (str) ->
     new R.String(str).split(/\s+/)
 
+
   # Shortcut for creating a R.Range.
   #
   # @example
@@ -306,18 +374,6 @@ class RubyJS.Kernel
   # Shortcut for creating Ranges
   rng: @prototype.r
 
-  # Returns primitive from an object, returns obj otherwise.
-  #
-  # @example
-  #      str = R('rubyjs')
-  #      R.l(str)        # => 'rubyjs'
-  #      R.l('js_str')   # => 'js_str'
-  #
-  l: (obj, recursive = false) ->
-    if typeof obj is 'object'
-      if obj.to_native? then obj.to_native(true) else obj
-    else
-      obj
 
   catch_break: (block, context = this) ->
     breaker  = new R.Breaker()
@@ -325,6 +381,7 @@ class RubyJS.Kernel
       return block.call(context, breaker)
     catch e
       return breaker.handle_break(e)
+
 
   $Array:   (obj, recursive = false) ->
     if recursive is true
@@ -340,6 +397,7 @@ class RubyJS.Kernel
   # TODO: Remove from code
   $Array_r: (obj) ->
     @$Array(obj, true)
+
 
   $Float: (obj) ->
     obj = @box(obj)
@@ -358,6 +416,7 @@ class RubyJS.Kernel
       new R.Float(obj.to_native())
     else # is not a R object
       new R.Float(obj)
+
 
   $Integer: (obj) ->
     obj = R(obj)
@@ -378,6 +437,7 @@ class RubyJS.Kernel
     else # is not a R object
       new R.Fixnum(Math.floor(obj))
 
+
   $Integer: @prototype.$Integer
 
 
@@ -397,40 +457,6 @@ class RubyJS.Kernel
     if limit then r.multiply(limit).to_i() else r
 
 
-
-  # RubyJS specific helper methods
-  # @private
-  __ensure_args_length: (args, length) ->
-    throw R.ArgumentError.new() unless args.length is length
-
-
-  # @private
-  __ensure_numeric: (obj) ->
-    throw R.TypeError.new() unless obj?.is_numeric?
-
-
-  # @private
-  __ensure_string: (obj) ->
-    throw R.TypeError.new() unless obj?.is_string?
-
-
-  # Finds, removes and returns the last block/function in arguments list.
-  # This is a destructive method.
-  #
-  # @example Use like this
-  #   foo = (args...) ->
-  #     console.log( args.length )     # => 2
-  #     block = @__extract_block(args)
-  #     console.log( args.length )     # => 1
-  #     other = args[0]
-  #
-  # @private
-  #
-  __extract_block: (args) ->
-    idx = args.length
-    while --idx >= 0
-      return args.pop() if args[idx]?.call?
-    null
 
 # Methods in Base are added to `R`.
 #
@@ -501,8 +527,13 @@ class RubyJS.Base
   #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
   #     # =>['oof', 'rab']
   #
-  i_am_feeling_evil: (prefix = 'rb_', overwrite = false) ->
-    overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str]]
+  god_mode: (prefix = 'rb_', overwrite = false) ->
+    overwrites = [
+      [Array.prototype,  _arr],
+      [Number.prototype, _num],
+      [String.prototype, _str],
+      [Date.prototype,   _time]
+    ]
 
     for [proto, methods] in overwrites
       for name, func of methods
@@ -510,35 +541,16 @@ class RubyJS.Base
 
         if typeof func == 'function'
           if overwrite or proto[new_name] is undefined
-
             do (new_name, func) ->
               # The following is 100x faster than slicing.
-              proto[new_name] = (a, b, c, d, e, f) ->
-                idx = arguments.length
-                while idx--
-                  break if arguments[idx] isnt undefined
-
-                val = this.valueOf()
-                switch idx + 1
-                  when 0 then func(val)
-                  when 1 then func(val, a)
-                  when 2 then func(val, a, b)
-                  when 3 then func(val, a, b, c)
-                  when 4 then func(val, a, b, c, d)
-                  when 5 then func(val, a, b, c, d, e)
-                  when 6 then func(val, a, b, c, d, e, f)
-                  # Slow fallback when passed more than 6 arguments.
-                  else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
-
-
+              proto[new_name] = callFunctionWithThis(func)
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
 
+
+  i_am_feeling_evil: ->
+    @god_mode('', true)
     "harr harr"
-
-
-  god_mode: ->
-    @i_am_feeling_evil('', true)
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
@@ -552,9 +564,7 @@ class RubyJS.Base
   #     R.w('foo bar').map( R.proc('capitalize') )
   #     R.w('foo bar').map( R.proc('ljust', 10) )
   #
-  proc:  ->
-    key = arguments[0]
-    # OPTIMIZE: dont use args... but arguments instead
+  proc: (key) ->
     if arguments.length == 1
       # Wrapper block doesnt need to mangle arguments
       (el) ->
@@ -562,6 +572,7 @@ class RubyJS.Base
         if typeof fn is 'function'
           fn.call(el)
         else if fn is undefined
+          # RELOADED: dont use R()
           R(el)[key]().valueOf()
         else
           fn
@@ -597,35 +608,38 @@ class RubyJS.Base
     !@falsey(obj)
 
 
-  unbox: (obj, recursive = false) ->
-    obj.unbox(recursive)
-
-
   respond_to: (obj, function_name) ->
     obj[function_name] != undefined
 
 
-  # Optimized version of calling a.equals(b).
-  # Takes care of non rubyjs objects.
+  # Compares to objects.
+  #
+  #      // => true
+  #      R.is_equal(1,1)
+  #      R.is_equal(1, new Number(1))
+  #      R.is_equal(1, {valueOf: function () {return 1;}})
+  #      R.is_equal(1, {equals: function (n) {return n === 1;}})
+  #
   is_equal: (a, b) ->
     return true if a is b
 
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
-      else if a.equals?
-        a.equals(b)
+      else if a.valueOf?
+        a.valueOf() is b
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
-      else if b.equals?
-        b.equals(a)
+      else if b.valueOf?
+        b.valueOf() is a
       else
         false
     else
       a is b
+
 
   is_eql: (a, b) ->
     if typeof a is 'object'
@@ -641,33 +655,11 @@ class RubyJS.Base
     obj
 
 
-  camelCase: ->
-
 
   # helper method to get an arguments object
   argify: -> arguments
 
 
-  # LITE: remove '==' methods.
-  equals: -> (a,b) ->
-    return true if a is b
-
-    if typeof a is 'object'
-      if a.equals?
-        a.equals(b)
-      else if a.equals?
-        a.equals(b)
-      else
-        false
-    else if typeof b is 'object'
-      if b.equals?
-        b.equals(a)
-      else if b.equals?
-        b.equals(a)
-      else
-        false
-    else
-      a is b
 
 
 # adds all methods to the global R object
@@ -697,7 +689,26 @@ for error in errors
   do (error) ->
     errorClass     = class extends Error
     errorClass.new = -> new RubyJS[error](error)
-    RubyJS[error]  = errorClass
+    RubyJS[error] = this["R"+error] = errorClass
+
+
+_err =
+  throw_argument: (msg) ->
+    throw RArgumentError.new(msg)
+
+  throw_type: (msg) ->
+    throw RTypeError.new(msg)
+
+  throw_index: (msg) ->
+    throw RIndexError.new(msg)
+
+  throw_not_implemented: (msg) ->
+    throw RNotImplementedError.new(msg)
+
+  throw_key: (msg) ->
+    throw RKeyError.new(msg)
+
+R.Support.err = _err
 
 
 # Singleton class for type coercion inside RubyJS.
@@ -721,26 +732,26 @@ _coerce =
 
 
   str: (obj) ->
-    throw R.TypeError.new() if obj == null
+    _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid string") unless typeof obj is 'string'
-    throw R.TypeError.new() unless typeof obj is 'string'
+    _err.throw_type() unless typeof obj is 'string'
     obj
 
 
   num: (obj) ->
-    throw R.TypeError.new() if obj == null
+    _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid num") unless typeof obj is 'number'
-    throw R.TypeError.new() unless typeof obj is 'number'
+    _err.throw_type() unless typeof obj is 'number'
     obj
 
 
   int: (obj) ->
-    throw R.TypeError.new() if obj == null
+    _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
     # throw new R.TypeError("#{obj} is not a valid int") unless typeof obj is 'number'
-    throw R.TypeError.new() unless typeof obj is 'number'
+    _err.throw_type() unless typeof obj is 'number'
     Math.floor(obj)
 
 
@@ -757,11 +768,16 @@ _coerce =
     typeof obj is 'object' && obj != null && typeof obj.valueOf() is 'string'
 
 
+  is_rgx: (obj) ->
+    return false unless obj?
+    nativeToString.call(obj.valueOf()) is '[object RegExp]'
+
+
   arr: (obj) ->
-    throw R.TypeError.new() if obj == null
-    throw R.TypeError.new() if typeof obj != 'object'
+    _err.throw_type() if obj == null
+    _err.throw_type() if typeof obj != 'object'
     obj = obj.valueOf()
-    throw R.TypeError.new() unless _coerce.isArray(obj)
+    _err.throw_type() unless _coerce.isArray(obj)
     obj
 
 
@@ -792,7 +808,9 @@ _coerce =
       else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
 
 
-R.coerce = _coerce
+
+
+R.Support.coerce = _coerce
 __str = _coerce.str
 __int = _coerce.int
 __num = _coerce.num
@@ -866,7 +884,7 @@ class NumericMethods
       step  = 1
 
     if step is 0
-      throw new R.ArgumentError("ArgumentError")
+      _err.throw_argument()
 
     float_mode = num % 1 is 0 or limit % 1 is 0 or step % 1 is 0
     # eps = 0.0000000000000002220446049250313080847263336181640625
@@ -947,10 +965,10 @@ class NumericMethods
   #
   gcdlcm: (other) ->
     other = @box(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    new R.Array([@gcd(other), @lcm(other)])
+    [@gcd(other), @lcm(other)]
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
@@ -964,7 +982,7 @@ class NumericMethods
   #
   lcm: (other) ->
     other = R(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
@@ -1124,7 +1142,7 @@ class EnumerableMethods
     else
       countable = block
       _itr.each coll, (el) ->
-        counter += 1 if R.is_equal(countable, el)
+        counter += 1 if __equals(countable, el)
     counter
 
 
@@ -1298,7 +1316,7 @@ class EnumerableMethods
     if value.call?
       block = value
     else
-      block = (el) -> R.is_equal(value, el)
+      block = (el) -> __equals(value, el)
 
     _itr.catch_break (breaker) ->
       idx = 0
@@ -1312,7 +1330,7 @@ class EnumerableMethods
 
   first: (coll, n = null) ->
     if n != null
-      throw new R.ArgumentError('ArgumentError') if n < 0
+      _err.throw_argument() if n < 0
       _itr.take(coll, n)
     else
       _itr.take(coll, 1)[0]
@@ -1408,7 +1426,7 @@ class EnumerableMethods
         max = item
       else
         comp = block(item, max)
-        throw R.ArgumentError.new() if comp is null
+        _err.throw_argument() if comp is null
         max = item if comp > 0
 
     max or null
@@ -1440,7 +1458,7 @@ class EnumerableMethods
         min = item
       else
         comp = block.call(this, item, min)
-        throw R.ArgumentError.new() if comp is null
+        _err.throw_argument() if comp is null
         min = item if comp < 0
 
     min or null
@@ -1526,8 +1544,8 @@ class EnumerableMethods
 
   slice_before: (args...) ->
     # TODO
-    # block = @__extract_block(args)
-    # # throw R.ArgumentError.new() if args.length == 1
+    # block = __extract_block(args)
+    # # _err.throw_argument() if args.length == 1
     # arg   = R(args[0])
 
     # if block
@@ -1568,7 +1586,7 @@ class EnumerableMethods
 
 
   take: (coll, n) ->
-    throw R.ArgumentError.new() if n < 0
+    _err.throw_argument() if n < 0
     ary = []
     _itr.catch_break (breaker) ->
       _itr.each coll, ->
@@ -1662,7 +1680,7 @@ class ArrayMethods extends EnumerableMethods
     return true  if arr is other
     return false unless other?
 
-    unless RArray.isNativeArray(other)
+    unless __arr(other)
       return false unless other.to_ary?
       # return other.equals arr
 
@@ -1671,7 +1689,7 @@ class ArrayMethods extends EnumerableMethods
     i = 0
     total = i + arr.length
     while i < total
-      return false unless R.is_equal(arr[i], other[i])
+      return false unless __equals(arr[i], other[i])
       i += 1
 
     true
@@ -1761,7 +1779,7 @@ class ArrayMethods extends EnumerableMethods
     i = 0
     len = arr.length
     while i < len
-      if R.is_equal(obj, arr[i])
+      if __equals(obj, arr[i])
         deleted.push(i)
       i += 1
 
@@ -1856,28 +1874,28 @@ class ArrayMethods extends EnumerableMethods
       return default_or_block(orig) if default_or_block?.call?
       return default_or_block   unless default_or_block is undefined
 
-      throw R.IndexError.new()
+      _err.throw_index()
 
     arr[idx]
 
 
   # @destructive
   fill: (arr, args...) ->
-    throw R.ArgumentError.new() if args.length == 0
-    block = R.__extract_block(args)
+    _err.throw_argument() if args.length == 0
+    block = __extract_block(args)
 
     if block
-      throw R.ArgumentError.new() if args.length >= 3
+      _err.throw_argument() if args.length >= 3
       one = args[0]; two = args[1]
     else
-      throw R.ArgumentError.new() if args.length > 3
+      _err.throw_argument() if args.length > 3
       obj = args[0]; one = args[1]; two = args[2]
 
     size = arr.length
 
     if one?.is_range?
       # TODO: implement fill with range
-      throw R.NotImplementedError.new()
+      _err.throw_not_implemented()
 
     else if one isnt undefined && one isnt null
       left = __int(one)
@@ -1888,7 +1906,7 @@ class ArrayMethods extends EnumerableMethods
         try
           right = __int(two)
         catch e
-          throw R.ArgumentError.new("second argument must be a Fixnum")
+          _err.throw_argument("second argument must be a Fixnum")
         return arr if right is 0
         right = right + left
       else
@@ -1921,7 +1939,7 @@ class ArrayMethods extends EnumerableMethods
   # @destructive
   # @param items...
   insert: (arr, idx) ->
-    throw R.ArgumentError.new() if idx is undefined
+    _err.throw_argument() if idx is undefined
 
     return arr if arguments.length == 2
     items = _coerce.split_args(arguments, 2)
@@ -1931,7 +1949,7 @@ class ArrayMethods extends EnumerableMethods
     idx = idx + len + 1 if idx < 0 # Negatives add AFTER the element
 
     # TODO: add message "#{idx} out of bounds"
-    throw R.IndexError.new() if idx < 0
+    _err.throw_index() if idx < 0
 
     after  = arr.slice(idx)
 
@@ -1981,7 +1999,7 @@ class ArrayMethods extends EnumerableMethods
     if len is 0 or n is 0
       return []
 
-    throw R.ArgumentError.new("count must be positive") if n < 0
+    _err.throw_argument("count must be positive") if n < 0
 
     n = len if n > len
     arr[-n.. -1]
@@ -2001,14 +2019,14 @@ class ArrayMethods extends EnumerableMethods
 
 
   multiply: (arr, multiplier) ->
-    throw R.TypeError.new() if multiplier is null
+    _err.throw_type() if multiplier is null
 
     if __isStr(multiplier)
       return _arr.join(arr, __str(multiplier))
     else
       multiplier = __int(multiplier)
 
-      throw R.ArgumentError.new("count cannot be negative") if multiplier < 0
+      _err.throw_argument("count cannot be negative") if multiplier < 0
 
       total = arr.length
       if total is 0
@@ -2029,7 +2047,7 @@ class ArrayMethods extends EnumerableMethods
       arr.pop()
     else
       many = __int(many)
-      throw R.ArgumentError.new("negative array size") if many < 0
+      _err.throw_argument("negative array size") if many < 0
       ary = []
       len = arr.length
       many = len if many > len
@@ -2040,7 +2058,7 @@ class ArrayMethods extends EnumerableMethods
 
   product: (arr, args...) ->
     result = []
-    block = R.__extract_block(args)
+    block = __extract_block(args)
 
     args = for a in args
       __arr(a)
@@ -2072,7 +2090,7 @@ class ArrayMethods extends EnumerableMethods
       elem = arr[idx]
       try
         el = __arr(elem)
-        if R.is_equal(el[1], obj)
+        if __equals(el[1], obj)
           return elem
       catch e
         null
@@ -2107,7 +2125,7 @@ class ArrayMethods extends EnumerableMethods
       # TODO: 2012-11-06 use a while loop with idx counting down
       while ridx--
         el = arr[ridx]
-        if R.is_equal(el, other)
+        if __equals(el, other)
           return ridx
 
     null
@@ -2134,7 +2152,7 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     return arr[R.rand(len)] if n is undefined
     n = __int(n)
-    throw R.ArgumentError.new() if n < 0
+    _err.throw_argument() if n < 0
 
     n    = len if n > len
 
@@ -2162,7 +2180,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   slice: (arr, idx, length) ->
-    throw new R.TypeError.new() if idx is null
+    _err.throw_type() if idx is null
     size = arr.length
 
     if idx?.is_range?
@@ -2206,7 +2224,7 @@ class ArrayMethods extends EnumerableMethods
 
       # Catches too-large as well as too-small (for which #fetch would suffice)
       # throw R.IndexError.new("All arrays must be same length") if ary.size != max
-      throw R.IndexError.new() unless ary.length == max
+      _err.throw_index() unless ary.length == max
 
       idx = -1
       len = ary.length
@@ -2265,7 +2283,7 @@ class ArrayMethods extends EnumerableMethods
     if typeof value is 'function' or (typeof value is 'object' && value.call?)
       block = Block.splat_arguments(value)
     else if value != null && typeof value is 'object'
-      block = (el) -> R.is_equal(value, el)
+      block = (el) -> __equals(value, el)
     else
       while ++idx < len
         return idx if arr[idx] == value
@@ -2279,7 +2297,7 @@ class ArrayMethods extends EnumerableMethods
 
   first: (arr, n) ->
     if n?
-      throw new R.ArgumentError('ArgumentError') if n < 0
+      _err.throw_argument() if n < 0
       arr.slice(0,n)
     else
       arr[0]
@@ -2312,6 +2330,7 @@ class ArrayMethods extends EnumerableMethods
 _arr = R._arr = (arr) ->
   new RArray(arr)
 
+
 R.extend(_arr, new ArrayMethods())
 
 class StringMethods
@@ -2323,7 +2342,7 @@ class StringMethods
 
 
   center: (str, length, padString = ' ') ->
-    throw R.ArgumentError.new() if padString.length == 0
+    _err.throw_argument() if padString.length == 0
 
     size = str.length
     return str if size >= length
@@ -2376,7 +2395,7 @@ class StringMethods
 
 
   'delete': (str) ->
-    throw R.ArgumentError.new() if arguments.length == 1
+    _err.throw_argument() if arguments.length == 1
     args  = _coerce.split_args(arguments, 1)
     trash = _str.__matched__(str, args)
     str.replace(new RegExp("[#{trash}]", 'g'), '')
@@ -2451,14 +2470,14 @@ class StringMethods
 
 
   gsub: (str, pattern, replacement) ->
-    throw R.TypeError.new() if pattern is null
+    _err.throw_type() if pattern is null
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
 
     unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
+      _err.throw_type()
 
     unless pattern.global
       throw "String#gsub: #{pattern} has not set the global flag 'g'. #{pattern}g"
@@ -2478,7 +2497,7 @@ class StringMethods
       offset = str.length + offset if offset < 0
 
     # unless needle.is_string? or needle.is_regexp? or needle.is_fixnum?
-    #   throw R.TypeError.new()
+    #   _err.throw_type()
 
     if offset? && (offset > str.length or offset < 0)
       return null
@@ -2496,7 +2515,7 @@ class StringMethods
       idx = str.length - Math.abs(idx) + 1
 
     if idx < 0 or idx > str.length
-      throw R.IndexError.new()
+      _err.throw_index()
 
     chrs = str.split("")
 
@@ -2512,7 +2531,7 @@ class StringMethods
     if len >= width
       str
     else
-      throw R.ArgumentError.new() if padString.length == 0
+      _err.throw_argument() if padString.length == 0
       pad_length = width - len
       idx = -1
       out = ""
@@ -2532,7 +2551,7 @@ class StringMethods
         offset = null
 
     # unless RString.isString(pattern) or R.Regexp.isRegexp(pattern)
-    #   throw R.TypeError.new()
+    #   _err.throw_type()
 
     opts = {}
 
@@ -2558,7 +2577,7 @@ class StringMethods
 
 
   multiply: (str, num) ->
-    throw R.ArgumentError.new() if num < 0
+    _err.throw_argument() if num < 0
     out = ""
     out += str for n in [0...num]
     out
@@ -2626,7 +2645,7 @@ class StringMethods
       str
     else
       pad_str = __str(pad_str)
-      throw R.ArgumentError.new() if pad_str.length == 0
+      _err.throw_argument() if pad_str.length == 0
       pad_len = width - len
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
@@ -2713,14 +2732,14 @@ class StringMethods
 
 
   sub: (str, pattern, replacement) ->
-    throw R.TypeError.new() if pattern is null
+    _err.throw_type() if pattern is null
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(R.Regexp.escape(pattern_lit))
 
     unless R.Regexp.isRegexp(pattern)
-      throw R.TypeError.new()
+      _err.throw_type()
 
     if pattern.global
       throw "String#sub: #{pattern} has set the global flag 'g'. #{pattern}g"
@@ -2777,13 +2796,13 @@ class StringMethods
 
 
   slice: (str, index, other) ->
-    throw R.TypeError.new() if index is null
+    _err.throw_type() if index is null
     # TODO: This methods needs some serious refactoring
 
     size = str.length
     unless other is undefined
       if index.is_regexp?
-        throw R.NotImplementedError.new()
+        _err.throw_not_implemented()
         # match, str = subpattern(index, other)
         # Regexp.last_match = match
         # return str
@@ -2797,7 +2816,7 @@ class StringMethods
         return nativeStrSlice.call(str, start, start + length)
 
     if index.is_regexp?
-      throw R.NotImplementedError.new()
+      _err.throw_not_implemented()
       # match_data = index.search_region(self, 0, _str.num_bytes, true)
       # Regexp.last_match = match_data
       # if match_data
@@ -2888,7 +2907,7 @@ class StringMethods
     base = __int(base)
 
     if base < 0 or base > 36 or base is 1
-      throw R.ArgumentError.new()
+      _err.throw_argument()
 
     # ignore whitespace
     lit = _str.strip(str)
@@ -2967,7 +2986,7 @@ class StringMethods
     try
       return new RegExp(r, 'g')
     catch e
-      throw R.ArgumentError.new()
+      _err.throw_argument()
 
 
 
@@ -3038,7 +3057,7 @@ class HashMethods extends EnumerableMethods
 
   fetch: (hsh, key, default_value) ->
     if arguments.length <= 1
-      throw R.ArgumentError.new()
+      _err.throw_argument()
 
     if `key in hsh`
       hsh[key]
@@ -3047,7 +3066,7 @@ class HashMethods extends EnumerableMethods
     else if default_value != undefined
       default_value
     else
-      throw R.KeyError.new()
+      _err.throw_key()
 
 
   flatten: (hsh, recursion = 1) ->
@@ -3246,7 +3265,7 @@ class TimeMethods
         when 'm' then fill(_time.month(date))
         when 'M' then fill(_time.min(date))
         when 'n' then "\n"
-        when 'N' then throw R.NotImplementedError.new()
+        when 'N' then _err.throw_not_implemented()
         when 'p'
           if _time.hour(date) < 12 then locale.AM     else locale.PM
         when 'P'
@@ -3775,7 +3794,7 @@ class RubyJS.Enumerable
   #     a.drop(3)             #=> [4, 5, 0]
   #
   drop: (n) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
@@ -3809,9 +3828,9 @@ class RubyJS.Enumerable
   #      # [4, 5, 6]
   #
   each_cons: (args...) ->
-    block = @__extract_block(args)
+    block = __extract_block(args)
     return @to_enum('each_cons', args...) unless block && block.call?
-    @__ensure_args_length(args, 1)
+    __ensure_args_length(args, 1)
     n = RCoerce.to_int_native(args[0])
     throw R.ArgumentError.new() unless n > 0
 
@@ -4190,7 +4209,7 @@ class RubyJS.Enumerable
 
 
   slice_before: (args...) ->
-    block = @__extract_block(args)
+    block = __extract_block(args)
     # throw R.ArgumentError.new() if args.length == 1
     arg   = R(args[0])
 
@@ -4224,7 +4243,7 @@ class RubyJS.Enumerable
 
 
   take: (n) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     n = RCoerce.to_int_native(n)
     throw R.ArgumentError.new() if n < 0
 
@@ -4266,7 +4285,7 @@ class RubyJS.Enumerable
   # @todo dont yield R.Arrays
   zip: (others...) ->
     # TODO: fix specs
-    block = @__extract_block(others)
+    block = __extract_block(others)
 
     others = for o in others
       if __isArr(o) then o.valueOf() else o
@@ -4345,7 +4364,7 @@ class RubyJS.Enumerator extends RubyJS.Object
 
 
   @create: (args...) ->
-    if block = R.__extract_block(args)
+    if block = __extract_block(args)
       object = new RubyJS.Enumerator.Generator(block)
       iter = 'each'
       return Enumerator.new(object, iter)
@@ -4538,7 +4557,7 @@ class RubyJS.Array extends RubyJS.Object
   #     copy = R.Array.new(squares)
   #
   @new: (args...) ->
-    block = R.__extract_block(args)
+    block = __extract_block(args)
     throw R.ArgumentError.new() if args.length >= 3
     size = args[0]
     obj  = args[1]
@@ -4694,7 +4713,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return [Object]
   #
   at: (index) ->
-    # UNSUPPORTED: @__ensure_args_length(arguments, 1)
+    # UNSUPPORTED: __ensure_args_length(arguments, 1)
     index = RCoerce.to_int_native(index)
     _arr.at(@__native__, index)
 
@@ -4708,7 +4727,7 @@ class RubyJS.Array extends RubyJS.Object
   # @return [R.Array]
   #
   clear: () ->
-    @__ensure_args_length(arguments, 0)
+    __ensure_args_length(arguments, 0)
     @__native__.length = 0
     @replace @__native__
     this
@@ -4820,7 +4839,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.delete("z", -> 'not found')   #=> "not found"
   #
   delete: (args...) ->
-    block   = @__extract_block(args)
+    block   = __extract_block(args)
     _arr.delete(@__native__, args[0], block)
 
 
@@ -5017,7 +5036,7 @@ class RubyJS.Array extends RubyJS.Object
   fill: (args...) ->
     throw R.ArgumentError.new() if args.length == 0
     # OPTIMIZE arguments
-    block = @__extract_block(args)
+    block = __extract_block(args)
 
     if block
       throw R.ArgumentError.new() if args.length >= 3
@@ -5139,7 +5158,7 @@ class RubyJS.Array extends RubyJS.Object
   #     R([ 1, 2, 3 ]).multiply ","  # => "1,2,3"
   #
   multiply: (multiplier) ->
-    R.__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     # can be string or array
     R(_arr.multiply(@__native__, multiplier))
 
@@ -5166,7 +5185,7 @@ class RubyJS.Array extends RubyJS.Object
   # @todo Not yet implemented
   permutation: (args...) ->
     throw R.NotImplementedError.new()
-  #   block = @__extract_block(args)
+  #   block = __extract_block(args)
   #   num   = args[0]
   #   return @to_enum('permutation', num) unless block?.call?
 
@@ -5362,7 +5381,7 @@ class RubyJS.Array extends RubyJS.Object
   #     a.replace(R([1]))             # => [1]
   #
   replace: (val) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     # TODO: Use RCoerce.to_ary_native
     @__native__ = if val.to_ary? then val.to_ary().to_native().slice(0) else val.slice(0)
     this
@@ -6613,7 +6632,7 @@ class RubyJS.MatchData extends RubyJS.Object
   #     # m.begin(:bar)  #=> 2
   #
   begin: (offset) ->
-    @__ensure_args_length(1)
+    __ensure_args_length(1)
     R(@__source__[@__offset__..-1].indexOf(@__native__[offset]) + @__offset__)
 
 
@@ -6636,7 +6655,7 @@ class RubyJS.MatchData extends RubyJS.Object
 
 
   end: (offset) ->
-    @__ensure_args_length(1)
+    __ensure_args_length(1)
     R(@__source__[@__offset__..-1].indexOf(@__native__[offset]) + @__offset__ + @__native__[offset].length)
 
 
@@ -7280,7 +7299,7 @@ class RubyJS.String extends RubyJS.Object
   #
   each_line: (args...) ->
     # TODO
-    block = @__extract_block(args)
+    block = __extract_block(args)
 
     return @to_enum('lines', args[0]) unless block && block.call?
 
@@ -8406,7 +8425,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #     match(str,pos) → matchdata or nil
   #
   match: (str, offset) ->
-    block   = @__extract_block(nativeSlice.call(arguments))
+    block   = __extract_block(nativeSlice.call(arguments))
 
     if str is null
       R['$~'] = null
@@ -8563,6 +8582,7 @@ class RubyJS.Regexp extends RubyJS.Object
   #     R.Regexp.union(pats_ary) → new_regexp
   #
   @union: (args...) ->
+    # FIX: check specs...
     return R(/(?!)/) if args.length == 0
 
     first_arg = R(args[0])
@@ -9015,7 +9035,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   gcd: (other) ->
     other = R(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     n = _num.gcd(@__native__, other.to_native())
@@ -9033,7 +9053,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   gcdlcm: (other) ->
     other = @box(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     new R.Array([@gcd(other).valueOf(), @lcm(other).valueOf()])
@@ -9050,7 +9070,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   #
   lcm: (other) ->
     other = R(other)
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
     lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
@@ -9383,7 +9403,7 @@ class RubyJS.Fixnum extends RubyJS.Integer
   fdiv: (other) ->
     other = R(other)
     throw R.TypeError.new() unless other.is_numeric?
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
     @to_f().divide(other.to_f())
 
 
@@ -9640,7 +9660,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [R.Float]
   #
   quo: (other) ->
-    @__ensure_args_length(arguments, 1)
+    __ensure_args_length(arguments, 1)
 
     other = @box(other)
     @divide(other)
@@ -9840,7 +9860,7 @@ class RubyJS.Time extends RubyJS.Object
       @_tzdate = R.Time._offset_to_local(@__native__, @__utc_offset__)
     else
       @_tzdate = @__native__
-      @__utc_offset__ = R.Time._local_timezone()
+      @__utc_offset__ = R.Time.__local_timezone__
 
 
   @now: ->
@@ -9874,7 +9894,7 @@ class RubyJS.Time extends RubyJS.Object
       date = @_local_to_offset(date, utc_offset)
     else
       date = new Date(year, month - 1, day, hour, min, sec)
-      utc_offset = @_local_timezone()
+      utc_offset = @__local_timezone__
 
     new R.Time(date, utc_offset)
 
@@ -9882,14 +9902,14 @@ class RubyJS.Time extends RubyJS.Object
   @_local_to_offset: (date, utc_offset) ->
     # utc_offset is the desired offset in seconds
     # Adjust the local date to the UTC date
-    date = date.valueOf() + R.Time._local_timezone() * 1000
+    date = date.valueOf() + R.Time.__local_timezone__ * 1000
     # remove the utc_offset:
     date = date - utc_offset * 1000
     new Date(date)
 
 
   @_offset_to_local: (date, utc_offset) ->
-    date = date.valueOf() - R.Time._local_timezone() * 1000
+    date = date.valueOf() - R.Time.__local_timezone__ * 1000
     date += utc_offset * 1000
     new Date(date)
 
@@ -9952,14 +9972,14 @@ class RubyJS.Time extends RubyJS.Object
     else if seconds.is_numeric?
       secs = seconds.valueOf()
       msecs = secs * 1000 + microseconds / 1000
-      new R.Time(new Date(msecs), @_local_timezone())
+      new R.Time(new Date(msecs), @__local_timezone__)
     else
       throw R.TypeError.new()
 
 
   @local: (year, month, day, hour, min, sec) ->
     # date = new Date(year, (month || 1) - 1, day || 1, hour || 0, min || 0, sec || 0)
-    R.Time.new(year, month, day, hour, min, sec, @_local_timezone())
+    R.Time.new(year, month, day, hour, min, sec, @__local_timezone__)
 
 
   # Creates a time based on given values, interpreted as UTC (GMT). The year
@@ -10001,8 +10021,13 @@ class RubyJS.Time extends RubyJS.Object
   # UCT: (+00:00) ->          -> 0
   #
   @_local_timezone: ->
-    new Date().getTimezoneOffset() * -60
+    @__local_timezone__
 
+
+  @__local_timezone__: new Date().getTimezoneOffset() * -60
+
+  @__reset_local_timezone__: ->
+    @__local_timezone__ = new Date().getTimezoneOffset() * -60
 
   # ---- RubyJSism ------------------------------------------------------------
 
@@ -10362,7 +10387,7 @@ class RubyJS.Time extends RubyJS.Object
   # Return 0 if local timezone matches gmt_offset.
   # otherwise the difference to UTC
   __utc_delta__: ->
-    @gmt_offset() + R.Time._local_timezone()
+    @gmt_offset() + R.Time.__local_timezone__
 
 
   tv_sec: @prototype.to_i
