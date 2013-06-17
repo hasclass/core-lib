@@ -201,8 +201,6 @@ class RubyJS.Base
     obj
 
 
-  camelCase: ->
-
 
   # helper method to get an arguments object
   argify: -> arguments
