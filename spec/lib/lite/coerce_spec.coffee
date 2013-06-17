@@ -63,7 +63,6 @@ describe "_coerce", ->
       expect( R.Support.coerce.is_arr(new String("")) ).toEqual false
       expect( R.Support.coerce.is_arr(/a/) ).toEqual false
       expect( R.Support.coerce.is_arr({}) ).toEqual false
-      expect( R.Support.coerce.is_arr([]) ).toEqual false
       expect( R.Support.coerce.is_arr(1)  ).toEqual false
       expect( R.Support.coerce.is_arr(undefined) ).toEqual false
       expect( R.Support.coerce.is_arr(null) ).toEqual false
