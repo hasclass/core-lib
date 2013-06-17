@@ -1,5 +1,5 @@
 ###
-RubyJS Alpha 0.7.2
+RubyJS Alpha 0.8.0-beta1
 Copyright (c) 2012 Sebastian Burkhard
 All rights reserved.
 http://www.rubyjs.org/LICENSE.txt
@@ -12,7 +12,7 @@ root = global ? window
 root.RubyJS = (obj, recursive, block) ->
   RubyJS.Base.prototype.box(obj, recursive, block)
 
-RubyJS.VERSION = '0.7.2'
+RubyJS.VERSION = '0.8.0-beta1'
 
 # noConflict mode for R
 previousR = root.R if root.R?
@@ -1089,7 +1089,7 @@ class EnumerableMethods
   each: (coll, block) ->
     if coll.each?
       coll.each(block)
-    else if RArray.isNativeArray(coll)
+    else if __isArr(coll)
       _arr.each(coll, block)
     else
       for own k,v of coll
@@ -1352,11 +1352,9 @@ class EnumerableMethods
       block = (memo, el) -> memo[sym](el)
     else if R(initial)?.is_string?
       # for [1,2,3].inject('-')
-      _method = "#{initial}"
-      block   = (memo, el) -> memo[_method](el)
+      block   = (memo, el) -> memo["#{initial}"](el)
       initial = undefined
     else if initial.call?
-      # for inject (memo,i) ->
       block = initial
       initial = undefined
 

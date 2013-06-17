@@ -1,3 +1,25 @@
+# RubyJS Reloaded v0.8.0-beta1
+
+RubyJS got a major overhaul.
+
+Most importantly all methods have been refactored into a functional style (similar to underscore). They can be accessed via _s, _a, _h, _n, _t.
+
+```javascript
+_s.capitalize("foo")      // => "Foo"
+_a.rindex([1,2,3,2,1], 2) // => 3
+_n.upto(1, 5, function(i) { console.log(i) })
+_h.rassoc({a: 2, b:3}, 3) // => ["b", 3]
+_t.strftime(new Date(), "%Y-%m-%d") // => "2013-02-11"
+```
+
+The original object-oriented classes that allow for easy and consistent method chaining now is an optional add-on.
+
+More documentation: http://rubyjs.org/reloaded
+
+Or watch my talk at RubyKaigi: http://ustream.tv/recorded/33526011
+
+
+
 # RubyJS
 
 RubyJS is a port of the Ruby core-lib and provides many methods for Array, String, Numerics and more. RubyJS classes are simple wrappers around native JavaScript objects.
