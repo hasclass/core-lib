@@ -1,7 +1,9 @@
 # R.Support includes aliases for private methods. So that they can be used
 # outside RubyJS.
 #
-R.Support = {}
+R.Support =
+  # helper method to get an arguments object
+  argify: -> arguments
 
 # Creates a wrapper method that calls a functional style
 # method with this as the first arguments
@@ -66,3 +68,5 @@ __extract_block = (args) ->
 R.Support.callFunctionWithThis = callFunctionWithThis
 R.Support.ensure_args_length = __ensure_args_length
 R.Support.extract_block = __extract_block
+
+

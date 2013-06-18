@@ -12,7 +12,7 @@ _h.rassoc({a: 2, b:3}, 3) // => ["b", 3]
 _t.strftime(new Date(), "%Y-%m-%d") // => "2013-02-11"
 ```
 
-The original object-oriented classes that allow for easy and consistent method chaining now is an optional add-on.
+The original object-oriented classes that allow for easy and consistent method chaining now is a (not yet optional) add-on.
 
 ```javascript
 R("foo").ljust(10, '-').size().times().downto(7).to_a()

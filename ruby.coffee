@@ -47,7 +47,9 @@ if typeof(exports) != 'undefined'
 # R.Support includes aliases for private methods. So that they can be used
 # outside RubyJS.
 #
-R.Support = {}
+R.Support =
+  # helper method to get an arguments object
+  argify: -> arguments
 
 # Creates a wrapper method that calls a functional style
 # method with this as the first arguments
@@ -112,6 +114,8 @@ __extract_block = (args) ->
 R.Support.callFunctionWithThis = callFunctionWithThis
 R.Support.ensure_args_length = __ensure_args_length
 R.Support.extract_block = __extract_block
+
+
 
 
 # Native classes, to avoid naming conflicts inside RubyJS classes.
@@ -504,36 +508,35 @@ class RubyJS.Base
 
   # Adds useful methods to the global namespace.
   #
-  # e.g. proc, puts, truthy, inspect, falsey
+  # e.g. _proc, _puts, _truthy, _inspect, _falsey
   #
-  # TODO: TEST
-  pollute_global: (prefix = "_") ->
-    if arguments.length is 0
-      args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_time', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
-    else
-      args = arguments
+  pollute_global_with_kernel: (prefix = "_") ->
+    args = [
+      'w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'
+    ]
 
-    for method in args
-      name = prefix + method.replace(/_/, '')
-      if root[name]? && root[name] isnt @[method]
-        R.puts("RubyJS.pollute_global(): #{name} already exists.")
-      else
-        root[name] = @[method]
+    for name in args
+      root[prefix + name] = R[name]
 
     null
 
 
-  pollute_more: ->
+  # Adds the _a, _n, etc shortcuts to the global namespace.
+  #
+  pollute_global_with_shortcuts: (prefix = "_") ->
     shortcuts =
-      _arr:  '_a'
-      _num:  '_n'
-      _str:  '_s'
-      _itr:  '_i'
-      _hsh:  '_h'
-      _time:  '_t'
+      _arr:  'a'
+      _num:  'n'
+      _str:  's'
+      _itr:  'i'
+      _hsh:  'h'
+      _time: 't'
 
     for k,v of shortcuts
-      root[v] = root[k]
+      R[prefix + v]    = R[k]
+      root[prefix + v] = R[k]
+
+    null
 
 
   # Adds RubyJS methods to JS native classes.
@@ -671,11 +674,6 @@ class RubyJS.Base
   extend: (obj, mixin) ->
     obj[name] = method for name, method of mixin
     obj
-
-
-
-  # helper method to get an arguments object
-  argify: -> arguments
 
 
 
@@ -1128,10 +1126,6 @@ _num = R._num = new NumericMethods()
 # Module
 class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
-
-
-  to_enum: (args...) ->
-    new RubyJS.Enumerator(args...)
 
 
   each: (coll, block) ->
@@ -1666,10 +1660,6 @@ class EnumerableMethods
       null
 
     ary
-
-
-  to_enum: (iter = "each", args...) ->
-    new R.Enumerator(this, iter, args)
 
 
   zip: (coll, others) ->
@@ -10559,6 +10549,6 @@ class RubyJS.Time extends RubyJS.Object
 # This file is included at the end of the compiled javascript and
 # setups the RubyJS environment
 
-RubyJS.pollute_global()
-RubyJS.pollute_more()
+RubyJS.pollute_global_with_shortcuts()
+RubyJS.pollute_global_with_kernel()
 root.puts = _puts

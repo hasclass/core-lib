@@ -2,7 +2,7 @@ describe 'RubyJS', ->
   root = global ? window
 
   it "auto pollutes global", ->
-    for method in ['_str', '_arr', '_itr', '_num', '_proc', '_puts', '_truthy', '_falsey', '_inspect']
+    for method in ['_proc', '_puts', '_truthy', '_falsey', '_inspect']
       expect( root[method]? ).toEqual true
 
   it "R()", ->
@@ -16,10 +16,10 @@ describe 'RubyJS', ->
 
 
   it "R.proc", ->
-    expect( _arr.map(['foo'], R.proc('length')) ).toEqual [3]
-    expect( _arr.map([R('foo')], R.proc('size')) ).toEqual [R(3)]
+    expect( _a.map(['foo'], R.proc('length')) ).toEqual [3]
+    expect( _a.map([R('foo')], R.proc('size')) ).toEqual [R(3)]
 
-    expect( _arr.map([R('foo')], R.proc('multiply', 2)) ).toEqual [R('foofoo')]
+    expect( _a.map([R('foo')], R.proc('multiply', 2)) ).toEqual [R('foofoo')]
 
 
 describe "R.is_equal", ->

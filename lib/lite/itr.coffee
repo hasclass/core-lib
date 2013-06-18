@@ -3,10 +3,6 @@ class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
 
 
-  to_enum: (args...) ->
-    new RubyJS.Enumerator(args...)
-
-
   each: (coll, block) ->
     if coll.each?
       coll.each(block)
@@ -539,10 +535,6 @@ class EnumerableMethods
       null
 
     ary
-
-
-  to_enum: (iter = "each", args...) ->
-    new R.Enumerator(this, iter, args)
 
 
   zip: (coll, others) ->

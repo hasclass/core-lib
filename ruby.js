@@ -65,7 +65,11 @@ http://www.rubyjs.org/LICENSE.txt
     exports.RubyJS = RubyJS;
   }
 
-  R.Support = {};
+  R.Support = {
+    argify: function() {
+      return arguments;
+    }
+  };
 
   callFunctionWithThis = function(func) {
     return function(a, b, c, d, e, f) {
@@ -522,44 +526,38 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    Base.prototype.pollute_global = function(prefix) {
-      var args, method, name, _i, _len;
+    Base.prototype.pollute_global_with_kernel = function(prefix) {
+      var args, name, _i, _len;
       if (prefix == null) {
         prefix = "_";
       }
-      if (arguments.length === 0) {
-        args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_time', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
-      } else {
-        args = arguments;
-      }
+      args = ['w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
       for (_i = 0, _len = args.length; _i < _len; _i++) {
-        method = args[_i];
-        name = prefix + method.replace(/_/, '');
-        if ((root[name] != null) && root[name] !== this[method]) {
-          R.puts("RubyJS.pollute_global(): " + name + " already exists.");
-        } else {
-          root[name] = this[method];
-        }
+        name = args[_i];
+        root[prefix + name] = R[name];
       }
       return null;
     };
 
-    Base.prototype.pollute_more = function() {
-      var k, shortcuts, v, _results;
+    Base.prototype.pollute_global_with_shortcuts = function(prefix) {
+      var k, shortcuts, v;
+      if (prefix == null) {
+        prefix = "_";
+      }
       shortcuts = {
-        _arr: '_a',
-        _num: '_n',
-        _str: '_s',
-        _itr: '_i',
-        _hsh: '_h',
-        _time: '_t'
+        _arr: 'a',
+        _num: 'n',
+        _str: 's',
+        _itr: 'i',
+        _hsh: 'h',
+        _time: 't'
       };
-      _results = [];
       for (k in shortcuts) {
         v = shortcuts[k];
-        _results.push(root[v] = root[k]);
+        R[prefix + v] = R[k];
+        root[prefix + v] = R[k];
       }
-      return _results;
+      return null;
     };
 
     Base.prototype.god_mode = function(prefix, overwrite) {
@@ -697,10 +695,6 @@ http://www.rubyjs.org/LICENSE.txt
         obj[name] = method;
       }
       return obj;
-    };
-
-    Base.prototype.argify = function() {
-      return arguments;
     };
 
     return Base;
@@ -1178,16 +1172,6 @@ http://www.rubyjs.org/LICENSE.txt
     function EnumerableMethods() {}
 
     EnumerableMethods.prototype.catch_break = R.Kernel.prototype.catch_break;
-
-    EnumerableMethods.prototype.to_enum = function() {
-      var args;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return (function(func, args, ctor) {
-        ctor.prototype = func.prototype;
-        var child = new ctor, result = func.apply(child, args);
-        return Object(result) === result ? result : child;
-      })(RubyJS.Enumerator, args, function(){});
-    };
 
     EnumerableMethods.prototype.each = function(coll, block) {
       var k, v;
@@ -1835,15 +1819,6 @@ http://www.rubyjs.org/LICENSE.txt
         return null;
       });
       return ary;
-    };
-
-    EnumerableMethods.prototype.to_enum = function() {
-      var args, iter;
-      iter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      if (iter == null) {
-        iter = "each";
-      }
-      return new R.Enumerator(this, iter, args);
     };
 
     EnumerableMethods.prototype.zip = function(coll, others) {};
@@ -8652,9 +8627,9 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(RubyJS.Object);
 
-  RubyJS.pollute_global();
+  RubyJS.pollute_global_with_shortcuts();
 
-  RubyJS.pollute_more();
+  RubyJS.pollute_global_with_kernel();
 
   root.puts = _puts;
 

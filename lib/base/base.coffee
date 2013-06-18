@@ -29,36 +29,35 @@ class RubyJS.Base
 
   # Adds useful methods to the global namespace.
   #
-  # e.g. proc, puts, truthy, inspect, falsey
+  # e.g. _proc, _puts, _truthy, _inspect, _falsey
   #
-  # TODO: TEST
-  pollute_global: (prefix = "_") ->
-    if arguments.length is 0
-      args = ['w', 'fn', '_str', '_arr', '_itr', '_hsh', '_time', '_num', 'proc', 'puts', 'truthy', 'falsey', 'inspect']
-    else
-      args = arguments
+  pollute_global_with_kernel: (prefix = "_") ->
+    args = [
+      'w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'
+    ]
 
-    for method in args
-      name = prefix + method.replace(/_/, '')
-      if root[name]? && root[name] isnt @[method]
-        R.puts("RubyJS.pollute_global(): #{name} already exists.")
-      else
-        root[name] = @[method]
+    for name in args
+      root[prefix + name] = R[name]
 
     null
 
 
-  pollute_more: ->
+  # Adds the _a, _n, etc shortcuts to the global namespace.
+  #
+  pollute_global_with_shortcuts: (prefix = "_") ->
     shortcuts =
-      _arr:  '_a'
-      _num:  '_n'
-      _str:  '_s'
-      _itr:  '_i'
-      _hsh:  '_h'
-      _time:  '_t'
+      _arr:  'a'
+      _num:  'n'
+      _str:  's'
+      _itr:  'i'
+      _hsh:  'h'
+      _time: 't'
 
     for k,v of shortcuts
-      root[v] = root[k]
+      R[prefix + v]    = R[k]
+      root[prefix + v] = R[k]
+
+    null
 
 
   # Adds RubyJS methods to JS native classes.
@@ -196,11 +195,6 @@ class RubyJS.Base
   extend: (obj, mixin) ->
     obj[name] = method for name, method of mixin
     obj
-
-
-
-  # helper method to get an arguments object
-  argify: -> arguments
 
 
 

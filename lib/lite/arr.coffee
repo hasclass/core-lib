@@ -1,3 +1,4 @@
+
 class ArrayMethods extends EnumerableMethods
 
   equals: (arr, other) ->

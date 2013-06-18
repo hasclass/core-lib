@@ -4,7 +4,7 @@ describe "_coerce", ->
 
   describe "call_with", ->
     call_with = _coerce.call_with
-    arg = R.argify
+    arg = R.Support.argify
 
     fn0 = (me) -> [me]
     fn1 = (me, a) -> [me, a]
