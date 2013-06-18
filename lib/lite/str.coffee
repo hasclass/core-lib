@@ -107,11 +107,9 @@ class StringMethods
 
   downcase: (str) ->
     return str unless nativeStrMatch.call(str, /[A-Z]/)
-    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
-    _arr.map(str.split(''), (c) ->
-      if nativeStrMatch.call(c, /[A-Z]/) then c.toLowerCase() else c
-    ).join('')
 
+    str.replace /[A-Z]/g, (ch) ->
+      String.fromCharCode(ch.charCodeAt(0) | 32)
 
 
   dump: (str) ->
@@ -609,10 +607,9 @@ class StringMethods
 
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
-    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
-    _arr.map(str.split(''), (c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('')
+
+    str.replace /[a-z]/g, (ch) ->
+      String.fromCharCode(ch.charCodeAt(0) & ~32)
 
 
   upto: (str, stop, exclusive, block) ->
