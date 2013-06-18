@@ -87,3 +87,109 @@ describe "_a.equals", ->
     expect( _a.equals( [obj],    []     )).toBe(false)
 
 
+describe "docs", ->
+  it "_a.at", ->
+    a = [ "a", "b", "c", "d", "e" ]
+    expect( _a.at(a, 0)  ).toEqual("a")
+    expect( _a.at(a, -1) ).toEqual("e")
+
+  it "_a.combination", ->
+    a = [1, 2, 3, 4]
+    acc = []
+    _a.combination(a, 1, (arr) -> acc.push(arr) )
+    expect( acc ).toEqual [[1],[2],[3],[4]]
+    expect( _a.combination(a, 1) ).toEqual [[1],[2],[3],[4]]
+    expect( _a.combination(a, 2) ).toEqual [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+    expect( _a.combination(a, 3) ).toEqual [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
+    expect( _a.combination(a, 4) ).toEqual [[1,2,3,4]]
+    expect( _a.combination(a, 0) ).toEqual [[]] # one combination of length 0
+    expect( _a.combination(a, 5) ).toEqual []   # no combinations of length 5
+
+  it "_a.compact", ->
+    expect(
+      _a.compact([ "a", null, "b", null, "c", null ])
+    ).toEqual [ "a", "b", "c" ]
+
+
+  it "_a.delete", ->
+    a = [ "a", "b", "b", "b", "c" ]
+    expect( _a.delete(a, "b") ).toEqual "b"
+    expect( a                 ).toEqual ["a", "c"]
+    expect( _a.delete(a, "z") ).toEqual null
+    expect( _a.delete(a, "z", -> 'not found') ).toEqual "not found"
+
+
+  it "_a.delete_at", ->
+    arr = ['ant','bat','cat','dog']
+    expect( _a.delete_at(arr, 2)    ).toEqual "cat"
+    expect( arr                     ).toEqual ["ant", "bat", "dog"]
+    expect( _a.delete_at(arr, 99)   ).toEqual null
+
+
+  it "_a.flatten", ->
+    s = [ 1, 2, 3 ]
+    t = [ 4, 5, 6, [7, 8] ]
+    arr = [ s, t, 9, 10 ]
+    expect( _a.flatten(arr) ).toEqual [1,2,3,4,5,6,7,8,9,10]
+    arr = [1,2,[3,[4,5]]]
+    expect( _a.flatten(arr, 1)        ).toEqual [1, 2, 3, [4, 5]]
+
+
+  it "_a.each_with_context", ->
+    arr = [ "a", "b", "c" ]
+    obj = []
+    _a.each_with_context(arr, obj, (x) -> this.push(x) )
+    expect( obj ).toEqual [ "a", "b", "c" ]
+
+
+  it "_a.fetch", ->
+    arr = [ 11, 22, 33, 44 ]
+    expect( _a.fetch(arr, 1)              ).toEqual 22
+    expect( _a.fetch(arr, -1)             ).toEqual 44
+    expect( _a.fetch(arr, 4, 'cat')       ).toEqual "cat"
+    expect( _a.fetch(arr, 4, (i) -> i*i ) ).toEqual 16
+
+
+  it "_a.fill", ->
+    arr = [ "a", "b", "c", "d" ]
+    expect( _a.fill(arr, "x")               ).toEqual ["x", "x", "x", "x"]
+    expect( _a.fill(arr, "z", 2, 2)         ).toEqual ["x", "x", "z", "z"]
+    # expect( _a.fill(arr, "y", 0..1)         ).toEqual ["y", "y", "z", "z"]
+    expect( _a.fill(arr, (i) -> i*i      )  ).toEqual [0, 1, 4, 9]
+    expect( _a.fill(arr, -2, (i) -> i*i*i)  ).toEqual [0, 1, 8, 27]
+
+
+  it "_a.first", ->
+    arr = ['foo','bar','baz']
+    expect( _a.first(arr)     ).toEqual "foo"
+    expect( _a.first(arr, 2)  ).toEqual ["foo", "bar"]
+    expect( _a.first(arr, 10) ).toEqual ["foo", "bar", "baz"]
+    expect( _a.first([])      ).toEqual null
+
+
+  it "_a.insert", ->
+    arr = ['a','b','c','d']
+    expect( _a.insert(arr, 2, 99)         ).toEqual ["a", "b", 99, "c", "d"]
+    expect( _a.insert(arr, -2, 1, 2, 3)   ).toEqual ["a", "b", 99, "c", 1, 2, 3, "d"]
+
+
+  it "_a.join", ->
+    arr = ['a', 'b', 'c']
+    expect( _a.join(arr)       ).toEqual "abc"
+    expect( _a.join(arr,null)  ).toEqual "abc"
+    expect( _a.join(arr,"-")   ).toEqual "a-b-c"
+    # joins nested arrays
+    expect( _a.join([1,[2,[3,4]]], '.')      ).toEqual '1.2.3.4'
+    # Default separator R['$,'] (in ruby: $,)
+    expect( R['$,']           ).toEqual null
+    expect( _a.join(arr)      ).toEqual "abc"
+    expect( R['$,'] = '|'     ).toEqual '|'
+    expect( _a.join(arr)      ).toEqual "a|b|c"
+
+
+  it "_a.keep_if", ->
+    arr = [1,2,3,4]
+    expect( _a.keep_if(arr, (v) -> v < 3 )  ).toEqual [1,2]
+    expect( _a.keep_if(arr, (v) -> true  )  ).toEqual [1,2,3,4]
+
+

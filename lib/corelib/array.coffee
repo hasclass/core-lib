@@ -667,7 +667,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @example
   #     a = R([1,2,3,4])
-  #     a.keep_if (v) -> i < 3   # => [1,2,3]
+  #     a.keep_if (v) -> v <= 3   # => [1,2,3]
   #     a.keep_if  -> true       # => a # returns self if not changed
   #
   keep_if: (block) ->
