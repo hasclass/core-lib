@@ -123,6 +123,7 @@ __num   = _coerce.num
 __arr   = _coerce.arr
 __isArr = _coerce.is_arr
 __isStr = _coerce.is_str
+__isRgx = _coerce.is_rgx
 __call  = _coerce.call_with
 __cmp   = _coerce.cmp
 __cmpstrict   = _coerce.cmpstrict

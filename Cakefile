@@ -17,6 +17,7 @@ liteFiles = [
   'lite/itr'
   'lite/arr'
   'lite/str'
+  'lite/rgx'
   'lite/hsh'
   'lite/time'
 ]

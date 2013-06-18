@@ -43,9 +43,9 @@ class StringMethods
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
         ending = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
+        regexp = new RegExp("(#{_rgx.escape(ending)})$")
       else
-        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
+        regexp = new RegExp("(#{_rgx.escape(sep)})$")
       str.replace(regexp, '')
 
 
@@ -145,9 +145,9 @@ class StringMethods
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
+      pattern = new RegExp(_rgx.escape(pattern_lit), 'g')
 
-    unless R.Regexp.isRegexp(pattern)
+    unless __isRgx(pattern)
       _err.throw_type()
 
     unless pattern.global
@@ -221,7 +221,7 @@ class StringMethods
         block = offset
         offset = null
 
-    # unless RString.isString(pattern) or R.Regexp.isRegexp(pattern)
+    # unless RString.isString(pattern) or __isRgx(pattern)
     #   _err.throw_type()
 
     opts = {}
@@ -342,9 +342,9 @@ class StringMethods
 
 
   scan: (str, pattern, block = null) ->
-    unless R.Regexp.isRegexp(pattern)
+    unless __isRgx(pattern)
       pattern = __str(pattern)
-      pattern = R.Regexp.quote(pattern)
+      pattern = _rgx.quote(pattern)
 
     index = 0
 
@@ -407,9 +407,9 @@ class StringMethods
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit))
+      pattern = new RegExp(_rgx.escape(pattern_lit))
 
-    unless R.Regexp.isRegexp(pattern)
+    unless __isRgx(pattern)
       _err.throw_type()
 
     if pattern.global
