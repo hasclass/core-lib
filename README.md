@@ -14,7 +14,19 @@ _t.strftime(new Date(), "%Y-%m-%d") // => "2013-02-11"
 
 The original object-oriented classes that allow for easy and consistent method chaining now is an optional add-on.
 
-More documentation: http://rubyjs.org/reloaded
+```javascript
+R("foo").ljust(10, '-').size().times().downto(7).to_a()
+// => R.Array {__native__: [10,9,8,7]}
+```
+
+If that is not enough for you, you can opt-in the experimental "god_mode". Which extends native JS classes with RubyJS methods.
+
+```javascript
+R.god_mode('rb_') // all methods are prefixed with rb_
+5.rb_times(function (el) { console.log(el) });
+```
+
+More documentation (in the works): http://rubyjs.org/reloaded
 
 Or watch my talk at RubyKaigi: http://ustream.tv/recorded/33526011
 

@@ -44,6 +44,9 @@ if typeof(exports) != 'undefined'
 
 
 
+# R.Support includes aliases for private methods. So that they can be used
+# outside RubyJS.
+#
 R.Support = {}
 
 # Creates a wrapper method that calls a functional style
@@ -129,7 +132,7 @@ nativeJoin     = ArrProto.join
 nativeSort     = ArrProto.sort
 nativeSlice    = ArrProto.slice
 nativeUnshift  = ArrProto.unshift
-nativePush  = ArrProto.push
+nativePush     = ArrProto.push
 
 # TODO: create BlockNone class that coerces multiple yield arguments into array.
 
@@ -214,7 +217,7 @@ class BlockSingle
 R.Block = Block
 R.blockify = __blockify = Block.create
 
-# Breaker is a R class for adding support to breaking out of functions
+# Breaker is a class for adding support to breaking out of functions
 # that act like loops. Because we mimick ruby block/procs/lambdas by passing
 # functions, so neither break nor return would work in JS.
 #
@@ -260,7 +263,7 @@ class RubyJS.Breaker
       throw e
 
 
-
+# methods are included in RubyJS classes. Most notably the Base object R.
 class RubyJS.Kernel
 
   # A method to easily check whether an object is a RubyJS object with CoffeeScript.
@@ -457,6 +460,18 @@ class RubyJS.Kernel
     if limit then r.multiply(limit).to_i() else r
 
 
+__enumerate = (func, args) ->
+  ary = []
+  args.push () ->
+    if arguments.length > 1
+      ary.push(nativeSlice.call(arguments, 0))
+    else
+      ary.push(arguments[0])
+  func.apply(null, args)
+  ary
+
+
+__rand = RubyJS.Kernel.prototype.rand
 
 # Methods in Base are added to `R`.
 #
@@ -595,8 +610,6 @@ class RubyJS.Base
       func.apply(null, arguments)
 
 
-
-
   # Check wether an obj is falsey according to Ruby
   #
   falsey: (obj) -> obj is false or obj is null or obj is undefined
@@ -626,18 +639,23 @@ class RubyJS.Base
     if typeof a is 'object'
       if a.equals?
         a.equals(b)
+      else if __isArr(a)
+        _arr.equals(a,b)
       else if a.valueOf?
-        a.valueOf() is b
+        a.valueOf() is b.valueOf()
       else
         false
     else if typeof b is 'object'
       if b.equals?
         b.equals(a)
+      else if __isArr(b)
+        _arr.equals(a,b)
       else if b.valueOf?
-        b.valueOf() is a
+        b.valueOf() is a.valueOf()
       else
         false
     else
+      # for elements that are literals
       a is b
 
 
@@ -667,6 +685,8 @@ for own name, method of RubyJS.Base.prototype
   RubyJS[name] = method
 
 
+__falsey = R.falsey
+__truthy = R.truthy
 __equals = R.is_equal
 
 
@@ -692,34 +712,7 @@ for error in errors
     RubyJS[error] = this["R"+error] = errorClass
 
 
-_err =
-  throw_argument: (msg) ->
-    throw RArgumentError.new(msg)
-
-  throw_type: (msg) ->
-    throw RTypeError.new(msg)
-
-  throw_index: (msg) ->
-    throw RIndexError.new(msg)
-
-  throw_not_implemented: (msg) ->
-    throw RNotImplementedError.new(msg)
-
-  throw_key: (msg) ->
-    throw RKeyError.new(msg)
-
-R.Support.err = _err
-
-
 # Singleton class for type coercion inside RubyJS.
-#
-# to_int(obj) converts obj to R.Fixnum
-#
-# to_int_native(obj) converts obj to a JS number primitive through R(obj).to_int() if not already one.
-#
-# There is a shortcut for Coerce.prototype: RCoerce.
-#
-#     RCoerce.to_num_native(1)
 #
 # @private
 _coerce =
@@ -808,18 +801,69 @@ _coerce =
       else func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)))
 
 
+  cmp: (a, b) ->
+    if typeof a isnt 'object' and typeof a is typeof b
+      if a is b
+        0
+      else
+        if a < b then -1 else 1
+    else
+      a = R(a)
+      throw 'NoMethodError' unless a.cmp?
+      a.cmp(b)
+
+
+  cmpstrict: (a, b) ->
+    if typeof a is typeof b and typeof a isnt 'object'
+      if a is b
+        0
+      else
+        if a < b then -1 else 1
+    else
+      a = R(a)
+      throw 'NoMethodError' unless a.cmp?
+      cmp = a.cmp(b)
+      _err.throw_argument() if cmp is null
+      cmp
+
+
+
 
 
 R.Support.coerce = _coerce
-__str = _coerce.str
-__int = _coerce.int
-__num = _coerce.num
-__arr = _coerce.arr
+__str   = _coerce.str
+__int   = _coerce.int
+__num   = _coerce.num
+__arr   = _coerce.arr
 __isArr = _coerce.is_arr
 __isStr = _coerce.is_str
-__call = _coerce.call_with
+__isRgx = _coerce.is_rgx
+__call  = _coerce.call_with
+__cmp   = _coerce.cmp
+__cmpstrict   = _coerce.cmpstrict
+
+_err =
+  throw_argument: (msg) ->
+    throw RArgumentError.new(msg)
+
+  throw_type: (msg) ->
+    throw RTypeError.new(msg)
+
+  throw_index: (msg) ->
+    throw RIndexError.new(msg)
+
+  throw_not_implemented: (msg) ->
+    throw RNotImplementedError.new(msg)
+
+  throw_key: (msg) ->
+    throw RKeyError.new(msg)
+
+R.Support.err = _err
+
+
 
 class NumericMethods
+
   cmp: (num, other) ->
     if num is other then 0 else null
 
@@ -845,6 +889,7 @@ class NumericMethods
 
 
   downto: (num, stop, block) ->
+    return __enumerate(_num.downto, [num, stop]) unless block?.call?
     stop = Math.ceil(stop)
 
     idx = num
@@ -879,9 +924,14 @@ class NumericMethods
 
 
   step: (num, limit, step = 1, block) ->
+    unless block?.call? or step?.call?
+      return __enumerate(_num.step, [num, limit, step])
+
+
     unless block?.call?
       block = step
       step  = 1
+
 
     if step is 0
       _err.throw_argument()
@@ -926,6 +976,7 @@ class NumericMethods
 
 
   upto: (num, stop, block) ->
+    return __enumerate(_num.upto, [num, stop]) unless block?.call?
     stop = Math.floor(stop)
 
     idx = num
@@ -945,6 +996,7 @@ class NumericMethods
 
   gcd: (num, other) ->
     t = null
+    other = __int(other)
     while (other != 0)
       t = other
       other = num % other
@@ -957,36 +1009,32 @@ class NumericMethods
   #
   # @example
   #
-  #     R(2).gcdlcm(2)                    #=> [2, 2]
-  #     R(3).gcdlcm(-7)                   #=> [1, 21]
-  #     R((1<<31)-1).gcdlcm((1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #     _n.gcdlcm(2,  2)                   #=> [2, 2]
+  #     _n.gcdlcm(3, -7)                   #=> [1, 21]
+  #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    #=> [1, 4951760154835678088235319297]
   #
-  # @return [R.Array<R.Fixnum, R.Fixnum>]
+  # @return [Array<Number, Number>]
   #
-  gcdlcm: (other) ->
-    other = @box(other)
-    __ensure_args_length(arguments, 1)
-    @__ensure_integer__(other)
+  gcdlcm: (num, other) ->
+    other = __int(other)
+    [_num.gcd(num, other), _num.lcm(num, other)]
 
-    [@gcd(other), @lcm(other)]
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
   # @example
   #
-  #     R(2).lcm(2)                    #=> 2
-  #     R(3).lcm(-7)                   #=> 21
-  #     R((1<<31)-1).lcm((1<<61)-1)    #=> 4951760154835678088235319297
+  #     _n.lcm(2,  2)                   #=> 2
+  #     _n.lcm(3, -7)                   #=> 21
+  #     _n.lcm((1<<31)-1, (1<<61)-1)    #=> 4951760154835678088235319297
   #
-  # @return [R.Fixnum]
+  # @return [Number]
   #
-  lcm: (other) ->
-    other = R(other)
-    __ensure_args_length(arguments, 1)
-    @__ensure_integer__(other)
+  lcm: (num, other) ->
+    other = __int(other)
 
-    lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
-    lcm.numerator()
+    lcm = num * other / _num.gcd(num, other)
+    _num.numerator(lcm)
 
 
   numerator: (num) ->
@@ -1060,7 +1108,7 @@ class NumericMethods
   # @return [this]
   #
   times: (num, block) ->
-    return R(num).to_enum('times') unless block?.call?
+    return __enumerate(_num.times, [num]) unless block?.call?
     if num > 0
       idx = 0
       while idx < num
@@ -1102,7 +1150,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, ->
         result = callback.invoke(arguments)
-        breaker.break(false) if R.falsey(result)
+        breaker.break(false) if __falsey(result)
       true
 
 
@@ -1111,7 +1159,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, ->
         result = callback.invoke(arguments)
-        breaker.break(true) unless R.falsey( result )
+        breaker.break(true) unless __falsey( result )
       false
 
 
@@ -1138,7 +1186,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, ->
         result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
+        counter += 1 unless __falsey(result)
     else
       countable = block
       _itr.each coll, (el) ->
@@ -1158,29 +1206,28 @@ class EnumerableMethods
     else
       many = null
 
-    return coll.to_enum('cycle', n) unless block
+    return __enumerate(_itr.cycle, [n]) unless block
 
     callback = __blockify(block, coll)
 
-    cache = new R.Array([])
+    cache = []
     _itr.each coll, ->
-      args = callback.args(arguments)
-      cache.append args
+      cache.push(callback.args(arguments))
       callback.invoke(arguments)
 
-    return null if cache.empty()
+    return null if cache.length == 0
 
     if many > 0                                  # cycle(2, () -> ... )
       i = 0
       many -= 1
       while many > i
         # OPTIMIZE use normal arrays and for el in cache
-        cache.each ->
+        _arr.each cache, ->
           callback.invoke(arguments)
           i += 1
     else
       while true                                 # cycle(() -> ... )
-        cache.each ->
+        _arr.each cache, ->
           callback.invoke(arguments)
 
 
@@ -1231,7 +1278,7 @@ class EnumerableMethods
     len = block.length
     _itr.each coll, ->
       args = callback.args(arguments)
-      if len > 1 and R.Array.isNativeArray(args)
+      if len > 1 and __isArr(args)
         block.apply(coll, args)
       else
         block.call(coll, args)
@@ -1265,7 +1312,8 @@ class EnumerableMethods
 
 
   each_with_index: (coll, block) ->
-    return new R.Enumerator(_itr, 'each_with_index', [coll]) unless block?.call?
+    unless block?.call?
+      return __enumerate(_itr.each_with_index, [coll])
 
     callback = __blockify(block, coll)
 
@@ -1279,6 +1327,9 @@ class EnumerableMethods
 
 
   each_with_object: (coll, obj, block) ->
+    unless block?.call?
+      return __enumerate(_itr.each_with_object, [coll, obj])
+
     callback = __blockify(block, coll)
 
     _itr.each coll, ->
@@ -1296,7 +1347,7 @@ class EnumerableMethods
     callback = __blockify(block, this)
     _itr.catch_break (breaker) ->
       _itr.each coll, ->
-        unless R.falsey(callback.invoke(arguments))
+        unless __falsey(callback.invoke(arguments))
           breaker.break(callback.args(arguments))
 
       ifnone?()
@@ -1306,7 +1357,7 @@ class EnumerableMethods
     ary = []
     callback = __blockify(block, coll)
     _itr.each coll, ->
-      unless R.falsey(callback.invoke(arguments))
+      unless __falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
     ary
@@ -1417,7 +1468,7 @@ class EnumerableMethods
   max: (coll, block) ->
     max = undefined
 
-    block ||= R.Comparable.cmp
+    block ||= __cmp
 
     _itr.each coll, (item) ->
       if max is undefined
@@ -1437,14 +1488,14 @@ class EnumerableMethods
       if max is undefined
         max = item
       else
-        cmp = R.Comparable.cmpstrict(block(item), block(max))
+        cmp = __cmpstrict(block(item), block(max))
         max = item if cmp > 0
     max or null
 
 
   min: (coll, block) ->
     min = undefined
-    block ||= R.Comparable.cmp
+    block ||= __cmp
 
     # Following Optimization won't complain if:
     # [1,2,'3']
@@ -1470,7 +1521,7 @@ class EnumerableMethods
       if min is undefined
         min = item
       else
-        cmp = R.Comparable.cmpstrict(block(item), block(min))
+        cmp = __cmpstrict(block(item), block(min))
         min = item if cmp < 0
     min or null
 
@@ -1489,7 +1540,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, (args) ->
         result = callback.invoke(arguments)
-        breaker.break(false) unless R.falsey(result)
+        breaker.break(false) unless __falsey(result)
       true
 
 
@@ -1500,7 +1551,7 @@ class EnumerableMethods
       callback = __blockify(block, coll)
       _itr.each coll, (args) ->
         result = callback.invoke(arguments)
-        counter += 1 unless R.falsey(result)
+        counter += 1 unless __falsey(result)
         breaker.break(false) if counter > 1
       counter is 1
 
@@ -1528,7 +1579,7 @@ class EnumerableMethods
 
     ary = []
     _itr.each coll, ->
-      if R.falsey(callback.invoke(arguments))
+      if __falsey(callback.invoke(arguments))
         ary.push(callback.args(arguments))
 
     ary
@@ -1567,7 +1618,7 @@ class EnumerableMethods
 
   sort: (coll, block) ->
     # TODO: throw Error when comparing different values.
-    block ||= R.Comparable.cmpstrict
+    block ||= __cmpstrict
     coll = coll.to_native() if coll.to_native?
     nativeSort.call(coll, block)
 
@@ -1579,7 +1630,7 @@ class EnumerableMethods
     _itr.each coll, (value) ->
       ary.push new SortedElement(value, callback.invoke(arguments))
 
-    ary = _arr.sort(ary, R.Comparable.cmpstrict)
+    ary = _arr.sort(ary, __cmpstrict)
     _arr.map(ary, (se) -> se.value)
 
 
@@ -1600,7 +1651,7 @@ class EnumerableMethods
 
     _itr.catch_break (breaker) ->
       _itr.each coll, ->
-        breaker.break() if R.falsey block.apply(coll, arguments)
+        breaker.break() if __falsey block.apply(coll, arguments)
         ary.push(BlockMulti.prototype.args(arguments))
 
     ary
@@ -1668,19 +1719,16 @@ class SortedElement
 _itr = R._itr = new EnumerableMethods()
 
 
-# Rules:
-#
-# Do not call methods as instance methods, but through the singleton object "_arr".
-# This allows for painless method chaining: _arr.map(["foo"], _str.capitalize)
-#
 class ArrayMethods extends EnumerableMethods
+
   equals: (arr, other) ->
     return true  if arr is other
     return false unless other?
 
-    unless __arr(other)
-      return false unless other.to_ary?
-      # return other.equals arr
+    if __isArr(other)
+      other = __arr(other)
+    else
+      return false
 
     return false unless arr.length is other.length
 
@@ -1691,6 +1739,7 @@ class ArrayMethods extends EnumerableMethods
       i += 1
 
     true
+
 
   append: (arr, obj) ->
     arr.push(obj)
@@ -1719,7 +1768,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
-    return _arr.to_enum('combination', arr, num) unless block?
+    return __enumerate(_arr.combination, arr, num) unless block?
 
     num = __int(num)
     len = arr.length
@@ -1812,7 +1861,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
-    return _arr.to_enum('each', [arr]) unless block?
+    return __enumerate(_arr.each, [arr]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -1823,9 +1872,10 @@ class ArrayMethods extends EnumerableMethods
 
     arr
 
+
   # @non-ruby
   each_with_context: (arr, thisArg, block) ->
-    return _arr.to_enum('each_with_context', [arr, thisArg]) unless block?
+    return __enumerate(_arr.each_with_context, [arr, thisArg]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -1837,15 +1887,8 @@ class ArrayMethods extends EnumerableMethods
     thisArg
 
 
-  to_enum: (name, args) ->
-    # new R.Enumerator(_arr, name, args)
-    ary = []
-    _arr[name].apply(_arr, args.concat((args) -> ary.push(args)))
-    ary
-
-
   each_index: (arr, block) ->
-    return _arr.to_enum('each_index', [arr]) unless block?
+    return __enumerate(_arr.each_index, [arr]) unless block?
 
     idx = -1
     len = arr.length
@@ -1975,7 +2018,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   keep_if: (arr, block) ->
-    return _arr.to_enum('keep_if', [arr]) unless block?
+    return __enumerate(_arr.keep_if, [arr]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -1984,7 +2027,7 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     while ++idx < len
       el = arr[idx]
-      ary.push(el) unless R.falsey(block(el))
+      ary.push(el) unless __falsey(block(el))
 
     ary
 
@@ -2096,7 +2139,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   reverse_each: (arr, block) ->
-    return _arr.to_enum('reverse_each', [arr]) unless block?
+    return __enumerate(_arr.reverse_each, [arr]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -2108,7 +2151,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   rindex: (arr, other) ->
-    return _arr.to_enum('rindex', [arr, other]) if other is undefined
+    return __enumerate(_arr.rindex, [arr, other]) if other is undefined
 
     len = arr.length
     ridx = arr.length
@@ -2116,7 +2159,7 @@ class ArrayMethods extends EnumerableMethods
       block = Block.splat_arguments(other)
       while ridx--
         el = arr[ridx]
-        unless R.falsey(block(el))
+        unless __falsey(block(el))
           return ridx
 
     else
@@ -2148,7 +2191,7 @@ class ArrayMethods extends EnumerableMethods
 
   sample: (arr, n, range = undefined) ->
     len = arr.length
-    return arr[R.rand(len)] if n is undefined
+    return arr[__rand(len)] if n is undefined
     n = __int(n)
     _err.throw_argument() if n < 0
 
@@ -2157,7 +2200,7 @@ class ArrayMethods extends EnumerableMethods
     ary = arr.slice(0)
     idx = -1
     while ++idx < n
-      ridx = idx + R.rand(len - idx) # Random idx
+      ridx = idx + __rand(len - idx) # Random idx
       tmp  = ary[idx]
       ary[idx]  = ary[ridx]
       ary[ridx] = tmp
@@ -2170,7 +2213,7 @@ class ArrayMethods extends EnumerableMethods
     ary = new Array(len)
     idx = -1
     while ++idx < len
-      rnd = idx + R.rand(len - idx)
+      rnd = idx + __rand(len - idx)
       tmp = arr[idx]
       ary[idx] = arr[rnd]
       ary[rnd] = tmp
@@ -2217,11 +2260,11 @@ class ArrayMethods extends EnumerableMethods
 
     # TODO: dogfood
     for ary in arr
-      ary = _coerce.arr(ary)
+      ary = __arr(ary)
       max ||= ary.length
 
       # Catches too-large as well as too-small (for which #fetch would suffice)
-      # throw R.IndexError.new("All arrays must be same length") if ary.size != max
+      # _err.throw_index("All arrays must be same length") if ary.size != max
       _err.throw_index() unless ary.length == max
 
       idx = -1
@@ -2332,6 +2375,12 @@ _arr = R._arr = (arr) ->
 R.extend(_arr, new ArrayMethods())
 
 class StringMethods
+  equals: (str, other) ->
+    str   = str.valueOf()   if typeof str is 'object'
+    other = other.valueOf() if typeof other is 'object'
+    str is other
+
+
   capitalize: (str) ->
     return "" if str.length == 0
     b = _str.downcase(str)
@@ -2365,14 +2414,14 @@ class StringMethods
     if sep == null
       if _str.empty(str) then "" else null
     else
-      sep = _coerce.str(sep)
+      sep = __str(sep)
       if sep.length == 0
         regexp = /((\r\n)|\n)+$/
       else if sep is "\n" or sep is "\r" or sep is "\r\n"
         ending = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{R.Regexp.escape(ending)})$")
+        regexp = new RegExp("(#{_rgx.escape(ending)})$")
       else
-        regexp = new RegExp("(#{R.Regexp.escape(sep)})$")
+        regexp = new RegExp("(#{_rgx.escape(sep)})$")
       str.replace(regexp, '')
 
 
@@ -2386,7 +2435,7 @@ class StringMethods
 
 
   count: (str) ->
-    throw R.ArgumentError.new("String.count needs arguments") if arguments.length == 1
+    _err.throw_argument("String.count needs arguments") if arguments.length == 1
     args = _coerce.split_args(arguments, 1)
 
     _str.__matched__(str, args).length
@@ -2472,9 +2521,9 @@ class StringMethods
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g')
+      pattern = new RegExp(_rgx.escape(pattern_lit), 'g')
 
-    unless R.Regexp.isRegexp(pattern)
+    unless __isRgx(pattern)
       _err.throw_type()
 
     unless pattern.global
@@ -2548,7 +2597,7 @@ class StringMethods
         block = offset
         offset = null
 
-    # unless RString.isString(pattern) or R.Regexp.isRegexp(pattern)
+    # unless RString.isString(pattern) or __isRgx(pattern)
     #   _err.throw_type()
 
     opts = {}
@@ -2669,9 +2718,9 @@ class StringMethods
 
 
   scan: (str, pattern, block = null) ->
-    unless R.Regexp.isRegexp(pattern)
+    unless __isRgx(pattern)
       pattern = __str(pattern)
-      pattern = R.Regexp.quote(pattern)
+      pattern = _rgx.quote(pattern)
 
     index = 0
 
@@ -2734,9 +2783,9 @@ class StringMethods
 
     pattern_lit = R.String.string_native(pattern)
     if pattern_lit isnt null
-      pattern = new RegExp(R.Regexp.escape(pattern_lit))
+      pattern = new RegExp(_rgx.escape(pattern_lit))
 
-    unless R.Regexp.isRegexp(pattern)
+    unless __isRgx(pattern)
       _err.throw_type()
 
     if pattern.global
@@ -2993,6 +3042,41 @@ _str = R._str = (arr) ->
 
 R.extend(_str, new StringMethods())
 
+
+class RegexpMethods
+
+  # Escapes any characters that would have special meaning in a regular
+  # expression. Returns a new escaped string, or self if no characters are
+  # escaped. For any string, Regexp.new(Regexp.escape(str))=~str will be true.
+  #
+  # @example
+  #      R.Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
+  #
+  # @alias Regexp.quote
+  #
+  escape: (pattern) ->
+    pattern = __str(pattern)
+    pattern.replace(/([.?*+^$[\](){}|-])/g, "\\$1")
+      # .replace(/[\\]/g, '\\\\')
+      # .replace(/[\"]/g, '\\\"')
+      # .replace(/[\/]/g, '\\/')
+      # .replace(/[\b]/g, '\\b')
+      .replace(/[\f]/g, '\\f')
+      .replace(/[\n]/g, '\\n')
+      .replace(/[\r]/g, '\\r')
+      .replace(/[\t]/g, '\\t')
+      .replace(/[\s]/g, '\\ ') # This must been an empty space ' '
+
+  quote: (pattern) ->
+    _rgx.escape(pattern)
+
+
+
+_rgx = R._rgx = (rgx) ->
+  new R.Regexp(rgx)
+
+
+R.extend(_rgx, new RegexpMethods())
 
 class HashMethods extends EnumerableMethods
   assoc: (hsh, needle) ->
@@ -3651,33 +3735,12 @@ class RubyJS.Comparable
 
   # Equivalent of calling
   # R(a).cmp(b) but faster for natives.
-  @cmp: (a, b) ->
-    if typeof a isnt 'object' and typeof a is typeof b
-      if a is b
-        0
-      else
-        if a < b then -1 else 1
-    else
-      a = R(a)
-      throw 'NoMethodError' unless a.cmp?
-      a.cmp(b)
+  @cmp: __cmp
 
 
   # Same as cmp, but throws ArgumentError if it cannot
   # coerce elements.
-  @cmpstrict: (a, b) ->
-    if typeof a is typeof b and typeof a isnt 'object'
-      if a is b
-        0
-      else
-        if a < b then -1 else 1
-    else
-      a = R(a)
-      throw 'NoMethodError' unless a.cmp?
-      cmp = a.cmp(b)
-      throw R.ArgumentError.new() if cmp is null
-      cmp
-
+  @cmpstrict: __cmpstrict
 
 
   # aliases
@@ -3782,8 +3845,11 @@ class RubyJS.Enumerable
   #
   cycle: (n, block) ->
     throw R.ArgumentError.new() if arguments.length > 2
+    unless block?.call? or n?.call?
+      return @to_enum('cycle', n)
 
     _itr.cycle(this, n, block)
+
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #
@@ -9054,7 +9120,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    new R.Array([@gcd(other).valueOf(), @lcm(other).valueOf()])
+    new R.Array([_num.gcd(@__native__, other), _num.lcm(@__native__, other)])
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
@@ -9067,12 +9133,10 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum]
   #
   lcm: (other) ->
-    other = R(other)
     __ensure_args_length(arguments, 1)
-    @__ensure_integer__(other)
+    @__ensure_integer__(R(other))
 
-    lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
-    lcm.numerator()
+    new RFixnum(_num.lcm(@__native__, other))
 
 
   # Returns self.
@@ -9080,7 +9144,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum,this]
   #
   numerator: ->
-    new R.Fixnum(_num.numerator(@__native__))
+    new RFixnum(_num.numerator(@__native__))
 
   # Returns true if int is an odd number.
   #
@@ -9218,7 +9282,7 @@ class RubyJS.Integer extends RubyJS.Numeric
 
 
 
-class RubyJS.Fixnum extends RubyJS.Integer
+class R.Fixnum extends RubyJS.Integer
   @include R.Comparable
 
 
@@ -9434,6 +9498,8 @@ class RubyJS.Fixnum extends RubyJS.Integer
 
   @__add_default_aliases__(@prototype)
 
+
+RFixnum = R.Fixnum
 
 #
 #

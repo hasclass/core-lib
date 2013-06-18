@@ -8,7 +8,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RHash, RString, SortedElement, StrProto, StringMethods, TimeMethods, callFunctionWithThis, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __ensure_args_length, __equals, __extract_block, __int, __isArr, __isStr, __num, __str, _arr, _coerce, _err, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _str, _time,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RFixnum, RHash, RString, RegexpMethods, SortedElement, StrProto, StringMethods, TimeMethods, callFunctionWithThis, error, errors, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __cmp, __cmpstrict, __ensure_args_length, __enumerate, __equals, __extract_block, __falsey, __int, __isArr, __isRgx, __isStr, __num, __rand, __str, __truthy, _arr, _coerce, _err, _fn, _hsh, _i, _itr, _len, _num, _ref, _ref1, _ref2, _ref3, _ref4, _rgx, _str, _time,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice;
@@ -481,6 +481,22 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
+  __enumerate = function(func, args) {
+    var ary;
+    ary = [];
+    args.push(function() {
+      if (arguments.length > 1) {
+        return ary.push(nativeSlice.call(arguments, 0));
+      } else {
+        return ary.push(arguments[0]);
+      }
+    });
+    func.apply(null, args);
+    return ary;
+  };
+
+  __rand = RubyJS.Kernel.prototype.rand;
+
   RubyJS.Base = (function() {
     function Base() {}
 
@@ -642,16 +658,20 @@ http://www.rubyjs.org/LICENSE.txt
       if (typeof a === 'object') {
         if (a.equals != null) {
           return a.equals(b);
+        } else if (__isArr(a)) {
+          return _arr.equals(a, b);
         } else if (a.valueOf != null) {
-          return a.valueOf() === b;
+          return a.valueOf() === b.valueOf();
         } else {
           return false;
         }
       } else if (typeof b === 'object') {
         if (b.equals != null) {
           return b.equals(a);
+        } else if (__isArr(b)) {
+          return _arr.equals(a, b);
         } else if (b.valueOf != null) {
-          return b.valueOf() === a;
+          return b.valueOf() === a.valueOf();
         } else {
           return false;
         }
@@ -694,6 +714,10 @@ http://www.rubyjs.org/LICENSE.txt
     RubyJS[name] = method;
   }
 
+  __falsey = R.falsey;
+
+  __truthy = R.truthy;
+
   __equals = R.is_equal;
 
   errors = ['ArgumentError', 'RegexpError', 'TypeError', 'KeyError', 'IndexError', 'FloatDomainError', 'RangeError', 'StandardError', 'ZeroDivisionError', 'NotSupportedError', 'NotImplementedError'];
@@ -720,26 +744,6 @@ http://www.rubyjs.org/LICENSE.txt
     error = errors[_i];
     _fn(error);
   }
-
-  _err = {
-    throw_argument: function(msg) {
-      throw RArgumentError["new"](msg);
-    },
-    throw_type: function(msg) {
-      throw RTypeError["new"](msg);
-    },
-    throw_index: function(msg) {
-      throw RIndexError["new"](msg);
-    },
-    throw_not_implemented: function(msg) {
-      throw RNotImplementedError["new"](msg);
-    },
-    throw_key: function(msg) {
-      throw RKeyError["new"](msg);
-    }
-  };
-
-  R.Support.err = _err;
 
   _coerce = {
     "native": function(obj) {
@@ -851,6 +855,49 @@ http://www.rubyjs.org/LICENSE.txt
         default:
           return func.apply(null, [thisArg].concat(nativeSlice.call(args, 0)));
       }
+    },
+    cmp: function(a, b) {
+      if (typeof a !== 'object' && typeof a === typeof b) {
+        if (a === b) {
+          return 0;
+        } else {
+          if (a < b) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+      } else {
+        a = R(a);
+        if (a.cmp == null) {
+          throw 'NoMethodError';
+        }
+        return a.cmp(b);
+      }
+    },
+    cmpstrict: function(a, b) {
+      var cmp;
+      if (typeof a === typeof b && typeof a !== 'object') {
+        if (a === b) {
+          return 0;
+        } else {
+          if (a < b) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+      } else {
+        a = R(a);
+        if (a.cmp == null) {
+          throw 'NoMethodError';
+        }
+        cmp = a.cmp(b);
+        if (cmp === null) {
+          _err.throw_argument();
+        }
+        return cmp;
+      }
     }
   };
 
@@ -868,7 +915,33 @@ http://www.rubyjs.org/LICENSE.txt
 
   __isStr = _coerce.is_str;
 
+  __isRgx = _coerce.is_rgx;
+
   __call = _coerce.call_with;
+
+  __cmp = _coerce.cmp;
+
+  __cmpstrict = _coerce.cmpstrict;
+
+  _err = {
+    throw_argument: function(msg) {
+      throw RArgumentError["new"](msg);
+    },
+    throw_type: function(msg) {
+      throw RTypeError["new"](msg);
+    },
+    throw_index: function(msg) {
+      throw RIndexError["new"](msg);
+    },
+    throw_not_implemented: function(msg) {
+      throw RNotImplementedError["new"](msg);
+    },
+    throw_key: function(msg) {
+      throw RKeyError["new"](msg);
+    }
+  };
+
+  R.Support.err = _err;
 
   NumericMethods = (function() {
     function NumericMethods() {}
@@ -909,6 +982,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     NumericMethods.prototype.downto = function(num, stop, block) {
       var idx;
+      if ((block != null ? block.call : void 0) == null) {
+        return __enumerate(_num.downto, [num, stop]);
+      }
       stop = Math.ceil(stop);
       idx = num;
       while (idx >= stop) {
@@ -938,6 +1014,9 @@ http://www.rubyjs.org/LICENSE.txt
       var d, float_mode, i, n;
       if (step == null) {
         step = 1;
+      }
+      if (!(((block != null ? block.call : void 0) != null) || ((step != null ? step.call : void 0) != null))) {
+        return __enumerate(_num.step, [num, limit, step]);
       }
       if ((block != null ? block.call : void 0) == null) {
         block = step;
@@ -987,6 +1066,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     NumericMethods.prototype.upto = function(num, stop, block) {
       var idx;
+      if ((block != null ? block.call : void 0) == null) {
+        return __enumerate(_num.upto, [num, stop]);
+      }
       stop = Math.floor(stop);
       idx = num;
       while (idx <= stop) {
@@ -1007,6 +1089,7 @@ http://www.rubyjs.org/LICENSE.txt
     NumericMethods.prototype.gcd = function(num, other) {
       var t;
       t = null;
+      other = __int(other);
       while (other !== 0) {
         t = other;
         other = num % other;
@@ -1019,20 +1102,16 @@ http://www.rubyjs.org/LICENSE.txt
       }
     };
 
-    NumericMethods.prototype.gcdlcm = function(other) {
-      other = this.box(other);
-      __ensure_args_length(arguments, 1);
-      this.__ensure_integer__(other);
-      return [this.gcd(other), this.lcm(other)];
+    NumericMethods.prototype.gcdlcm = function(num, other) {
+      other = __int(other);
+      return [_num.gcd(num, other), _num.lcm(num, other)];
     };
 
-    NumericMethods.prototype.lcm = function(other) {
+    NumericMethods.prototype.lcm = function(num, other) {
       var lcm;
-      other = R(other);
-      __ensure_args_length(arguments, 1);
-      this.__ensure_integer__(other);
-      lcm = new R.Fixnum(this.to_native() * other.to_native() / this.gcd(other));
-      return lcm.numerator();
+      other = __int(other);
+      lcm = num * other / _num.gcd(num, other);
+      return _num.numerator(lcm);
     };
 
     NumericMethods.prototype.numerator = function(num) {
@@ -1071,7 +1150,7 @@ http://www.rubyjs.org/LICENSE.txt
     NumericMethods.prototype.times = function(num, block) {
       var idx;
       if ((block != null ? block.call : void 0) == null) {
-        return R(num).to_enum('times');
+        return __enumerate(_num.times, [num]);
       }
       if (num > 0) {
         idx = 0;
@@ -1133,7 +1212,7 @@ http://www.rubyjs.org/LICENSE.txt
         _itr.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
-          if (R.falsey(result)) {
+          if (__falsey(result)) {
             return breaker["break"](false);
           }
         });
@@ -1148,7 +1227,7 @@ http://www.rubyjs.org/LICENSE.txt
         _itr.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
-          if (!R.falsey(result)) {
+          if (!__falsey(result)) {
             return breaker["break"](true);
           }
         });
@@ -1189,7 +1268,7 @@ http://www.rubyjs.org/LICENSE.txt
         _itr.each(coll, function() {
           var result;
           result = callback.invoke(arguments);
-          if (!R.falsey(result)) {
+          if (!__falsey(result)) {
             return counter += 1;
           }
         });
@@ -1221,17 +1300,15 @@ http://www.rubyjs.org/LICENSE.txt
         many = null;
       }
       if (!block) {
-        return coll.to_enum('cycle', n);
+        return __enumerate(_itr.cycle, [n]);
       }
       callback = __blockify(block, coll);
-      cache = new R.Array([]);
+      cache = [];
       _itr.each(coll, function() {
-        var args;
-        args = callback.args(arguments);
-        cache.append(args);
+        cache.push(callback.args(arguments));
         return callback.invoke(arguments);
       });
-      if (cache.empty()) {
+      if (cache.length === 0) {
         return null;
       }
       if (many > 0) {
@@ -1239,7 +1316,7 @@ http://www.rubyjs.org/LICENSE.txt
         many -= 1;
         _results = [];
         while (many > i) {
-          _results.push(cache.each(function() {
+          _results.push(_arr.each(cache, function() {
             callback.invoke(arguments);
             return i += 1;
           }));
@@ -1248,7 +1325,7 @@ http://www.rubyjs.org/LICENSE.txt
       } else {
         _results1 = [];
         while (true) {
-          _results1.push(cache.each(function() {
+          _results1.push(_arr.each(cache, function() {
             return callback.invoke(arguments);
           }));
         }
@@ -1309,7 +1386,7 @@ http://www.rubyjs.org/LICENSE.txt
       _itr.each(coll, function() {
         var args;
         args = callback.args(arguments);
-        if (len > 1 && R.Array.isNativeArray(args)) {
+        if (len > 1 && __isArr(args)) {
           return block.apply(coll, args);
         } else {
           return block.call(coll, args);
@@ -1350,7 +1427,7 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.each_with_index = function(coll, block) {
       var callback, idx;
       if ((block != null ? block.call : void 0) == null) {
-        return new R.Enumerator(_itr, 'each_with_index', [coll]);
+        return __enumerate(_itr.each_with_index, [coll]);
       }
       callback = __blockify(block, coll);
       idx = 0;
@@ -1365,6 +1442,9 @@ http://www.rubyjs.org/LICENSE.txt
 
     EnumerableMethods.prototype.each_with_object = function(coll, obj, block) {
       var callback;
+      if ((block != null ? block.call : void 0) == null) {
+        return __enumerate(_itr.each_with_object, [coll, obj]);
+      }
       callback = __blockify(block, coll);
       _itr.each(coll, function() {
         var args;
@@ -1386,7 +1466,7 @@ http://www.rubyjs.org/LICENSE.txt
       callback = __blockify(block, this);
       return _itr.catch_break(function(breaker) {
         _itr.each(coll, function() {
-          if (!R.falsey(callback.invoke(arguments))) {
+          if (!__falsey(callback.invoke(arguments))) {
             return breaker["break"](callback.args(arguments));
           }
         });
@@ -1399,7 +1479,7 @@ http://www.rubyjs.org/LICENSE.txt
       ary = [];
       callback = __blockify(block, coll);
       _itr.each(coll, function() {
-        if (!R.falsey(callback.invoke(arguments))) {
+        if (!__falsey(callback.invoke(arguments))) {
           return ary.push(callback.args(arguments));
         }
       });
@@ -1538,7 +1618,7 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.max = function(coll, block) {
       var max;
       max = void 0;
-      block || (block = R.Comparable.cmp);
+      block || (block = __cmp);
       _itr.each(coll, function(item) {
         var comp;
         if (max === void 0) {
@@ -1564,7 +1644,7 @@ http://www.rubyjs.org/LICENSE.txt
         if (max === void 0) {
           return max = item;
         } else {
-          cmp = R.Comparable.cmpstrict(block(item), block(max));
+          cmp = __cmpstrict(block(item), block(max));
           if (cmp > 0) {
             return max = item;
           }
@@ -1576,7 +1656,7 @@ http://www.rubyjs.org/LICENSE.txt
     EnumerableMethods.prototype.min = function(coll, block) {
       var min;
       min = void 0;
-      block || (block = R.Comparable.cmp);
+      block || (block = __cmp);
       _itr.each(coll, function(item) {
         var comp;
         if (min === void 0) {
@@ -1602,7 +1682,7 @@ http://www.rubyjs.org/LICENSE.txt
         if (min === void 0) {
           return min = item;
         } else {
-          cmp = R.Comparable.cmpstrict(block(item), block(min));
+          cmp = __cmpstrict(block(item), block(min));
           if (cmp < 0) {
             return min = item;
           }
@@ -1626,7 +1706,7 @@ http://www.rubyjs.org/LICENSE.txt
         _itr.each(coll, function(args) {
           var result;
           result = callback.invoke(arguments);
-          if (!R.falsey(result)) {
+          if (!__falsey(result)) {
             return breaker["break"](false);
           }
         });
@@ -1643,7 +1723,7 @@ http://www.rubyjs.org/LICENSE.txt
         _itr.each(coll, function(args) {
           var result;
           result = callback.invoke(arguments);
-          if (!R.falsey(result)) {
+          if (!__falsey(result)) {
             counter += 1;
           }
           if (counter > 1) {
@@ -1676,7 +1756,7 @@ http://www.rubyjs.org/LICENSE.txt
       callback = __blockify(block, coll);
       ary = [];
       _itr.each(coll, function() {
-        if (R.falsey(callback.invoke(arguments))) {
+        if (__falsey(callback.invoke(arguments))) {
           return ary.push(callback.args(arguments));
         }
       });
@@ -1694,7 +1774,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     EnumerableMethods.prototype.sort = function(coll, block) {
-      block || (block = R.Comparable.cmpstrict);
+      block || (block = __cmpstrict);
       if (coll.to_native != null) {
         coll = coll.to_native();
       }
@@ -1708,7 +1788,7 @@ http://www.rubyjs.org/LICENSE.txt
       _itr.each(coll, function(value) {
         return ary.push(new SortedElement(value, callback.invoke(arguments)));
       });
-      ary = _arr.sort(ary, R.Comparable.cmpstrict);
+      ary = _arr.sort(ary, __cmpstrict);
       return _arr.map(ary, function(se) {
         return se.value;
       });
@@ -1736,7 +1816,7 @@ http://www.rubyjs.org/LICENSE.txt
       ary = [];
       _itr.catch_break(function(breaker) {
         return _itr.each(coll, function() {
-          if (R.falsey(block.apply(coll, arguments))) {
+          if (__falsey(block.apply(coll, arguments))) {
             breaker["break"]();
           }
           return ary.push(BlockMulti.prototype.args(arguments));
@@ -1855,10 +1935,10 @@ http://www.rubyjs.org/LICENSE.txt
       if (other == null) {
         return false;
       }
-      if (!__arr(other)) {
-        if (other.to_ary == null) {
-          return false;
-        }
+      if (__isArr(other)) {
+        other = __arr(other);
+      } else {
+        return false;
       }
       if (arr.length !== other.length) {
         return false;
@@ -1903,7 +1983,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.combination = function(arr, num, block) {
       var chosen, done, i, len, lev, stack;
       if (block == null) {
-        return _arr.to_enum('combination', arr, num);
+        return __enumerate(_arr.combination, arr, num);
       }
       num = __int(num);
       len = arr.length;
@@ -2024,7 +2104,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.each = function(arr, block) {
       var idx, len;
       if (block == null) {
-        return _arr.to_enum('each', [arr]);
+        return __enumerate(_arr.each, [arr]);
       }
       block = Block.splat_arguments(block);
       idx = -1;
@@ -2038,7 +2118,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.each_with_context = function(arr, thisArg, block) {
       var idx, len;
       if (block == null) {
-        return _arr.to_enum('each_with_context', [arr, thisArg]);
+        return __enumerate(_arr.each_with_context, [arr, thisArg]);
       }
       block = Block.splat_arguments(block);
       idx = -1;
@@ -2049,19 +2129,10 @@ http://www.rubyjs.org/LICENSE.txt
       return thisArg;
     };
 
-    ArrayMethods.prototype.to_enum = function(name, args) {
-      var ary;
-      ary = [];
-      _arr[name].apply(_arr, args.concat(function(args) {
-        return ary.push(args);
-      }));
-      return ary;
-    };
-
     ArrayMethods.prototype.each_index = function(arr, block) {
       var idx, len;
       if (block == null) {
-        return _arr.to_enum('each_index', [arr]);
+        return __enumerate(_arr.each_index, [arr]);
       }
       idx = -1;
       len = arr.length;
@@ -2224,7 +2295,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.keep_if = function(arr, block) {
       var ary, el, idx, len;
       if (block == null) {
-        return _arr.to_enum('keep_if', [arr]);
+        return __enumerate(_arr.keep_if, [arr]);
       }
       block = Block.splat_arguments(block);
       ary = [];
@@ -2232,7 +2303,7 @@ http://www.rubyjs.org/LICENSE.txt
       len = arr.length;
       while (++idx < len) {
         el = arr[idx];
-        if (!R.falsey(block(el))) {
+        if (!__falsey(block(el))) {
           ary.push(el);
         }
       }
@@ -2382,7 +2453,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.reverse_each = function(arr, block) {
       var idx;
       if (block == null) {
-        return _arr.to_enum('reverse_each', [arr]);
+        return __enumerate(_arr.reverse_each, [arr]);
       }
       block = Block.splat_arguments(block);
       idx = arr.length;
@@ -2395,7 +2466,7 @@ http://www.rubyjs.org/LICENSE.txt
     ArrayMethods.prototype.rindex = function(arr, other) {
       var block, el, len, ridx;
       if (other === void 0) {
-        return _arr.to_enum('rindex', [arr, other]);
+        return __enumerate(_arr.rindex, [arr, other]);
       }
       len = arr.length;
       ridx = arr.length;
@@ -2403,7 +2474,7 @@ http://www.rubyjs.org/LICENSE.txt
         block = Block.splat_arguments(other);
         while (ridx--) {
           el = arr[ridx];
-          if (!R.falsey(block(el))) {
+          if (!__falsey(block(el))) {
             return ridx;
           }
         }
@@ -2444,7 +2515,7 @@ http://www.rubyjs.org/LICENSE.txt
       }
       len = arr.length;
       if (n === void 0) {
-        return arr[R.rand(len)];
+        return arr[__rand(len)];
       }
       n = __int(n);
       if (n < 0) {
@@ -2456,7 +2527,7 @@ http://www.rubyjs.org/LICENSE.txt
       ary = arr.slice(0);
       idx = -1;
       while (++idx < n) {
-        ridx = idx + R.rand(len - idx);
+        ridx = idx + __rand(len - idx);
         tmp = ary[idx];
         ary[idx] = ary[ridx];
         ary[ridx] = tmp;
@@ -2470,7 +2541,7 @@ http://www.rubyjs.org/LICENSE.txt
       ary = new Array(len);
       idx = -1;
       while (++idx < len) {
-        rnd = idx + R.rand(len - idx);
+        rnd = idx + __rand(len - idx);
         tmp = arr[idx];
         ary[idx] = arr[rnd];
         ary[rnd] = tmp;
@@ -2531,7 +2602,7 @@ http://www.rubyjs.org/LICENSE.txt
       max = null;
       for (_j = 0, _len1 = arr.length; _j < _len1; _j++) {
         ary = arr[_j];
-        ary = _coerce.arr(ary);
+        ary = __arr(ary);
         max || (max = ary.length);
         if (ary.length !== max) {
           _err.throw_index();
@@ -2659,6 +2730,16 @@ http://www.rubyjs.org/LICENSE.txt
   StringMethods = (function() {
     function StringMethods() {}
 
+    StringMethods.prototype.equals = function(str, other) {
+      if (typeof str === 'object') {
+        str = str.valueOf();
+      }
+      if (typeof other === 'object') {
+        other = other.valueOf();
+      }
+      return str === other;
+    };
+
     StringMethods.prototype.capitalize = function(str) {
       var a, b;
       if (str.length === 0) {
@@ -2710,14 +2791,14 @@ http://www.rubyjs.org/LICENSE.txt
           return null;
         }
       } else {
-        sep = _coerce.str(sep);
+        sep = __str(sep);
         if (sep.length === 0) {
           regexp = /((\r\n)|\n)+$/;
         } else if (sep === "\n" || sep === "\r" || sep === "\r\n") {
           ending = ((_ref2 = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)) != null ? _ref2[0] : void 0) || "\n";
-          regexp = new RegExp("(" + (R.Regexp.escape(ending)) + ")$");
+          regexp = new RegExp("(" + (_rgx.escape(ending)) + ")$");
         } else {
-          regexp = new RegExp("(" + (R.Regexp.escape(sep)) + ")$");
+          regexp = new RegExp("(" + (_rgx.escape(sep)) + ")$");
         }
         return str.replace(regexp, '');
       }
@@ -2737,7 +2818,7 @@ http://www.rubyjs.org/LICENSE.txt
     StringMethods.prototype.count = function(str) {
       var args;
       if (arguments.length === 1) {
-        throw R.ArgumentError["new"]("String.count needs arguments");
+        _err.throw_argument("String.count needs arguments");
       }
       args = _coerce.split_args(arguments, 1);
       return _str.__matched__(str, args).length;
@@ -2835,9 +2916,9 @@ http://www.rubyjs.org/LICENSE.txt
       }
       pattern_lit = R.String.string_native(pattern);
       if (pattern_lit !== null) {
-        pattern = new RegExp(R.Regexp.escape(pattern_lit), 'g');
+        pattern = new RegExp(_rgx.escape(pattern_lit), 'g');
       }
-      if (!R.Regexp.isRegexp(pattern)) {
+      if (!__isRgx(pattern)) {
         _err.throw_type();
       }
       if (!pattern.global) {
@@ -3069,9 +3150,9 @@ http://www.rubyjs.org/LICENSE.txt
       if (block == null) {
         block = null;
       }
-      if (!R.Regexp.isRegexp(pattern)) {
+      if (!__isRgx(pattern)) {
         pattern = __str(pattern);
-        pattern = R.Regexp.quote(pattern);
+        pattern = _rgx.quote(pattern);
       }
       index = 0;
       R['$~'] = null;
@@ -3144,9 +3225,9 @@ http://www.rubyjs.org/LICENSE.txt
       }
       pattern_lit = R.String.string_native(pattern);
       if (pattern_lit !== null) {
-        pattern = new RegExp(R.Regexp.escape(pattern_lit));
+        pattern = new RegExp(_rgx.escape(pattern_lit));
       }
-      if (!R.Regexp.isRegexp(pattern)) {
+      if (!__isRgx(pattern)) {
         _err.throw_type();
       }
       if (pattern.global) {
@@ -3446,6 +3527,28 @@ http://www.rubyjs.org/LICENSE.txt
   };
 
   R.extend(_str, new StringMethods());
+
+  RegexpMethods = (function() {
+    function RegexpMethods() {}
+
+    RegexpMethods.prototype.escape = function(pattern) {
+      pattern = __str(pattern);
+      return pattern.replace(/([.?*+^$[\](){}|-])/g, "\\$1").replace(/[\f]/g, '\\f').replace(/[\n]/g, '\\n').replace(/[\r]/g, '\\r').replace(/[\t]/g, '\\t').replace(/[\s]/g, '\\ ');
+    };
+
+    RegexpMethods.prototype.quote = function(pattern) {
+      return _rgx.escape(pattern);
+    };
+
+    return RegexpMethods;
+
+  })();
+
+  _rgx = R._rgx = function(rgx) {
+    return new R.Regexp(rgx);
+  };
+
+  R.extend(_rgx, new RegexpMethods());
 
   HashMethods = (function(_super) {
     __extends(HashMethods, _super);
@@ -4260,50 +4363,9 @@ http://www.rubyjs.org/LICENSE.txt
       return this.gteq(min) && this.lteq(max);
     };
 
-    Comparable.cmp = function(a, b) {
-      if (typeof a !== 'object' && typeof a === typeof b) {
-        if (a === b) {
-          return 0;
-        } else {
-          if (a < b) {
-            return -1;
-          } else {
-            return 1;
-          }
-        }
-      } else {
-        a = R(a);
-        if (a.cmp == null) {
-          throw 'NoMethodError';
-        }
-        return a.cmp(b);
-      }
-    };
+    Comparable.cmp = __cmp;
 
-    Comparable.cmpstrict = function(a, b) {
-      var cmp;
-      if (typeof a === typeof b && typeof a !== 'object') {
-        if (a === b) {
-          return 0;
-        } else {
-          if (a < b) {
-            return -1;
-          } else {
-            return 1;
-          }
-        }
-      } else {
-        a = R(a);
-        if (a.cmp == null) {
-          throw 'NoMethodError';
-        }
-        cmp = a.cmp(b);
-        if (cmp === null) {
-          throw R.ArgumentError["new"]();
-        }
-        return cmp;
-      }
-    };
+    Comparable.cmpstrict = __cmpstrict;
 
     Comparable.prototype.gteq = Comparable.prototype.gteq;
 
@@ -4341,6 +4403,9 @@ http://www.rubyjs.org/LICENSE.txt
     Enumerable.prototype.cycle = function(n, block) {
       if (arguments.length > 2) {
         throw R.ArgumentError["new"]();
+      }
+      if (!(((block != null ? block.call : void 0) != null) || ((n != null ? n.call : void 0) != null))) {
+        return this.to_enum('cycle', n);
       }
       return _itr.cycle(this, n, block);
     };
@@ -7521,20 +7586,17 @@ http://www.rubyjs.org/LICENSE.txt
       other = this.box(other);
       __ensure_args_length(arguments, 1);
       this.__ensure_integer__(other);
-      return new R.Array([this.gcd(other).valueOf(), this.lcm(other).valueOf()]);
+      return new R.Array([_num.gcd(this.__native__, other), _num.lcm(this.__native__, other)]);
     };
 
     Integer.prototype.lcm = function(other) {
-      var lcm;
-      other = R(other);
       __ensure_args_length(arguments, 1);
-      this.__ensure_integer__(other);
-      lcm = new R.Fixnum(this.to_native() * other.to_native() / this.gcd(other));
-      return lcm.numerator();
+      this.__ensure_integer__(R(other));
+      return new RFixnum(_num.lcm(this.__native__, other));
     };
 
     Integer.prototype.numerator = function() {
-      return new R.Fixnum(_num.numerator(this.__native__));
+      return new RFixnum(_num.numerator(this.__native__));
     };
 
     Integer.prototype.odd = function() {
@@ -7612,7 +7674,7 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(RubyJS.Numeric);
 
-  RubyJS.Fixnum = (function(_super) {
+  R.Fixnum = (function(_super) {
     __extends(Fixnum, _super);
 
     Fixnum.include(R.Comparable);
@@ -7792,6 +7854,8 @@ http://www.rubyjs.org/LICENSE.txt
     return Fixnum;
 
   })(RubyJS.Integer);
+
+  RFixnum = R.Fixnum;
 
   RubyJS.Float = (function(_super) {
     __extends(Float, _super);
