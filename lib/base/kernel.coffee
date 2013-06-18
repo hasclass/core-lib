@@ -197,7 +197,11 @@ class RubyJS.Kernel
 
 __enumerate = (func, args) ->
   ary = []
-  args.push((args) -> ary.push(args))
+  args.push () ->
+    if arguments.length > 1
+      ary.push(nativeSlice.call(arguments, 0))
+    else
+      ary.push(arguments[0])
   func.apply(null, args)
   ary
 

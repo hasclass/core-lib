@@ -185,7 +185,8 @@ class EnumerableMethods
 
 
   each_with_index: (coll, block) ->
-    return new R.Enumerator(_itr, 'each_with_index', [coll]) unless block?.call?
+    unless block?.call?
+      return __enumerate(_itr.each_with_index, [coll])
 
     callback = __blockify(block, coll)
 
@@ -199,6 +200,9 @@ class EnumerableMethods
 
 
   each_with_object: (coll, obj, block) ->
+    unless block?.call?
+      return __enumerate(_itr.each_with_object, [coll, obj])
+
     callback = __blockify(block, coll)
 
     _itr.each coll, ->
