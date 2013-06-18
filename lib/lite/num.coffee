@@ -1,4 +1,6 @@
+
 class NumericMethods
+
   cmp: (num, other) ->
     if num is other then 0 else null
 
@@ -24,6 +26,7 @@ class NumericMethods
 
 
   downto: (num, stop, block) ->
+    return __enumerate(_num.downto, [num, stop]) unless block?.call?
     stop = Math.ceil(stop)
 
     idx = num
@@ -58,9 +61,14 @@ class NumericMethods
 
 
   step: (num, limit, step = 1, block) ->
+    unless block?.call? or step?.call?
+      return __enumerate(_num.step, [num, limit, step])
+
+
     unless block?.call?
       block = step
       step  = 1
+
 
     if step is 0
       _err.throw_argument()
@@ -105,6 +113,7 @@ class NumericMethods
 
 
   upto: (num, stop, block) ->
+    return __enumerate(_num.upto, [num, stop]) unless block?.call?
     stop = Math.floor(stop)
 
     idx = num
@@ -124,6 +133,7 @@ class NumericMethods
 
   gcd: (num, other) ->
     t = null
+    other = __int(other)
     while (other != 0)
       t = other
       other = num % other
@@ -136,36 +146,32 @@ class NumericMethods
   #
   # @example
   #
-  #     R(2).gcdlcm(2)                    #=> [2, 2]
-  #     R(3).gcdlcm(-7)                   #=> [1, 21]
-  #     R((1<<31)-1).gcdlcm((1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #     _n.gcdlcm(2,  2)                   #=> [2, 2]
+  #     _n.gcdlcm(3, -7)                   #=> [1, 21]
+  #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    #=> [1, 4951760154835678088235319297]
   #
-  # @return [R.Array<R.Fixnum, R.Fixnum>]
+  # @return [Array<Number, Number>]
   #
-  gcdlcm: (other) ->
-    other = @box(other)
-    __ensure_args_length(arguments, 1)
-    @__ensure_integer__(other)
+  gcdlcm: (num, other) ->
+    other = __int(other)
+    [_num.gcd(num, other), _num.lcm(num, other)]
 
-    [@gcd(other), @lcm(other)]
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
   # @example
   #
-  #     R(2).lcm(2)                    #=> 2
-  #     R(3).lcm(-7)                   #=> 21
-  #     R((1<<31)-1).lcm((1<<61)-1)    #=> 4951760154835678088235319297
+  #     _n.lcm(2,  2)                   #=> 2
+  #     _n.lcm(3, -7)                   #=> 21
+  #     _n.lcm((1<<31)-1, (1<<61)-1)    #=> 4951760154835678088235319297
   #
-  # @return [R.Fixnum]
+  # @return [Number]
   #
-  lcm: (other) ->
-    other = R(other)
-    __ensure_args_length(arguments, 1)
-    @__ensure_integer__(other)
+  lcm: (num, other) ->
+    other = __int(other)
 
-    lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
-    lcm.numerator()
+    lcm = num * other / _num.gcd(num, other)
+    _num.numerator(lcm)
 
 
   numerator: (num) ->
@@ -239,7 +245,7 @@ class NumericMethods
   # @return [this]
   #
   times: (num, block) ->
-    return R(num).to_enum('times') unless block?.call?
+    return __enumerate(_num.times, [num]) unless block?.call?
     if num > 0
       idx = 0
       while idx < num

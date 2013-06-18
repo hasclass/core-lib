@@ -1,4 +1,4 @@
-class RubyJS.Fixnum extends RubyJS.Integer
+class R.Fixnum extends RubyJS.Integer
   @include R.Comparable
 
 
@@ -213,3 +213,6 @@ class RubyJS.Fixnum extends RubyJS.Integer
   # ---- Aliases --------------------------------------------------------------
 
   @__add_default_aliases__(@prototype)
+
+
+RFixnum = R.Fixnum

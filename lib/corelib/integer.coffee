@@ -115,7 +115,7 @@ class RubyJS.Integer extends RubyJS.Numeric
     __ensure_args_length(arguments, 1)
     @__ensure_integer__(other)
 
-    new R.Array([@gcd(other).valueOf(), @lcm(other).valueOf()])
+    new R.Array([_num.gcd(@__native__, other), _num.lcm(@__native__, other)])
 
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
@@ -128,12 +128,10 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum]
   #
   lcm: (other) ->
-    other = R(other)
     __ensure_args_length(arguments, 1)
-    @__ensure_integer__(other)
+    @__ensure_integer__(R(other))
 
-    lcm = new R.Fixnum(@to_native() * other.to_native() / @gcd(other))
-    lcm.numerator()
+    new RFixnum(_num.lcm(@__native__, other))
 
 
   # Returns self.
@@ -141,7 +139,7 @@ class RubyJS.Integer extends RubyJS.Numeric
   # @return [R.Fixnum,this]
   #
   numerator: ->
-    new R.Fixnum(_num.numerator(@__native__))
+    new RFixnum(_num.numerator(@__native__))
 
   # Returns true if int is an odd number.
   #

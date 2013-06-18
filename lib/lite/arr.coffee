@@ -47,7 +47,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   combination: (arr, num, block) ->
-    return _arr.to_enum('combination', arr, num) unless block?
+    return __enumerate(_arr.combination, arr, num) unless block?
 
     num = __int(num)
     len = arr.length
@@ -140,7 +140,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   each: (arr, block) ->
-    return _arr.to_enum('each', [arr]) unless block?
+    return __enumerate(_arr.each, [arr]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -154,7 +154,7 @@ class ArrayMethods extends EnumerableMethods
 
   # @non-ruby
   each_with_context: (arr, thisArg, block) ->
-    return _arr.to_enum('each_with_context', [arr, thisArg]) unless block?
+    return __enumerate(_arr.each_with_context, [arr, thisArg]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -166,15 +166,8 @@ class ArrayMethods extends EnumerableMethods
     thisArg
 
 
-  to_enum: (name, args) ->
-    # new R.Enumerator(_arr, name, args)
-    ary = []
-    _arr[name].apply(_arr, args.concat((args) -> ary.push(args)))
-    ary
-
-
   each_index: (arr, block) ->
-    return _arr.to_enum('each_index', [arr]) unless block?
+    return __enumerate(_arr.each_index, [arr]) unless block?
 
     idx = -1
     len = arr.length
@@ -304,7 +297,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   keep_if: (arr, block) ->
-    return _arr.to_enum('keep_if', [arr]) unless block?
+    return __enumerate(_arr.keep_if, [arr]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -425,7 +418,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   reverse_each: (arr, block) ->
-    return _arr.to_enum('reverse_each', [arr]) unless block?
+    return __enumerate(_arr.reverse_each, [arr]) unless block?
 
     block = Block.splat_arguments(block)
 
@@ -437,7 +430,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   rindex: (arr, other) ->
-    return _arr.to_enum('rindex', [arr, other]) if other is undefined
+    return __enumerate(_arr.rindex, [arr, other]) if other is undefined
 
     len = arr.length
     ridx = arr.length

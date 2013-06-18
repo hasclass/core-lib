@@ -97,8 +97,11 @@ class RubyJS.Enumerable
   #
   cycle: (n, block) ->
     throw R.ArgumentError.new() if arguments.length > 2
+    unless block?.call? or n?.call?
+      return @to_enum('cycle', n)
 
     _itr.cycle(this, n, block)
+
 
   # Drops first n elements from enum, and returns rest elements in an array.
   #

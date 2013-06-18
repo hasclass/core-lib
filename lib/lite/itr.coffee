@@ -79,7 +79,7 @@ class EnumerableMethods
     else
       many = null
 
-    return coll.to_enum('cycle', n) unless block
+    return __enumerate(_itr.cycle, [n]) unless block
 
     callback = __blockify(block, coll)
 

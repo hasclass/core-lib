@@ -195,4 +195,11 @@ class RubyJS.Kernel
     if limit then r.multiply(limit).to_i() else r
 
 
+__enumerate = (func, args) ->
+  ary = []
+  args.push((args) -> ary.push(args))
+  func.apply(null, args)
+  ary
+
+
 __rand = RubyJS.Kernel.prototype.rand
