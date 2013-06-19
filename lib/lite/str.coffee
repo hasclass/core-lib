@@ -535,7 +535,14 @@ class StringMethods
     chars.join('')
 
 
+  # Returns a copy of str with leading and trailing whitespace removed.
+  #
+  # @example
+  #   _s.strip("    hello    ")   // => "hello"
+  #   _s.strip("\tgoodbye\r\n")   // => "goodbye"
+  #
   strip: (str) ->
+    # TODO Optimize
     _str.rstrip(_str.lstrip(str))
 
 
@@ -681,6 +688,14 @@ class StringMethods
     ary
 
 
+  # Returns true if str starts with one of the prefixes given.
+  #
+  # @example
+  #   _s.start_with("hello", "hell")               // => true
+  #   // returns true if one of the prefixes matches.
+  #   _s.start_with("hello", "heaven", "hell")     // => true
+  #   _s.start_with("hello", "heaven", "paradise") // => false
+  #
   start_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
 

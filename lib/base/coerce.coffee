@@ -80,6 +80,16 @@ _coerce =
     ary
 
 
+  # Use call_with when you want to delegate a method call to a functional one
+  # when the original method has flexible length of arguments.
+  #
+  # @example
+  #   class RString
+  #     #   new RString("foo").count('o')
+  #     #   new RString("foo").count('o', 'of')
+  #     count: () ->
+  #       __call( _str.count, @__native__, arguments)
+  #
   call_with: (func, thisArg, args) ->
     a = args
     switch args.length

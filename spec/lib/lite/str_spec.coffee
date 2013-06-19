@@ -95,3 +95,15 @@ describe "_s", ->
     expect( _s.squeeze("yellow moon")                ).toEqual "yelow mon"
     expect( _s.squeeze("  now   is  the", " ")       ).toEqual " now is the"
     expect( _s.squeeze("putters shoot balls", "m-z") ).toEqual "puters shot balls"
+
+
+  describe '_s.strip', ->
+    expect( _s.strip("    hello    ") ).toEqual "hello"
+    expect( _s.strip("\tgoodbye\r\n") ).toEqual "goodbye"
+
+
+  describe '_s.start_with', ->
+    expect( _s.start_with("hello", "hell")               ).toEqual true
+    expect( _s.start_with("hello", "heaven", "hell")     ).toEqual true
+    expect( _s.start_with("hello", "heaven", "paradise") ).toEqual false
+
