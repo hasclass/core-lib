@@ -5,6 +5,22 @@ class StringMethods
     str is other
 
 
+  # Converts str to camelCase.
+  #
+  # @example
+  #   _s.camelCase('foo-bar')      // => ('fooBar')
+  #   _s.camelCase('foo-bar-baz')  // => ('fooBarBaz')
+  #   _s.camelCase('foo:bar_baz')  // => ('fooBarBaz')
+  #   _s.camelCase('')             // => ('')
+  #   _s.camelCase('foo')          // => ('foo')
+  #   _s.camelCase('fooBar')       // => ('fooBar')
+  #
+  camel_case: (str) ->
+    str.replace /([\:\-\_]+(.))/g, (_1, _2, letter, offset) ->
+      if offset then letter.toUpperCase() else letter
+
+
+
   capitalize: (str) ->
     return "" if str.length == 0
     b = _str.downcase(str)
