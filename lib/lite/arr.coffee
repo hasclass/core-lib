@@ -596,6 +596,17 @@ class ArrayMethods extends EnumerableMethods
       ary
 
 
+  # Removes the last element from self and returns it, or nil if the array is empty.
+  #
+  # If a number n is given, returns an array of the last n elements (or less)
+  # just like array.slice!(-n, n) does.
+  #
+  # @example
+  #   arr = [ "a", "b", "c", "d" ]
+  #   _a.pop(arr,)     // => "d"
+  #   _a.pop(arr,2)    // => ["b", "c"]
+  #   arr              // => ["a"]
+  #
   pop: (arr, many) ->
     if many is undefined
       arr.pop()
@@ -610,6 +621,21 @@ class ArrayMethods extends EnumerableMethods
       ary
 
 
+  # Returns an array of all combinations of elements from all arrays. The
+  # length of the returned array is the product of the length of self and the
+  # argument arrays. If given a block, product will yield all combinations and
+  # return self instead.
+  #
+  # @example
+  #   _a.product( [1,2,3], [4,5])      // => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+  #   _a.product( [1,2],   [1,2])      // => [[1,1],[1,2],[2,1],[2,2]]
+  #   _a.product( [1,2], [3,4],[5,6])  // => [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
+  #                                    //      [2,3,5],[2,3,6],[2,4,5],[2,4,6]]
+  #   _a.product( [1,2] )              // => [[1],[2]]
+  #   _a.product( [1,2], [])           // => []
+  #
+  # @todo does not check if the result size will fit in an Array.
+  #
   product: (arr, args...) ->
     result = []
     block = __extract_block(args)
@@ -635,6 +661,20 @@ class ArrayMethods extends EnumerableMethods
       block_result
     else
       result
+
+
+  # Append—Pushes the given object(s) on to the end of this array. This
+  # expression returns the array itself, so several appends may be chained
+  # together.
+  #
+  # @example
+  #   arr = [ "a", "b", "c" ]
+  #   _a.push(arr, "d", "e", "f")
+  #   #=> ["a", "b", "c", "d", "e", "f"]
+  #
+  push: (arr, elements...) ->
+    arr.push.apply(arr, elements)
+    arr
 
 
   rassoc: (arr, obj) ->

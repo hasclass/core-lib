@@ -844,7 +844,7 @@ class RubyJS.Array extends RubyJS.Object
   #     #=> ["a", "b", "c", "d", "e", "f"]
   #
   push: ->
-    @__native__.push.apply(@__native__, arguments)
+    __call(_arr.push, @__native__, arguments)
     this
 
 

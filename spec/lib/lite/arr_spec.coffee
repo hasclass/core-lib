@@ -209,3 +209,17 @@ describe "docs", ->
     arr = [ 1, 2, 3 ]
     expect( _a.multiply(arr, 3  ) ).toEqual [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
     expect( _a.multiply(arr, ",") ).toEqual "1,2,3"
+
+
+  it "_a.pop", ->
+    arr = [ "a", "b", "c", "d" ]
+    expect( _a.pop(arr,)     ).toEqual "d"
+    expect( _a.pop(arr,2)    ).toEqual ["b", "c"]
+    expect( arr              ).toEqual ["a"]
+
+
+
+  it "_a.push", ->
+    arr = [ "a", "b", "c" ]
+    expect( _a.push(arr, "d", "e", "f") ).toEqual ["a", "b", "c", "d", "e", "f"]
+
