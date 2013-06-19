@@ -55,3 +55,43 @@ describe "_s", ->
     expect( _s.rindex("hello", 'l')           ).toEqual 3
     expect( _s.rindex("hello", 'a')           ).toEqual null
     expect( _s.rindex("hello", /[aeiou]/, -2) ).toEqual 1
+
+
+  describe '_s.rjust', ->
+    expect( _s.rjust("hello", 4)          ).toEqual "hello"
+    expect( _s.rjust("hello", 20)         ).toEqual "               hello"
+    expect( _s.rjust("hello", 20, '1234') ).toEqual "123412341234123hello"
+
+
+  describe '_s.rjust', ->
+    expect( _s.rpartition("hello", "l")     ).toEqual ["hel", "l", "o"]
+    expect( _s.rpartition("hello", "x")     ).toEqual ["", "", "hello"]
+    expect( _s.rpartition("hello", "x")     ).toEqual ["", "", "hello"]
+    expect( _s.rpartition("hello", "hello") ).toEqual ["", "hello", ""]
+    # expect( _s.rpartition("hello", /.l/)    ).toEqual ["he", "ll", "o"]
+
+
+  describe '_s.rjust', ->
+    expect( _s.rstrip("  hello  ") ).toEqual "  hello"
+    expect( _s.rstrip("hello")     ).toEqual "hello"
+
+
+  describe '_s.scan', ->
+    str = "cruel world"
+    expect( _s.scan(str, /\w+/)       ).toEqual ["cruel", "world"]
+    expect( _s.scan(str, /.../)       ).toEqual ["cru", "el ", "wor"]
+    expect( _s.scan(str, /(...)/)     ).toEqual [["cru"], ["el "], ["wor"]]
+    expect( _s.scan(str, /(..)(..)/)  ).toEqual [["cr", "ue"], ["l ", "wo"]]
+    acc = []
+    _s.scan(str, /\w+/, (w) -> acc.push("<<#{w}>>")  )
+    expect( acc ).toEqual ["<<cruel>>", "<<world>>"]
+    # TODO Resolve
+    # acc = []
+    # _s.scan(str, /(.)(.)/, (x,y) -> acc.push(x+y) )
+    # expect( acc ).toEqual ["cr", 'ue', 'l ', 'wo', 'rl']
+
+
+  describe '_s.squeeze', ->
+    expect( _s.squeeze("yellow moon")                ).toEqual "yelow mon"
+    expect( _s.squeeze("  now   is  the", " ")       ).toEqual " now is the"
+    expect( _s.squeeze("putters shoot balls", "m-z") ).toEqual "puters shot balls"

@@ -375,6 +375,15 @@ class StringMethods
     idx
 
 
+  # If integer is greater than the length of str, returns a new String of
+  # length integer with str right justified and padded with padstr; otherwise,
+  # returns str.
+  #
+  # @example
+  #   _s.rjust("hello", 4)            // => "hello"
+  #   _s.rjust("hello", 20)           // => "               hello"
+  #   _s.rjust("hello", 20, '1234')   // => "123412341234123hello"
+  #
   rjust: (str, width, pad_str = " ") ->
     width = __int(width)
     len = str.length
@@ -387,6 +396,25 @@ class StringMethods
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
+
+  # Searches sep or pattern (regexp) in the string from the end of the string,
+  # and returns the part before it, the match, and the part after it. If it is
+  # not found, returns two empty strings and str.
+  #
+  # @example
+  #   _s.rpartition("hello", "l")     // => ["hel", "l", "o"]
+  #   _s.rpartition("hello", "x")     // => ["", "", "hello"]
+  #
+  # @example edge cases
+  #   _s.rpartition("hello", "x")     // => ["", "", "hello"]
+  #   _s.rpartition("hello", "hello") // => ["", "hello", ""]
+  #
+  # @example todo:
+  #   _s.rpartition("hello", /.l/)    // => ["he", "ll", "o"]
+  #
+  # @todo does not yet accept regexp as pattern
+  # @todo does not yet affect R['$~']
+  #
   rpartition: (str, pattern) ->
     pattern = __str(pattern)
 
@@ -403,10 +431,40 @@ class StringMethods
 
 
 
+  # Returns a copy of str with trailing whitespace removed. See also
+  # String#lstrip and String#strip.
+  #
+  # @example
+  #   _s.rstrip("  hello  ")  // => "  hello"
+  #   _s.rstrip("hello")      // => "hello"
+  #
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
 
 
+  # Both forms iterate through str, matching the pattern (which may be a
+  # Regexp or a String). For each match, a result is generated and either
+  # added to the result array or passed to the block. If the pattern contains
+  # no groups, each individual result consists of the matched string, $&. If
+  # the pattern contains groups, each individual result is itself an array
+  # containing one entry per group.
+  #
+  # @example
+  #     str = "cruel world"
+  #     _s.scan(str, /\w+/)        #=> ["cruel", "world"]
+  #     _s.scan(str, /.../)        #=> ["cru", "el ", "wor"]
+  #     _s.scan(str, /(...)/)      #=> [["cru"], ["el "], ["wor"]]
+  #     _s.scan(str, /(..)(..)/)   #=> [["cr", "ue"], ["l ", "wo"]]
+  #     // And the block form:
+  #     _s.scan(str, /\w+/, function (w) { _puts("<<#{w}>> ") } )
+  #     // > <<cruel>> <<world>>
+  #     // TODO:
+  #     // _s.scan(str, /(.)(.)/, function (x,y) { _puts(y, x)} )
+  #     // > rceu lowlr
+  #
+  #
+  # @todo some untested specs
+  #
   scan: (str, pattern, block = null) ->
     unless __isRgx(pattern)
       pattern = __str(pattern)
@@ -442,6 +500,19 @@ class StringMethods
     if block != null then str else match_arr
 
 
+  # Builds a set of characters from the other_str parameter(s) using the
+  # procedure described for String#count. Returns a new string where runs of
+  # the same character that occur in this set are replaced by a single
+  # character. If no arguments are given, all runs of identical characters are
+  # replaced by a single character.
+  #
+  # @example
+  #   _s.squeeze("yellow moon")                 // => "yelow mon"
+  #   _s.squeeze("  now   is  the", " ")        // => " now is the"
+  #   _s.squeeze("putters shoot balls", "m-z")  // => "puters shot balls"
+  #
+  # @todo Fix A-a bug
+  #
   squeeze: (str) ->
     pattern = _coerce.split_args(arguments, 1)
 
