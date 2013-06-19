@@ -142,7 +142,7 @@ class RubyJS.Base
   # Check wether an obj is truthy according to Ruby
   #
   truthy: (obj) ->
-    !@falsey(obj)
+    !__falsey(obj)
 
 
   respond_to: (obj, function_name) ->

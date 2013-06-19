@@ -116,9 +116,9 @@ describe "String#sub with pattern, replacement", ->
   it "leaves \\ at the end of replacement untouched", ->
     expect( R("hello").sub(/./, 'hah\\') ).toEqual R('hah\\ello')
 
-  it "tries to convert pattern to a string using to_str", ->
+  it "tries to convert pattern to a string using valueOf", ->
     pattern =
-      to_str: -> R(".")
+      valueOf: -> "."
 
     expect( R("hello.").sub(pattern, "!") ).toEqual R("hello!")
 
@@ -128,9 +128,9 @@ describe "String#sub with pattern, replacement", ->
     expect( -> R("hello").sub(new Object(), null)).toThrow('TypeError')
     expect( R("hello").sub(new String('e'), 'x') ).toEqual R("hxllo")
 
-  it "tries to convert replacement to a string using to_str", ->
+  it "tries to convert replacement to a string using valueOf", ->
     replacement =
-      to_str: -> R("hello_replacement")
+      valueOf: -> "hello_replacement"
 
     expect( R("hello").sub(/hello/, replacement) ).toEqual R("hello_replacement")
 

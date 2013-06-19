@@ -41,15 +41,6 @@ class RubyJS.String extends RubyJS.Object
       @new(obj)
 
 
-  @string_native: (obj) ->
-    return obj if typeof obj is 'string'
-    obj = R(obj)
-    if obj.to_str?
-      obj.to_str().to_native()
-    else
-      null
-
-
   # ---- RubyJSism ------------------------------------------------------------
 
   is_string: ->

@@ -141,7 +141,7 @@ class StringMethods
   gsub: (str, pattern, replacement) ->
     _err.throw_type() if pattern is null
 
-    pattern_lit = R.String.string_native(pattern)
+    pattern_lit = __try_str(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(_rgx.escape(pattern_lit), 'g')
 
@@ -403,7 +403,7 @@ class StringMethods
   sub: (str, pattern, replacement) ->
     _err.throw_type() if pattern is null
 
-    pattern_lit = R.String.string_native(pattern)
+    pattern_lit = __try_str(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(_rgx.escape(pattern_lit))
 
@@ -527,7 +527,7 @@ class StringMethods
     ary = str.split(pattern)
 
     # remove trailing empty fields
-    while R.truthy(str = ary[ary.length - 1])
+    while __truthy(str = ary[ary.length - 1])
       break unless str.length == 0
       ary.pop()
 
@@ -658,7 +658,7 @@ class StringMethods
 
 
 
-_str = R._str = (arr) ->
-  new RString(arr)
+_str = R._str = (str) ->
+  new RWrapper(str, _str)
 
 R.extend(_str, new StringMethods())

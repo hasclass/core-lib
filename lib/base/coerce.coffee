@@ -18,6 +18,13 @@ _coerce =
     obj
 
 
+  try_str: (obj) ->
+    return obj if typeof obj is 'string'
+    obj = obj.valueOf() if obj isnt null
+    return obj if typeof obj is 'string'
+    null
+
+
   num: (obj) ->
     _err.throw_type() if obj == null
     obj = obj.valueOf() if typeof obj is 'object'
@@ -126,4 +133,5 @@ __isStr = _coerce.is_str
 __isRgx = _coerce.is_rgx
 __call  = _coerce.call_with
 __cmp   = _coerce.cmp
-__cmpstrict   = _coerce.cmpstrict
+__cmpstrict = _coerce.cmpstrict
+__try_str   = _coerce.try_str

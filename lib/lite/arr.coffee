@@ -842,7 +842,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 _arr = R._arr = (arr) ->
-  new RArray(arr)
+  new RWrapper(arr, _arr)
 
 
 R.extend(_arr, new ArrayMethods())

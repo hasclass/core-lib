@@ -184,9 +184,9 @@ describe "String#gsub with pattern and replacement", ->
 
       # hello.gsub(//.untrust, "foo").untrusted?.should == false
 
-  it "tries to convert pattern to a string using to_str", ->
+  it "tries to convert pattern to a string using valueOf", ->
     pattern =
-      to_str: -> R(".")
+      valueOf: -> "."
 
     expect( R("hello.").gsub(pattern, "!") ).toEqual R("hello!")
 
@@ -195,9 +195,9 @@ describe "String#gsub with pattern and replacement", ->
     expect( -> R("hello").gsub({}, "x")    ).toThrow('TypeError')
     expect( -> R("hello").gsub(null, "x")           ).toThrow('TypeError')
 
-  it "tries to convert replacement to a string using to_str", ->
+  it "tries to convert replacement to a string using valueOf", ->
     replacement =
-      to_str: -> R("hello_replacement")
+      valueOf: -> "hello_replacement"
 
     expect( R("hello").gsub(/hello/g, replacement) ).toEqual R("hello_replacement")
 
