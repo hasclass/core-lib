@@ -621,7 +621,7 @@ class RubyJS.Base
   # Check wether an obj is truthy according to Ruby
   #
   truthy: (obj) ->
-    !@falsey(obj)
+    !__falsey(obj)
 
 
   respond_to: (obj, function_name) ->
@@ -728,6 +728,13 @@ _coerce =
     # throw new R.TypeError("#{obj} is not a valid string") unless typeof obj is 'string'
     _err.throw_type() unless typeof obj is 'string'
     obj
+
+
+  try_str: (obj) ->
+    return obj if typeof obj is 'string'
+    obj = obj.valueOf() if obj isnt null
+    return obj if typeof obj is 'string'
+    null
 
 
   num: (obj) ->
@@ -838,7 +845,9 @@ __isStr = _coerce.is_str
 __isRgx = _coerce.is_rgx
 __call  = _coerce.call_with
 __cmp   = _coerce.cmp
-__cmpstrict   = _coerce.cmpstrict
+__cmpstrict = _coerce.cmpstrict
+__try_str   = _coerce.try_str
+
 
 _err =
   throw_argument: (msg) ->
@@ -1750,6 +1759,16 @@ class ArrayMethods extends EnumerableMethods
     # TODO
 
 
+  # Returns the element at index. A negative index counts from the end of
+  # self. Returns nil if the index is out of range. See also Array#[].
+  #
+  # @example
+  #   a = [ "a", "b", "c", "d", "e" ]
+  #   _a.at(a, 0)     #=> "a"
+  #   _a.at(a, -1)    #=> "e"
+  #
+  # @return [Object]
+  #
   at: (arr, index) ->
     if index < 0
       arr[arr.length + index]
@@ -1757,8 +1776,26 @@ class ArrayMethods extends EnumerableMethods
       arr[index]
 
 
+  # When invoked with a block, yields all combinations of length n of elements
+  # from ary and then returns ary itself. The implementation makes no
+  # guarantees about the order in which the combinations are yielded.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #   arr = [1, 2, 3, 4]
+  #   _a.combination(arr, 1, function (arr) { _puts(arr) })
+  #   _a.combination(arr, 1)  #=> [[1],[2],[3],[4]]
+  #   _a.combination(arr, 2)  #=> [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+  #   _a.combination(arr, 3)  #=> [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
+  #   _a.combination(arr, 4)  #=> [[1,2,3,4]]
+  #   _a.combination(arr, 0)  #=> [[]] # one combination of length 0
+  #   _a.combination(arr, 5)  #=> []   # no combinations of length 5
+  #
+  # @return Array
+  #
   combination: (arr, num, block) ->
-    return __enumerate(_arr.combination, arr, num) unless block?
+    return __enumerate(_arr.combination, [arr, num]) unless block?.call?
 
     num = __int(num)
     len = arr.length
@@ -1801,6 +1838,14 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # Returns a copy of self with all nil elements removed.
+  #
+  # @example
+  #   _a.compact([ "a", null, "b", null, "c", null ])
+  #   // => [ "a", "b", "c" ]
+  #
+  # @return [Array]
+  #
   compact: (arr) ->
     # one liner: _arr.select arr, (el) -> el?
     ary = []
@@ -1809,7 +1854,23 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+  # Deletes items from arr that are equal to obj. If any items are found,
+  # returns obj. If the item is not found, returns nil. If the optional code
+  # block is given, returns the result of block if the item is not found. (To
+  # remove nil elements and get an informative return value, use compact!)
+  #
+  # @example
+  #   a = [ "a", "b", "b", "b", "c" ]
+  #   _a.delete(a, "b")                   // => "b"
+  #   a                                   // => ["a", "c"]
+  #   _a.delete(a, "z")                   // => nil
+  #   _a.delete(a, "z", function () { return 'not found'} )
+  #   // => "not found"
+  #
   # @destructive
+  #
+  # @return [Object]
+  #
   delete: (arr, obj, block) ->
     deleted = []
 
@@ -1827,6 +1888,17 @@ class ArrayMethods extends EnumerableMethods
     if block then block() else null
 
 
+  # Deletes the element at the specified index, returning that element, or nil
+  # if the index is out of range. See also Array#slice!.
+  #
+  # @example
+  #    arr = ['ant','bat','cat','dog']
+  #    _a.delete_at(arr, 2)    #=> "cat"
+  #    arr                     #=> ["ant", "bat", "dog"]
+  #    _a.delete_at(arr, 99)   #=> null
+  #
+  # @return obj or null
+  #
   # @destructive
   delete_at: (arr, idx) ->
     idx = idx + arr.length if idx < 0
@@ -1834,6 +1906,40 @@ class ArrayMethods extends EnumerableMethods
     arr.splice(idx, 1)[0]
 
 
+  # Returns the first element, or the first n elements, of the enumerable. If
+  # the enumerable is empty, the first form returns nil, and the second form
+  # returns an empty array.
+  #
+  # @example
+  #   arr = ['foo','bar','baz']
+  #   _a.first(arr)     // => "foo"
+  #   _a.first(arr, 2)  // => ["foo", "bar"]
+  #   _a.first(arr, 10) // => ["foo", "bar", "baz"]
+  #   _a.first([])      // => null
+  #
+  first: (arr, n) ->
+    if n?
+      _err.throw_argument() if n < 0
+      arr.slice(0,n)
+    else
+      arr[0]
+
+
+  # Returns a new array that is a one-dimensional flattening of this array
+  # (recursively). That is, for every element that is an array, extract its
+  # elements into the new array. If the optional level argument determines the
+  # level of recursion to flatten.
+  #
+  # @example
+  #   s = [ 1, 2, 3 ]
+  #   t = [ 4, 5, 6, [7, 8] ]
+  #   arr = [ s, t, 9, 10 ]     // => [[1, 2, 3], [4, 5, 6, [7, 8]], 9, 10]
+  #   _a.flatten(arr)           // => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  #   arr = [ 1, 2, [3, [4, 5] ] ]
+  #   _a.flatten(arr, 1)        // => [1, 2, 3, [4, 5]]
+  #
+  # @return [Array] flattened array
+  #
   flatten: (arr, recursion = -1) ->
     arr = __arr(arr)
     ary = []
@@ -1850,8 +1956,21 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+
+  # Calls block once for each element in self, passing that element as a
+  # parameter.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #   a = [ "a", "b", "c" ]
+  #   str = ""
+  #   _a.each(arr, function (x) { str += x} )
+  #   // str: 'abc'
+  #
+  #
   each: (arr, block) ->
-    return __enumerate(_arr.each, [arr]) unless block?
+    return arr unless block?
 
     block = Block.splat_arguments(block)
 
@@ -1863,7 +1982,18 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # each with a thisArg.
+  #
+  # @example
+  #   arr = [ "a", "b", "c" ]
+  #   acc = []
+  #   _a.each_with_context(arr, acc, function (x) { this.push(x) } )
+  #   // => ['a', 'b', 'c']
+  #
   # @non-ruby
+  #
+  # @return thisArg
+  #
   each_with_context: (arr, thisArg, block) ->
     return __enumerate(_arr.each_with_context, [arr, thisArg]) unless block?
 
@@ -1874,7 +2004,7 @@ class ArrayMethods extends EnumerableMethods
     while ++idx < arr.length
       block.call(thisArg, arr[idx])
 
-    thisArg
+    arr
 
 
   each_index: (arr, block) ->
@@ -1887,14 +2017,27 @@ class ArrayMethods extends EnumerableMethods
     this
 
 
-  get: (a, b) ->
-    _arr.slice(a,b)
+  get: (arr, b) ->
+    _arr.slice(arr,b)
 
 
   empty: (arr) ->
     arr.length is 0
 
 
+  # Tries to return the element at position index. If the index lies outside
+  # the array, the first form throws an IndexError exception, the second form
+  # returns default, and the third form returns the value of invoking the
+  # block, passing in the index. Negative values of index count from the end
+  # of the array.
+  #
+  # @example
+  #   arr = [ 11, 22, 33, 44 ]
+  #   _a.fetch(arr, 1)               // => 22
+  #   _a.fetch(arr, -1)              // => 44
+  #   _a.fetch(arr, 4, 'cat')        // => "cat"
+  #   _a.fetch(arr, 4, function (i) { return i*i; })  // => 16
+  #
   fetch: (arr, idx, default_or_block) ->
     idx  = __int(idx)
     len  = arr.length
@@ -1910,7 +2053,36 @@ class ArrayMethods extends EnumerableMethods
     arr[idx]
 
 
+
+  # Fills array with obj or block.
+  #
+  #     _a.fill(arr, obj)                   → ary
+  #     _a.fill(arr, obj, start [, length]) → ary
+  #     _a.fill(arr, obj, range )           → ary
+  #     _a.fill(arr, function (index) {})   → ary
+  #     _a.fill(arr, start [, length],  (index) -> block  → ary
+  #     # not yet implemented:
+  #     _a.fill(arr, range, (index) -> block ) → ary
+  #
+  # The first three forms set the selected elements of self (which may be the
+  # entire array) to obj. A start of nil is equivalent to zero. A length of
+  # nil is equivalent to self.length. The last three forms fill the array with
+  # the value of the block. The block is passed the absolute index of each
+  # element to be filled. Negative values of start count from the end of the
+  # array.
+  #
+  # @example
+  #   arr = [ "a", "b", "c", "d" ]
+  #   _a.fill(arr, "x")               // => ["x", "x", "x", "x"]
+  #   _a.fill(arr, "z", 2, 2)         // => ["x", "x", "z", "z"]
+  #   _a.fill(arr, "y", 0..1)         // => ["y", "y", "z", "z"]
+  #   _a.fill(arr, (i) -> i*i         // => [0, 1, 4, 9]
+  #   _a.fill(arr, -2, function (i) { return i*i*i; })   // => [0, 1, 8, 27]
+  #
+  # @todo implement fill(range, ...)
+  #
   # @destructive
+  #
   fill: (arr, args...) ->
     _err.throw_argument() if args.length == 0
     block = __extract_block(args)
@@ -1967,8 +2139,16 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # Inserts the given values before the element with the given index (which
+  # may be negative).
+  #
+  # @example
+  #   arr = ['a','b','c','d']
+  #   _a.insert(arr, 2, 99)         // => ["a", "b", 99, "c", "d"]
+  #   _a.insert(arr, -2, 1, 2, 3)   // => ["a", "b", 99, "c", 1, 2, 3, "d"]
+  #
   # @destructive
-  # @param items...
+  #
   insert: (arr, idx) ->
     _err.throw_argument() if idx is undefined
 
@@ -2000,13 +2180,43 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+
+  # Returns a string created by converting each element of the array to a
+  # string, separated by sep.
+  #
+  # @example
+  #     arr = ['a', 'b', 'c']
+  #     _a.join(arr)       // => "abc"
+  #     _a.join(arr,null)  // => "abc"
+  #     _a.join(arr,"-")   // => "a-b-c"
+  #     # joins nested arrays
+  #     _a.join([1,[2,[3,4]]], '.')      // => '1.2.3.4'
+  #     # Default separator R['$,'] (in ruby: $,)
+  #     R['$,']           // => null
+  #     _a.join(arr)      // => "abc"
+  #     R['$,'] = '|'     // => '|'
+  #     _a.join(arr)      // => "a|b|c"
+  #
   join: (arr, separator) ->
     return '' if arr.length == 0
     separator = R['$,']  if separator is undefined
     separator = ''       if separator is null
-    nativeJoin.call(arr, separator)
+    nativeJoin.call(_arr.flatten(arr), separator)
 
 
+
+  # Deletes every element of self for which block evaluates to false. See also
+  # Array#select!
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #   arr = [1,2,3,4]
+  #   _a.keep_if(arr, function (v) { return i < 3; } )  // => [1,2,3]
+  #   _a.keep_if(arr, function (v) { return true; } )   // => [1,2,3,4]
+  #
+  # @todo make destructive
+  #
   keep_if: (arr, block) ->
     return __enumerate(_arr.keep_if, [arr]) unless block?
 
@@ -2022,6 +2232,15 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+
+  # Returns the last element(s) of self. If the array is empty, the first form
+  # returns nil.
+  #
+  # @example
+  #   arr = [ "w", "x", "y", "z" ]
+  #   _a.last(arr)       // => "z"
+  #   _a.last(arr, 2)    // => ["y", "z"]
+  #
   last: (arr, n) ->
     len = arr.length
     if n is undefined
@@ -2036,6 +2255,20 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
+  # Array Difference - Returns a new array that is a copy of the original
+  # array, removing any items that also appear in other_ary. (If you need set-
+  # like behavior, see the library class Set.)
+  #
+  # @note minus checks for identity using _a.include(el), which differs slightly
+  #   from the reference which uses #hash and #eql?
+  #
+  # @example
+  #   arr = [1, 1, 2, 2, 3, 3, 4, 5 ]
+  #   _a.minus(arr, [1, 2, 4])
+  #   // =>  [3, 3, 5]
+  #
+  # @todo recursive arrays not tested
+  #
   minus: (arr, other) ->
     other = __arr(other)
 
@@ -2049,6 +2282,15 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+  # Repetition - With a String argument, equivalent to _a.join(str).
+  # Otherwise, returns a new array built by concatenating the int copies of
+  # self.
+  #
+  # @example
+  #   arr = [ 1, 2, 3 ]
+  #   _a.multiply(arr, 3  ) // => [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
+  #   _a.multiply(arr, ",") // => "1,2,3"
+  #
   multiply: (arr, multiplier) ->
     _err.throw_type() if multiplier is null
 
@@ -2073,6 +2315,17 @@ class ArrayMethods extends EnumerableMethods
       ary
 
 
+  # Removes the last element from self and returns it, or nil if the array is empty.
+  #
+  # If a number n is given, returns an array of the last n elements (or less)
+  # just like array.slice!(-n, n) does.
+  #
+  # @example
+  #   arr = [ "a", "b", "c", "d" ]
+  #   _a.pop(arr,)     // => "d"
+  #   _a.pop(arr,2)    // => ["b", "c"]
+  #   arr              // => ["a"]
+  #
   pop: (arr, many) ->
     if many is undefined
       arr.pop()
@@ -2087,6 +2340,21 @@ class ArrayMethods extends EnumerableMethods
       ary
 
 
+  # Returns an array of all combinations of elements from all arrays. The
+  # length of the returned array is the product of the length of self and the
+  # argument arrays. If given a block, product will yield all combinations and
+  # return self instead.
+  #
+  # @example
+  #   _a.product( [1,2,3], [4,5])      // => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+  #   _a.product( [1,2],   [1,2])      // => [[1,1],[1,2],[2,1],[2,2]]
+  #   _a.product( [1,2], [3,4],[5,6])  // => [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
+  #                                    //      [2,3,5],[2,3,6],[2,4,5],[2,4,6]]
+  #   _a.product( [1,2] )              // => [[1],[2]]
+  #   _a.product( [1,2], [])           // => []
+  #
+  # @todo does not check if the result size will fit in an Array.
+  #
   product: (arr, args...) ->
     result = []
     block = __extract_block(args)
@@ -2114,6 +2382,29 @@ class ArrayMethods extends EnumerableMethods
       result
 
 
+  # Append—Pushes the given object(s) on to the end of this array. This
+  # expression returns the array itself, so several appends may be chained
+  # together.
+  #
+  # @example
+  #   arr = [ "a", "b", "c" ]
+  #   _a.push(arr, "d", "e", "f")
+  #   #=> ["a", "b", "c", "d", "e", "f"]
+  #
+  push: (arr, elements...) ->
+    arr.push.apply(arr, elements)
+    arr
+
+
+  # Searches through the array whose elements are also arrays. Compares obj
+  # with the second element of each contained array using ==. Returns the
+  # first contained array that matches. See also Array#assoc.
+  #
+  # @example
+  #   arr = [[1, "one"], [2, "two"], [3, "three"], ["ii", "two"]]
+  #   _a.rassoc(arr, "two")    // => [2, "two"]
+  #   _a.rassoc(arr, "four")   // => nil
+  #
   rassoc: (arr, obj) ->
     len = arr.length
     idx = -1
@@ -2128,6 +2419,17 @@ class ArrayMethods extends EnumerableMethods
     null
 
 
+  # TODO: _a.replace
+
+
+  # Same as Array#each, but traverses self in reverse order.
+  #
+  # @example
+  #   arr = [ "a", "b", "c" ]
+  #   acc = []
+  #   _a.reverse_each arr, (x) -> acc.push("#{x} ")
+  #   acc // => ['c ', 'b ', 'a ']
+  #
   reverse_each: (arr, block) ->
     return __enumerate(_arr.reverse_each, [arr]) unless block?
 
@@ -2140,6 +2442,21 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # Returns the index of the last object in self == to obj. If a block is
+  # given instead of an argument, returns index of first object for which
+  # block is true, starting from the last object. Returns nil if no match is
+  # found. See also Array#index.
+  #
+  # If neither block nor argument is given, an enumerator is returned instead.
+  #
+  # @example
+  #   arr = [ "a", "b", "b", "b", "c" ]
+  #   _a.rindex(arr, "b")             // => 3
+  #   _a.rindex(arr, "z")             // => nil
+  #   _a.rindex(arr, function (x) { return x == "b" } // => 3
+  #
+  # @note does not check if array has changed.
+  #
   rindex: (arr, other) ->
     return __enumerate(_arr.rindex, [arr, other]) if other is undefined
 
@@ -2162,6 +2479,18 @@ class ArrayMethods extends EnumerableMethods
     null
 
 
+
+  # Returns new array by rotating self so that the element at cnt in self is
+  # the first element of the new array. If cnt is negative then it rotates in
+  # the opposite direction.
+  #
+  # @example
+  #   arr = [ "a", "b", "c", "d" ]
+  #   _a.rotate(arr)       # => ["b", "c", "d", "a"]
+  #   arr                  # => ["a", "b", "c", "d"]
+  #   _a.rotate(arr, 2)    # => ["c", "d", "a", "b"]
+  #   _a.rotate(arr, -3)   # => ["b", "c", "d", "a"]
+  #
   rotate: (arr, cnt) ->
     if cnt is undefined
       cnt = 1
@@ -2179,6 +2508,22 @@ class ArrayMethods extends EnumerableMethods
     arr.slice(idx).concat(sliced)
 
 
+  # Choose a random element or n random elements from the array. The elements
+  # are chosen by using random and unique indices into the array in order to
+  # ensure that an element doesn’t repeat itself unless the array already
+  # contained duplicate elements. If the array is empty the first form returns
+  # nil and the second form returns an empty array.
+  #
+  # If rng is given, it will be used as the random number generator.
+  #
+  # @example
+  #   arr = [1,2,3]
+  #   _a.sample(arr)      // => 2
+  #   _a.sample(arr, 2)   // => [3,1]
+  #   _a.sample(arr, 4)   // => [2,1,3]
+  #
+  # @todo range is not implemented yet
+  #
   sample: (arr, n, range = undefined) ->
     len = arr.length
     return arr[__rand(len)] if n is undefined
@@ -2198,6 +2543,12 @@ class ArrayMethods extends EnumerableMethods
     ary.slice(0, n)
 
 
+  # Returns a new array with elements of this array shuffled.
+  #
+  # @example
+  #   arr = [ 1, 2, 3 ]
+  #   _a.shuffle(arr)     //=> [2, 3, 1]
+  #
   shuffle: (arr) ->
     len = arr.length
     ary = new Array(len)
@@ -2210,6 +2561,28 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+  # Element Reference—Returns the element at index, or returns a subarray
+  # starting at start and continuing for length elements, or returns a
+  # subarray specified by range. Negative indices count backward from the end
+  # of the array (-1 is the last element). Returns null if the index (or
+  # starting index) are out of range.
+  #
+  # @example
+  #     a = [ "a", "b", "c", "d", "e" ]
+  #     _a.slice(arr, 2) +  arr[0] + arr[1] // => "cab"
+  #     _a.slice(arr, 6)                    // => null
+  #     _a.slice(arr, 1, 2)                 // => [ "b", "c" ]
+  #     _a.slice(arr, _r(1,3))              // => [ "b", "c", "d" ]
+  #     _a.slice(arr, _r(4,7))              // => [ "e" ]
+  #     _a.slice(arr, _r(6,10))             // => null
+  #     _a.slice(arr, -3, 3)                // => [ "c", "d", "e" ]
+  #     # special cases
+  #     _a.slice(arr, 5)                    // => null
+  #     _a.slice(arr, 5, 1)                 // => []
+  #     _a.slice(arr, _r(5,10))             // => []
+  #
+  # @todo Ranges not yet implemented correctly, use R.Range(...)
+  #
   slice: (arr, idx, length) ->
     _err.throw_type() if idx is null
     size = arr.length
@@ -2242,6 +2615,12 @@ class ArrayMethods extends EnumerableMethods
       arr.slice(idx, length + idx)
 
 
+  # Assumes that self is an array of arrays and transposes the rows and columns.
+  #
+  # @example
+  #   arr = [[1,2], [3,4], [5,6]]
+  #   _a.transpose(arr)  // => [[1, 3, 5], [2, 4, 6]]
+  #
   transpose: (arr) ->
     return [] if arr.length == 0
 
@@ -2267,6 +2646,18 @@ class ArrayMethods extends EnumerableMethods
     out
 
 
+  # Returns a new array by removing duplicate values in self.
+  #
+  # @example
+  #   arr = [ "a", "a", "b", "b", "c" ]
+  #   _a.uniq(arr)      // => ["a", "b", "c"]
+  #   // Not yet implemented:
+  #   c = [ "a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl" ]
+  #   _a.uniq(c, function(s) { return s[/^\w+/] })
+  #   // => [ "a:def", "b:abc", "c:jkl" ]
+  #
+  # @note Not yet correctly implemented. should use #eql on objects, but uses @include().
+  #
   uniq: (arr) ->
     idx = -1
     len = arr.length
@@ -2283,11 +2674,13 @@ class ArrayMethods extends EnumerableMethods
     args.concat(arr)
 
 
-  # values_at2: (arr, args...) ->
-  #   for idx in args
-  #     _arr.at(arr, __int(idx)) || null
-
-
+  # Set Union—Returns a new array by joining this array with other_ary,
+  # removing duplicates.
+  #
+  # @example
+  #   _a.union([ "a", "b", "c" ], [ "c", "d", "a" ])
+  #   // => [ "a", "b", "c", "d" ]
+  #
   union: (arr, other) ->
     _arr.uniq(arr.concat(__arr(other)))
 
@@ -2326,14 +2719,6 @@ class ArrayMethods extends EnumerableMethods
     null
 
 
-  first: (arr, n) ->
-    if n?
-      _err.throw_argument() if n < 0
-      arr.slice(0,n)
-    else
-      arr[0]
-
-
   map: (arr, block) ->
     callback = Block.splat_arguments(block)
 
@@ -2349,7 +2734,7 @@ class ArrayMethods extends EnumerableMethods
   take: @prototype.first
 
 
-
+  # @private
   __native_array_with__: (size, obj) ->
     ary = nativeArray(__int(size))
     idx = -1
@@ -2359,7 +2744,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 _arr = R._arr = (arr) ->
-  new RArray(arr)
+  new RWrapper(arr, _arr)
 
 
 R.extend(_arr, new ArrayMethods())
@@ -2473,11 +2858,9 @@ class StringMethods
 
   downcase: (str) ->
     return str unless nativeStrMatch.call(str, /[A-Z]/)
-    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
-    _arr.map(str.split(''), (c) ->
-      if nativeStrMatch.call(c, /[A-Z]/) then c.toLowerCase() else c
-    ).join('')
 
+    str.replace /[A-Z]/g, (ch) ->
+      String.fromCharCode(ch.charCodeAt(0) | 32)
 
 
   dump: (str) ->
@@ -2509,7 +2892,7 @@ class StringMethods
   gsub: (str, pattern, replacement) ->
     _err.throw_type() if pattern is null
 
-    pattern_lit = R.String.string_native(pattern)
+    pattern_lit = __try_str(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(_rgx.escape(pattern_lit), 'g')
 
@@ -2771,7 +3154,7 @@ class StringMethods
   sub: (str, pattern, replacement) ->
     _err.throw_type() if pattern is null
 
-    pattern_lit = R.String.string_native(pattern)
+    pattern_lit = __try_str(pattern)
     if pattern_lit isnt null
       pattern = new RegExp(_rgx.escape(pattern_lit))
 
@@ -2895,7 +3278,7 @@ class StringMethods
     ary = str.split(pattern)
 
     # remove trailing empty fields
-    while R.truthy(str = ary[ary.length - 1])
+    while __truthy(str = ary[ary.length - 1])
       break unless str.length == 0
       ary.pop()
 
@@ -2975,10 +3358,9 @@ class StringMethods
 
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
-    # FIXME ugly and slow but ruby upcase differs from normal toUpperCase
-    _arr.map(str.split(''), (c) ->
-      if c.match(/[a-z]/) then c.toUpperCase() else c
-    ).join('')
+
+    str.replace /[a-z]/g, (ch) ->
+      String.fromCharCode(ch.charCodeAt(0) & ~32)
 
 
   upto: (str, stop, exclusive, block) ->
@@ -3027,8 +3409,8 @@ class StringMethods
 
 
 
-_str = R._str = (arr) ->
-  new RString(arr)
+_str = R._str = (str) ->
+  new RWrapper(str, _str)
 
 R.extend(_str, new StringMethods())
 
@@ -3520,6 +3902,66 @@ _time = R._time = (arr) ->
   new R.Time(arr)
 
 R.extend(_time, new TimeMethods())
+
+
+class RWrapper
+  constructor: (@value, @type) ->
+    @chain = false
+
+
+  valueOf: ->
+    @value
+
+
+R.Wrapper = RWrapper
+
+
+lookupFunction = (val, name) ->
+  if val is null
+    return -> throw new TypeError("wrapper has null value")
+
+  return @type if @type
+
+  val = val.valueOf() if typeof val is 'object'
+
+  ns = null
+  if typeof val is 'string'
+    ns = _str
+  else if typeof val is 'number'
+    ns = _num
+  else if __isArr(val)
+    ns = _arr
+  else
+    ns = _hsh
+
+  ns[name]
+
+
+dispatchFunction = (name) ->
+  ->
+    self = this
+    if t = self.type
+      func = t[name]
+      self.type  = null
+    else
+      func = lookupFunction(self.value, name)
+    self.value = __call(func, self.value, arguments)
+
+    if self.chain then this else self.value
+
+
+klasses = [
+  ArrayMethods,
+  StringMethods,
+  NumericMethods,
+  TimeMethods
+]
+
+for klass in klasses
+  for own name, fn of klass.prototype
+    do (name,fn) ->
+      RWrapper.prototype[name] = dispatchFunction(name)
+
 
 
 
@@ -5178,7 +5620,7 @@ class RubyJS.Array extends RubyJS.Object
   #
   # @example
   #     a = R([1,2,3,4])
-  #     a.keep_if (v) -> i < 3   # => [1,2,3]
+  #     a.keep_if (v) -> v <= 3   # => [1,2,3]
   #     a.keep_if  -> true       # => a # returns self if not changed
   #
   keep_if: (block) ->
@@ -5355,7 +5797,7 @@ class RubyJS.Array extends RubyJS.Object
   #     #=> ["a", "b", "c", "d", "e", "f"]
   #
   push: ->
-    @__native__.push.apply(@__native__, arguments)
+    __call(_arr.push, @__native__, arguments)
     this
 
 
@@ -5391,6 +5833,7 @@ class RubyJS.Array extends RubyJS.Object
     return @to_enum('rindex') if other is undefined
     ridx = _arr.rindex(@__native__, other)
     if ridx is null then null else new R.Fixnum(ridx)
+
 
   # Choose a random element or n random elements from the array. The elements
   # are chosen by using random and unique indices into the array in order to
@@ -6914,15 +7357,6 @@ class RubyJS.String extends RubyJS.Object
       obj
     else
       @new(obj)
-
-
-  @string_native: (obj) ->
-    return obj if typeof obj is 'string'
-    obj = R(obj)
-    if obj.to_str?
-      obj.to_str().to_native()
-    else
-      null
 
 
   # ---- RubyJSism ------------------------------------------------------------
