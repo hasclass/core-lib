@@ -760,6 +760,18 @@ class ArrayMethods extends EnumerableMethods
     null
 
 
+
+  # Returns new array by rotating self so that the element at cnt in self is
+  # the first element of the new array. If cnt is negative then it rotates in
+  # the opposite direction.
+  #
+  # @example
+  #   arr = [ "a", "b", "c", "d" ]
+  #   _a.rotate(arr)       # => ["b", "c", "d", "a"]
+  #   arr                  # => ["a", "b", "c", "d"]
+  #   _a.rotate(arr, 2)    # => ["c", "d", "a", "b"]
+  #   _a.rotate(arr, -3)   # => ["b", "c", "d", "a"]
+  #
   rotate: (arr, cnt) ->
     if cnt is undefined
       cnt = 1
@@ -777,6 +789,22 @@ class ArrayMethods extends EnumerableMethods
     arr.slice(idx).concat(sliced)
 
 
+  # Choose a random element or n random elements from the array. The elements
+  # are chosen by using random and unique indices into the array in order to
+  # ensure that an element doesn’t repeat itself unless the array already
+  # contained duplicate elements. If the array is empty the first form returns
+  # nil and the second form returns an empty array.
+  #
+  # If rng is given, it will be used as the random number generator.
+  #
+  # @example
+  #   arr = [1,2,3]
+  #   _a.sample(arr)      // => 2
+  #   _a.sample(arr, 2)   // => [3,1]
+  #   _a.sample(arr, 4)   // => [2,1,3]
+  #
+  # @todo range is not implemented yet
+  #
   sample: (arr, n, range = undefined) ->
     len = arr.length
     return arr[__rand(len)] if n is undefined
@@ -796,6 +824,12 @@ class ArrayMethods extends EnumerableMethods
     ary.slice(0, n)
 
 
+  # Returns a new array with elements of this array shuffled.
+  #
+  # @example
+  #   arr = [ 1, 2, 3 ]
+  #   _a.shuffle(arr)     //=> [2, 3, 1]
+  #
   shuffle: (arr) ->
     len = arr.length
     ary = new Array(len)
@@ -808,6 +842,28 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+  # Element Reference—Returns the element at index, or returns a subarray
+  # starting at start and continuing for length elements, or returns a
+  # subarray specified by range. Negative indices count backward from the end
+  # of the array (-1 is the last element). Returns null if the index (or
+  # starting index) are out of range.
+  #
+  # @example
+  #     a = [ "a", "b", "c", "d", "e" ]
+  #     _a.slice(arr, 2) +  arr[0] + arr[1] // => "cab"
+  #     _a.slice(arr, 6)                    // => null
+  #     _a.slice(arr, 1, 2)                 // => [ "b", "c" ]
+  #     _a.slice(arr, _r(1,3))              // => [ "b", "c", "d" ]
+  #     _a.slice(arr, _r(4,7))              // => [ "e" ]
+  #     _a.slice(arr, _r(6,10))             // => null
+  #     _a.slice(arr, -3, 3)                // => [ "c", "d", "e" ]
+  #     # special cases
+  #     _a.slice(arr, 5)                    // => null
+  #     _a.slice(arr, 5, 1)                 // => []
+  #     _a.slice(arr, _r(5,10))             // => []
+  #
+  # @todo Ranges not yet implemented correctly, use R.Range(...)
+  #
   slice: (arr, idx, length) ->
     _err.throw_type() if idx is null
     size = arr.length

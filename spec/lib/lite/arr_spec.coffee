@@ -241,3 +241,35 @@ describe "docs", ->
     expect( _a.rindex(arr, "b")             ).toEqual 3
     expect( _a.rindex(arr, "z")             ).toEqual null
     expect( _a.rindex(arr, (x) -> x == "b") ).toEqual 3
+
+
+  it "_a.rotate", ->
+    arr = [ "a", "b", "c", "d" ]
+    expect( _a.rotate(arr)     ).toEqual ["b", "c", "d", "a"]
+    expect( arr                ).toEqual ["a", "b", "c", "d"]
+    expect( _a.rotate(arr, 2)  ).toEqual ["c", "d", "a", "b"]
+    expect( _a.rotate(arr, -3) ).toEqual ["b", "c", "d", "a"]
+
+
+  xit "_a.sample", ->
+    # cant test docs, because sample uses random elements.
+    arr = [1,2,3]
+    expect( typeof _a.sample(arr)     ).toEqual 'number'
+    expect( _a.sample(arr, 2).length  ).toEqual 2
+    expect( _a.sample(arr, 4).length  ).toEqual 3
+
+
+  it "_a.slice", ->
+    arr = [ "a", "b", "c", "d", "e" ]
+    expect( _a.slice(arr, 2) +  arr[0] + arr[1]    ).toEqual "cab"
+    expect( _a.slice(arr, 6)                   ).toEqual null
+    expect( _a.slice(arr, 1, 2)                ).toEqual [ "b", "c" ]
+    expect( _a.slice(arr, R.Range.new(1, 3))   ).toEqual [ "b", "c", "d" ]
+    expect( _a.slice(arr, R.Range.new(4, 7))   ).toEqual [ "e" ]
+    expect( _a.slice(arr, R.Range.new(6, 10))  ).toEqual null
+    expect( _a.slice(arr, -3, 3)               ).toEqual [ "c", "d", "e" ]
+    expect( _a.slice(arr, 5)                   ).toEqual null
+    expect( _a.slice(arr, 5, 1)                ).toEqual []
+    expect( _a.slice(arr, R.Range.new(5,10))           ).toEqual []
+
+
