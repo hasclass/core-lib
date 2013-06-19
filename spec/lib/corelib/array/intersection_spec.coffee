@@ -29,9 +29,9 @@ describe "Array#&", ->
 
   #     (ArraySpecs.recursive_array & ArraySpecs.recursive_array).should == [1, 'two', 3.0, ArraySpecs.recursive_array]
 
-  it "tries to convert the passed argument to an Array using #to_ary", ->
+  it "tries to convert the passed argument to an Array using #valueOf", ->
     obj =
-      to_ary: -> R([1, 2, 3])
+      valueOf: -> [1, 2, 3]
     expect(R([1, 2]).intersection(obj).to_native(true)).toEqual([1, 2])
 
   # it "determines equivalence between elements in the sense of eql?", ->
@@ -58,5 +58,5 @@ describe "Array#&", ->
   #   (ArraySpecs::MyArray[1, 2, 3] & ArraySpecs::MyArray[1, 2, 3]).should be_kind_of(Array)
   #   ([] & ArraySpecs::MyArray[1, 2, 3]).should be_kind_of(Array)
 
-  # it "does not call to_ary on array subclasses", ->
+  # it "does not call valueOf on array subclasses", ->
   #   ([5, 6] & ArraySpecs::ToAryArray[1, 2, 5, 6]).should == [5, 6]

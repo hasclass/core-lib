@@ -213,36 +213,11 @@ class RubyJS.Array extends RubyJS.Object
 
 
   '&': (other) ->
-    other = RCoerce.to_ary(other)
-    arr   = new R.Array([])
-    # TODO suboptimal solution.
-    @each (el) -> arr.push(el) if other.include(el)
-    arr.uniq()
+    new RArray(_arr.intersection(@__native__, other))
 
 
-  # @private
   cmp: (other) ->
-    return null unless other?
-    try
-      other = RCoerce.to_ary(other)
-    catch e
-      return null
-    return 0    if @equals(other)
-
-    other_total = other.size()
-    # Thread.detect_recursion self, other do
-    i = 0
-    total = if other_total.lt(@size()) then other_total else @size()
-
-    while total.gt(i)
-      diff = R(@__native__[i]).cmp other.__native__[i]
-      return diff unless diff == 0
-      i += 1
-
-    # subtle: if we are recursing on that pair, then let's
-    # no go any further down into that pair;
-    # any difference will be found elsewhere if need be
-    @size().cmp other_total
+    _arr.cmp(@__native__, other)
 
 
   # Returns the element at index. A negative index counts from the end of

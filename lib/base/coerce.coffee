@@ -101,9 +101,12 @@ _coerce =
       else
         if a < b then -1 else 1
     else
-      a = R(a)
-      throw 'NoMethodError' unless a.cmp?
-      a.cmp(b)
+      if __isArr(a)
+        _arr.cmp(a, b)
+      else
+        a = R(a)
+        throw 'NoMethodError' unless a.cmp?
+        a.cmp(b)
 
 
   cmpstrict: (a, b) ->

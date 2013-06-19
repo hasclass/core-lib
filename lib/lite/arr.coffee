@@ -31,22 +31,63 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
-  '&': (other) ->
-    arr   = []
-    # TODO suboptimal solution.
+  # Set Intersection—Returns a new array containing elements common to the two
+  # arrays, with no duplicates.
+  #
+  # @example
+  #   _a.intersection([1,1,3,5],[1,2,3])  // => [1, 3]
+  #
+  intersection: (arr, other) ->
+    other = __arr(other)
+    out   = []
+
     _arr.each arr, (el) ->
-      arr.push(el) if _arr.include(other, el)
+      out.push(el) if _arr.include(other, el)
 
-    _arr.uniq(arr)
+    _arr.uniq(out)
 
 
-  # @private
-  cmp: (other) ->
-    # TODO
+  # Comparison—Returns an integer (-1, 0, or +1) if this array is less than,
+  # equal to, or greater than other_ary. Each object in each array is compared
+  # (using <=>). If any value isn’t equal, then that inequality is the return
+  # value. If all the values found are equal, then the return is based on a
+  # comparison of the array lengths. Thus, two arrays are “equal” according to
+  # Array#<=> if and only if they have the same length and the value of each
+  # element is equal to the value of the corresponding element in the other
+  # array.
+  #
+  # @example
+  #   _a.cmp(["a","a","c"], ["a","b","c"]) // => -1
+  #   _a.cmp([1,2,3,4,5,6], [1,2])         // => +1
+  #
+  cmp: (arr, other) ->
+    return null unless other?
+    try
+      other = __arr(other)
+    catch e
+      return null
+
+    return 0 if _arr.equals(arr, other)
+
+    len = arr.length
+    other_total = other.length
+    # Thread.detect_recursion arr, other do
+    i = 0
+    total = if other_total < len then other_total else len
+
+    while total > i
+      diff = __cmp(arr[i], other[i])
+      return diff unless diff == 0
+      i += 1
+
+    # subtle: if we are recursing on that pair, then let's
+    # no go any further down into that pair;
+    # any difference will be found elsewhere if need be
+    __cmp(len, other_total)
 
 
   # Returns the element at index. A negative index counts from the end of
-  # self. Returns nil if the index is out of range. See also Array#[].
+  # arr. Returns nil if the index is out of range. See also Array#[].
   #
   # @example
   #   a = [ "a", "b", "c", "d", "e" ]
@@ -124,7 +165,7 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
-  # Returns a copy of self with all nil elements removed.
+  # Returns a copy of arr with all nil elements removed.
   #
   # @example
   #   _a.compact([ "a", null, "b", null, "c", null ])
@@ -243,7 +284,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 
-  # Calls block once for each element in self, passing that element as a
+  # Calls block once for each element in arr, passing that element as a
   # parameter.
   #
   # If no block is given, an enumerator is returned instead.
@@ -293,6 +334,18 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # Same as Array#each, but passes the index of the element instead of the
+  # element itself.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #   arr = [ "a", "b", "c" ]
+  #   _a.each_index(arr, function (x) { R.puts "#{x} -- " })
+  #   // 0 --
+  #   // 1 --
+  #   // 2 --
+  #
   each_index: (arr, block) ->
     return __enumerate(_arr.each_index, [arr]) unless block?
 
@@ -307,6 +360,8 @@ class ArrayMethods extends EnumerableMethods
     _arr.slice(arr,b)
 
 
+  # Returns true if arr contains no elements.
+  #
   empty: (arr) ->
     arr.length is 0
 
@@ -350,9 +405,9 @@ class ArrayMethods extends EnumerableMethods
   #     # not yet implemented:
   #     _a.fill(arr, range, (index) -> block ) → ary
   #
-  # The first three forms set the selected elements of self (which may be the
+  # The first three forms set the selected elements of arr (which may be the
   # entire array) to obj. A start of nil is equivalent to zero. A length of
-  # nil is equivalent to self.length. The last three forms fill the array with
+  # nil is equivalent to arr.length. The last three forms fill the array with
   # the value of the block. The block is passed the absolute index of each
   # element to be filled. Negative values of start count from the end of the
   # array.
@@ -491,7 +546,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 
-  # Deletes every element of self for which block evaluates to false. See also
+  # Deletes every element of arr for which block evaluates to false. See also
   # Array#select!
   #
   # If no block is given, an enumerator is returned instead.
@@ -519,7 +574,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 
-  # Returns the last element(s) of self. If the array is empty, the first form
+  # Returns the last element(s) of arr. If the array is empty, the first form
   # returns nil.
   #
   # @example
@@ -570,7 +625,7 @@ class ArrayMethods extends EnumerableMethods
 
   # Repetition - With a String argument, equivalent to _a.join(str).
   # Otherwise, returns a new array built by concatenating the int copies of
-  # self.
+  # arr.
   #
   # @example
   #   arr = [ 1, 2, 3 ]
@@ -601,7 +656,7 @@ class ArrayMethods extends EnumerableMethods
       ary
 
 
-  # Removes the last element from self and returns it, or nil if the array is empty.
+  # Removes the last element from arr and returns it, or nil if the array is empty.
   #
   # If a number n is given, returns an array of the last n elements (or less)
   # just like array.slice!(-n, n) does.
@@ -627,9 +682,9 @@ class ArrayMethods extends EnumerableMethods
 
 
   # Returns an array of all combinations of elements from all arrays. The
-  # length of the returned array is the product of the length of self and the
+  # length of the returned array is the product of the length of arr and the
   # argument arrays. If given a block, product will yield all combinations and
-  # return self instead.
+  # return arr instead.
   #
   # @example
   #   _a.product( [1,2,3], [4,5])      // => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
@@ -669,7 +724,7 @@ class ArrayMethods extends EnumerableMethods
 
 
   # Append—Pushes the given object(s) on to the end of this array. This
-  # expression returns the array itself, so several appends may be chained
+  # expression returns the array i arr, so several appends may be chained
   # together.
   #
   # @example
@@ -708,7 +763,7 @@ class ArrayMethods extends EnumerableMethods
   # TODO: _a.replace
 
 
-  # Same as Array#each, but traverses self in reverse order.
+  # Same as Array#each, but traverses arr in reverse order.
   #
   # @example
   #   arr = [ "a", "b", "c" ]
@@ -728,7 +783,7 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
-  # Returns the index of the last object in self == to obj. If a block is
+  # Returns the index of the last object in arr == to obj. If a block is
   # given instead of an argument, returns index of first object for which
   # block is true, starting from the last object. Returns nil if no match is
   # found. See also Array#index.
@@ -766,7 +821,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 
-  # Returns new array by rotating self so that the element at cnt in self is
+  # Returns new array by rotating arr so that the element at cnt in arr is
   # the first element of the new array. If cnt is negative then it rotates in
   # the opposite direction.
   #
@@ -901,7 +956,7 @@ class ArrayMethods extends EnumerableMethods
       arr.slice(idx, length + idx)
 
 
-  # Assumes that self is an array of arrays and transposes the rows and columns.
+  # Assumes that arr is an array of arrays and transposes the rows and columns.
   #
   # @example
   #   arr = [[1,2], [3,4], [5,6]]
@@ -932,7 +987,7 @@ class ArrayMethods extends EnumerableMethods
     out
 
 
-  # Returns a new array by removing duplicate values in self.
+  # Returns a new array by removing duplicate values in arr.
   #
   # @example
   #   arr = [ "a", "a", "b", "b", "c" ]
@@ -972,7 +1027,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 
-  # Returns an array containing the elements in self corresponding to the
+  # Returns an array containing the elements in arr corresponding to the
   # given selector(s). The selectors may be either integer indices or ranges.
   # See also Array#select.
   #

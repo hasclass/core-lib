@@ -87,11 +87,17 @@ describe "_a.equals", ->
     expect( _a.equals( [obj],    []     )).toBe(false)
 
 
-describe "docs", ->
+describe "_a docs", ->
   it "_a.at", ->
     a = [ "a", "b", "c", "d", "e" ]
     expect( _a.at(a, 0)  ).toEqual("a")
     expect( _a.at(a, -1) ).toEqual("e")
+
+
+  it "_a.cmp", ->
+    expect( _a.cmp(["a","a","c"], ["a","b","c"]) ).toBe -1
+    expect( _a.cmp([1,2,3,4,5,6], [1,2])         ).toBe +1
+
 
   it "_a.combination", ->
     a = [1, 2, 3, 4]
@@ -171,6 +177,10 @@ describe "docs", ->
     arr = ['a','b','c','d']
     expect( _a.insert(arr, 2, 99)         ).toEqual ["a", "b", 99, "c", "d"]
     expect( _a.insert(arr, -2, 1, 2, 3)   ).toEqual ["a", "b", 99, "c", 1, 2, 3, "d"]
+
+
+  it "_a.intersection", ->
+    expect( _a.intersection([1,1,3,5],[1,2,3]) ).toEqual [1, 3]
 
 
   it "_a.join", ->
