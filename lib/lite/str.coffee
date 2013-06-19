@@ -194,6 +194,20 @@ class StringMethods
       idx
 
 
+  # Inserts other_str before the character at the given index, modifying str.
+  # Negative indices count from the end of the string, and insert after the
+  # given character. The intent is insert aString so that it starts at the
+  # given index.
+  #
+  # @example
+  #   _s.insert("abcd", 0, 'X')    // => "Xabcd"
+  #   _s.insert("abcd", 3, 'X')    // => "abcXd"
+  #   _s.insert("abcd", 4, 'X')    // => "abcdX"
+  #
+  # @example inserts after with negative counts
+  #   _s.insert("abcd", -3, 'X')   // => "abXcd"
+  #   _s.insert("abcd", -1, 'X')   // => "abcdX"
+  #
   insert: (str, idx, other) ->
     if idx < 0
       # On negative count
@@ -202,15 +216,20 @@ class StringMethods
     if idx < 0 or idx > str.length
       _err.throw_index()
 
-    chrs = str.split("")
-
-    # TODO: OPTIMIZE!
-    before = chrs[0...idx]
-    insert = other.split("")
-    after  = chrs.slice(idx)
-    before.concat(insert).concat(after).join('')
+    before = str.slice(0, idx)
+    after  = str.slice(idx)
+    before + other + after
 
 
+  # If integer is greater than the length of str, returns a new String of
+  # length integer with str left justified and padded with padstr; otherwise,
+  # returns str.
+  #
+  # @example
+  #   _s.ljust("hello", 4)           // => "hello"
+  #   _s.ljust("hello", 20)          // => "hello               "
+  #   _s.ljust("hello", 20, '1234')  // => "hello123412341234123"
+  #
   ljust: (str, width, padString = " ") ->
     len = str.length
     if len >= width
@@ -222,9 +241,16 @@ class StringMethods
       out = ""
       # TODO refactor
       out += padString while ++idx <= pad_length
-      str + out[0...pad_length]
+      str + out.slice(0, pad_length)
 
 
+  # Returns a copy of str with leading whitespace removed. See also
+  # String#rstrip and String#strip.
+  #
+  # @example
+  #   _s.lstrip("  hello  ")  // => "hello  "
+  #   _s.lstrip("hello")      // => "hello"
+  #
   lstrip: (str) ->
     str.replace(/^[\s\n\t]+/g, '')
 
@@ -261,10 +287,17 @@ class StringMethods
       result
 
 
+  # Copy—Returns a new String containing integer copies of the receiver.
+  #
+  # @example
+  #   _s.multiply("Ho! ", 3)   // => "Ho! Ho! Ho! "
+  #
   multiply: (str, num) ->
     _err.throw_argument() if num < 0
     out = ""
-    out += str for n in [0...num]
+    n = 0
+    while ++n <= num
+      out += str
     out
 
 
@@ -281,10 +314,29 @@ class StringMethods
       [str, '', '']
 
 
+  # Returns a new string with the characters from str in reverse order.
+  #
+  # @example
+  #   _s.reverse("stressed")   // => "desserts"
+  #
   reverse: (str) ->
     str.split("").reverse().join("")
 
 
+
+  # Returns the index of the last occurrence of the given substring or pattern
+  # (regexp) in str. Returns nil if not found. If the second parameter is
+  # present, it specifies the position in the string to end the
+  # search—characters beyond this point will not be considered.
+  #
+  # @example
+  #   _s.rindex("hello", 'e')             // => 1
+  #   _s.rindex("hello", 'l')             // => 3
+  #   _s.rindex("hello", 'a')             // => null
+  #   _s.rindex("hello", /[aeiou]/, -2)   // => 1
+  #
+  # @todo #rindex(/.../) does not add matches to R['$~'] as it should
+  #
   rindex: (str, needle, offset) ->
     if offset != undefined
       offset = offset + str.length if offset < 0
@@ -649,6 +701,7 @@ class StringMethods
 
 
 
+  # @private
   __matched__: (str, args) ->
     for el in args
       rgx = _str.__to_regexp__(el)
@@ -657,6 +710,7 @@ class StringMethods
 
 
   # creates a regexp from the "a-z", "^ab" arguments used in #count
+  # @private
   __to_regexp__: (str) ->
     r = ""
 
