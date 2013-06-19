@@ -193,3 +193,19 @@ describe "docs", ->
     expect( _a.keep_if(arr, (v) -> true  )  ).toEqual [1,2,3,4]
 
 
+  it "_a.last", ->
+    arr = [ "w", "x", "y", "z" ]
+    expect( _a.last(arr)       ).toEqual "z"
+    expect( _a.last(arr, 2)    ).toEqual ["y", "z"]
+
+
+  it "_a.minus", ->
+    expect(
+      _a.minus([ 1, 1, 2, 2, 3, 3, 4, 5 ], [ 1, 2, 4 ])
+    ).toEqual([3,3,5])
+
+
+  it "_a.multiply", ->
+    arr = [ 1, 2, 3 ]
+    expect( _a.multiply(arr, 3  ) ).toEqual [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
+    expect( _a.multiply(arr, ",") ).toEqual "1,2,3"

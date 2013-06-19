@@ -513,6 +513,15 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+
+  # Returns the last element(s) of self. If the array is empty, the first form
+  # returns nil.
+  #
+  # @example
+  #   arr = [ "w", "x", "y", "z" ]
+  #   _a.last(arr)       // => "z"
+  #   _a.last(arr, 2)    // => ["y", "z"]
+  #
   last: (arr, n) ->
     len = arr.length
     if n is undefined
@@ -527,6 +536,20 @@ class ArrayMethods extends EnumerableMethods
     arr[-n.. -1]
 
 
+  # Array Difference - Returns a new array that is a copy of the original
+  # array, removing any items that also appear in other_ary. (If you need set-
+  # like behavior, see the library class Set.)
+  #
+  # @note minus checks for identity using _a.include(el), which differs slightly
+  #   from the reference which uses #hash and #eql?
+  #
+  # @example
+  #   arr = [1, 1, 2, 2, 3, 3, 4, 5 ]
+  #   _a.minus(arr, [1, 2, 4])
+  #   // =>  [3, 3, 5]
+  #
+  # @todo recursive arrays not tested
+  #
   minus: (arr, other) ->
     other = __arr(other)
 
@@ -540,6 +563,15 @@ class ArrayMethods extends EnumerableMethods
     ary
 
 
+  # Repetition - With a String argument, equivalent to _a.join(str).
+  # Otherwise, returns a new array built by concatenating the int copies of
+  # self.
+  #
+  # @example
+  #   arr = [ 1, 2, 3 ]
+  #   _a.multiply(arr, 3  ) // => [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
+  #   _a.multiply(arr, ",") // => "1,2,3"
+  #
   multiply: (arr, multiplier) ->
     _err.throw_type() if multiplier is null
 
@@ -832,7 +864,7 @@ class ArrayMethods extends EnumerableMethods
   take: @prototype.first
 
 
-
+  # @private
   __native_array_with__: (size, obj) ->
     ary = nativeArray(__int(size))
     idx = -1

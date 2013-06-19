@@ -95,7 +95,7 @@ coffee> R('hello world').capitalize().toNative()
 $ bundle install
 $ cake build_tests            # compiles all test files
 $ bundle exec guard           # automatically compile coffeescript
-$ bundle exec rake jasmine                # starts jasmine server
+$ bundle exec rake jasmine    # starts jasmine server
 $ open http://localhost:8888  # pray
 ```
 
