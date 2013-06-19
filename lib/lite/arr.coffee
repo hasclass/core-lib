@@ -677,6 +677,15 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # Searches through the array whose elements are also arrays. Compares obj
+  # with the second element of each contained array using ==. Returns the
+  # first contained array that matches. See also Array#assoc.
+  #
+  # @example
+  #   arr = [[1, "one"], [2, "two"], [3, "three"], ["ii", "two"]]
+  #   _a.rassoc(arr, "two")    // => [2, "two"]
+  #   _a.rassoc(arr, "four")   // => nil
+  #
   rassoc: (arr, obj) ->
     len = arr.length
     idx = -1
@@ -691,6 +700,17 @@ class ArrayMethods extends EnumerableMethods
     null
 
 
+  # TODO: _a.replace
+
+
+  # Same as Array#each, but traverses self in reverse order.
+  #
+  # @example
+  #   arr = [ "a", "b", "c" ]
+  #   acc = []
+  #   _a.reverse_each arr, (x) -> acc.push("#{x} ")
+  #   acc // => ['c ', 'b ', 'a ']
+  #
   reverse_each: (arr, block) ->
     return __enumerate(_arr.reverse_each, [arr]) unless block?
 
@@ -703,6 +723,21 @@ class ArrayMethods extends EnumerableMethods
     arr
 
 
+  # Returns the index of the last object in self == to obj. If a block is
+  # given instead of an argument, returns index of first object for which
+  # block is true, starting from the last object. Returns nil if no match is
+  # found. See also Array#index.
+  #
+  # If neither block nor argument is given, an enumerator is returned instead.
+  #
+  # @example
+  #   arr = [ "a", "b", "b", "b", "c" ]
+  #   _a.rindex(arr, "b")             // => 3
+  #   _a.rindex(arr, "z")             // => nil
+  #   _a.rindex(arr, function (x) { return x == "b" } // => 3
+  #
+  # @note does not check if array has changed.
+  #
   rindex: (arr, other) ->
     return __enumerate(_arr.rindex, [arr, other]) if other is undefined
 

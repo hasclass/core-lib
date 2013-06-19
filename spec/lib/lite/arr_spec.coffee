@@ -218,8 +218,26 @@ describe "docs", ->
     expect( arr              ).toEqual ["a"]
 
 
-
   it "_a.push", ->
     arr = [ "a", "b", "c" ]
     expect( _a.push(arr, "d", "e", "f") ).toEqual ["a", "b", "c", "d", "e", "f"]
 
+
+  it "_a.rassoc", ->
+    arr = [[1, "one"], [2, "two"], [3, "three"], ["ii", "two"]]
+    expect( _a.rassoc(arr, "two")  ).toEqual [2, "two"]
+    expect( _a.rassoc(arr, "four") ).toEqual null
+
+
+  it "_a.reverse_each", ->
+    arr = [ "a", "b", "c" ]
+    acc = []
+    _a.reverse_each arr, (x) -> acc.push("#{x} ")
+    expect( acc ).toEqual ['c ', 'b ', 'a ']
+
+
+  it "_a.rindex", ->
+    arr = [ "a", "b", "b", "b", "c" ]
+    expect( _a.rindex(arr, "b")             ).toEqual 3
+    expect( _a.rindex(arr, "z")             ).toEqual null
+    expect( _a.rindex(arr, (x) -> x == "b") ).toEqual 3
