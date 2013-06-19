@@ -877,16 +877,40 @@ class NumericMethods
   cmp: (num, other) ->
     if num is other then 0 else null
 
-
+  # Returns the absolute value of num.
+  #
+  # @example
+  #     _n.abs(12)          #=> 12
+  #     _n.abs(-34.56)      #=> 34.56
+  #
+  # @return [Numeric]
+  #
   abs: (num) ->
     if num < 0 then (- num) else num
 
-
+  # Returns square of num.
+  #
+  # @example
+  #     _n.abs2(2)          #=> 4
+  #     _n.abs2(-4)         #=> 16
+  #
+  # @return [Numeric]
+  #
   abs2: (num) ->
-    return num if @nan(num)
+    return num if @nan?(num)
     Math.pow(num, 2)
 
-
+  # Returns the smallest Integer greater than or equal to num. Class Numeric achieves this by converting itself to
+  # a Float then invoking Float#ceil.
+  #
+  # @example
+  #     _n.ceil(1)      #=> 1
+  #     _n.ceil(1.2)    #=> 2
+  #     _n.ceil(-1.2)   #=> -1
+  #     _n.ceil(-1)     #=> -1
+  #
+  # @return [Fixnum]
+  #
   ceil: (num) ->
     Math.ceil(num)
 

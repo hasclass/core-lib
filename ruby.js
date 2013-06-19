@@ -975,7 +975,7 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     NumericMethods.prototype.abs2 = function(num) {
-      if (this.nan(num)) {
+      if (typeof this.nan === "function" ? this.nan(num) : void 0) {
         return num;
       }
       return Math.pow(num, 2);
