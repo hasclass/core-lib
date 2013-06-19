@@ -1,6 +1,11 @@
 
 class ArrayMethods extends EnumerableMethods
-
+  # Checks if arrays have the same elements.
+  #
+  # @example
+  #   _a.equals([1,2], [1,2])         // => true
+  #   _a.equals([1,2,[3]], [1,2,[3]]) // => true
+  #
   equals: (arr, other) ->
     return true  if arr is other
     return false unless other?
@@ -967,6 +972,19 @@ class ArrayMethods extends EnumerableMethods
 
 
 
+  # Returns an array containing the elements in self corresponding to the
+  # given selector(s). The selectors may be either integer indices or ranges.
+  # See also Array#select.
+  #
+  # @example
+  #     arr = ['a', 'b', 'c', 'd', 'e', 'f']
+  #     _a.values_at(arr, 1, 3, 5)        // => ['b', 'd', 'f']
+  #     _a.values_at(arr, 1, 3, 5, 7)     // => ['b', 'd', 'f', null]
+  #     _a.values_at(arr, -1, -3, -5, -7) // => ['f', 'd', 'b', null]
+  #     // _a.values_at(arr, _r(1,3), _r(2,5, false))
+  #
+  # @todo not working with ranges
+  #
   values_at: (arr) ->
     len = arguments.length
     ary = new Array(len - 1)
@@ -1011,7 +1029,7 @@ class ArrayMethods extends EnumerableMethods
 
     ary
 
-
+  # @alias #first
   take: @prototype.first
 
 
