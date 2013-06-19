@@ -874,11 +874,15 @@ http://www.rubyjs.org/LICENSE.txt
           }
         }
       } else {
-        a = R(a);
-        if (a.cmp == null) {
-          throw 'NoMethodError';
+        if (__isArr(a)) {
+          return _arr.cmp(a, b);
+        } else {
+          a = R(a);
+          if (a.cmp == null) {
+            throw 'NoMethodError';
+          }
+          return a.cmp(b);
         }
-        return a.cmp(b);
       }
     },
     cmpstrict: function(a, b) {
@@ -1948,18 +1952,45 @@ http://www.rubyjs.org/LICENSE.txt
       return arr;
     };
 
-    ArrayMethods.prototype['&'] = function(other) {
-      var arr;
-      arr = [];
+    ArrayMethods.prototype.intersection = function(arr, other) {
+      var out;
+      other = __arr(other);
+      out = [];
       _arr.each(arr, function(el) {
         if (_arr.include(other, el)) {
-          return arr.push(el);
+          return out.push(el);
         }
       });
-      return _arr.uniq(arr);
+      return _arr.uniq(out);
     };
 
-    ArrayMethods.prototype.cmp = function(other) {};
+    ArrayMethods.prototype.cmp = function(arr, other) {
+      var diff, e, i, len, other_total, total;
+      if (other == null) {
+        return null;
+      }
+      try {
+        other = __arr(other);
+      } catch (_error) {
+        e = _error;
+        return null;
+      }
+      if (_arr.equals(arr, other)) {
+        return 0;
+      }
+      len = arr.length;
+      other_total = other.length;
+      i = 0;
+      total = other_total < len ? other_total : len;
+      while (total > i) {
+        diff = __cmp(arr[i], other[i]);
+        if (diff !== 0) {
+          return diff;
+        }
+        i += 1;
+      }
+      return __cmp(len, other_total);
+    };
 
     ArrayMethods.prototype.at = function(arr, index) {
       if (index < 0) {
@@ -3418,20 +3449,15 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     StringMethods.prototype.swapcase = function(str) {
-      var c, chars, i, _j, _len1;
       if (!str.match(/[a-zA-Z]/)) {
         return str;
       }
-      chars = str.split('');
-      for (i = _j = 0, _len1 = chars.length; _j < _len1; i = ++_j) {
-        c = chars[i];
-        if (c.match(/[a-z]/)) {
-          chars[i] = c.toUpperCase();
-        } else if (c.match(/[A-Z]/)) {
-          chars[i] = c.toLowerCase();
-        }
-      }
-      return chars.join('');
+      return str.replace(/[a-zA-Z]/g, function(ch) {
+        var code, swap;
+        code = ch.charCodeAt(0);
+        swap = code < 97 ? code | 32 : code & ~32;
+        return String.fromCharCode(swap);
+      });
     };
 
     StringMethods.prototype.to_i = function(str, base) {
@@ -5164,42 +5190,11 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     Array.prototype['&'] = function(other) {
-      var arr;
-      other = RCoerce.to_ary(other);
-      arr = new R.Array([]);
-      this.each(function(el) {
-        if (other.include(el)) {
-          return arr.push(el);
-        }
-      });
-      return arr.uniq();
+      return new RArray(_arr.intersection(this.__native__, other));
     };
 
     Array.prototype.cmp = function(other) {
-      var diff, e, i, other_total, total;
-      if (other == null) {
-        return null;
-      }
-      try {
-        other = RCoerce.to_ary(other);
-      } catch (_error) {
-        e = _error;
-        return null;
-      }
-      if (this.equals(other)) {
-        return 0;
-      }
-      other_total = other.size();
-      i = 0;
-      total = other_total.lt(this.size()) ? other_total : this.size();
-      while (total.gt(i)) {
-        diff = R(this.__native__[i]).cmp(other.__native__[i]);
-        if (diff !== 0) {
-          return diff;
-        }
-        i += 1;
-      }
-      return this.size().cmp(other_total);
+      return _arr.cmp(this.__native__, other);
     };
 
     Array.prototype.at = function(index) {
