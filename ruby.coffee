@@ -1719,7 +1719,12 @@ _itr = R._itr = new EnumerableMethods()
 
 
 class ArrayMethods extends EnumerableMethods
-
+  # Checks if arrays have the same elements.
+  #
+  # @example
+  #   _a.equals([1,2], [1,2])         // => true
+  #   _a.equals([1,2,[3]], [1,2,[3]]) // => true
+  #
   equals: (arr, other) ->
     return true  if arr is other
     return false unless other?
@@ -2686,6 +2691,19 @@ class ArrayMethods extends EnumerableMethods
 
 
 
+  # Returns an array containing the elements in self corresponding to the
+  # given selector(s). The selectors may be either integer indices or ranges.
+  # See also Array#select.
+  #
+  # @example
+  #     arr = ['a', 'b', 'c', 'd', 'e', 'f']
+  #     _a.values_at(arr, 1, 3, 5)        // => ['b', 'd', 'f']
+  #     _a.values_at(arr, 1, 3, 5, 7)     // => ['b', 'd', 'f', null]
+  #     _a.values_at(arr, -1, -3, -5, -7) // => ['f', 'd', 'b', null]
+  #     // _a.values_at(arr, _r(1,3), _r(2,5, false))
+  #
+  # @todo not working with ranges
+  #
   values_at: (arr) ->
     len = arguments.length
     ary = new Array(len - 1)
@@ -2730,7 +2748,7 @@ class ArrayMethods extends EnumerableMethods
 
     ary
 
-
+  # @alias #first
   take: @prototype.first
 
 
@@ -2754,6 +2772,22 @@ class StringMethods
     str   = str.valueOf()   if typeof str is 'object'
     other = other.valueOf() if typeof other is 'object'
     str is other
+
+
+  # Converts str to camelCase.
+  #
+  # @example
+  #   _s.camelCase('foo-bar')      // => ('fooBar')
+  #   _s.camelCase('foo-bar-baz')  // => ('fooBarBaz')
+  #   _s.camelCase('foo:bar_baz')  // => ('fooBarBaz')
+  #   _s.camelCase('')             // => ('')
+  #   _s.camelCase('foo')          // => ('foo')
+  #   _s.camelCase('fooBar')       // => ('fooBar')
+  #
+  camel_case: (str) ->
+    str.replace /([\:\-\_]+(.))/g, (_1, _2, letter, offset) ->
+      if offset then letter.toUpperCase() else letter
+
 
 
   capitalize: (str) ->

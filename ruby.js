@@ -2736,6 +2736,16 @@ http://www.rubyjs.org/LICENSE.txt
       return str === other;
     };
 
+    StringMethods.prototype.camel_case = function(str) {
+      return str.replace(/([\:\-\_]+(.))/g, function(_1, _2, letter, offset) {
+        if (offset) {
+          return letter.toUpperCase();
+        } else {
+          return letter;
+        }
+      });
+    };
+
     StringMethods.prototype.capitalize = function(str) {
       var a, b;
       if (str.length === 0) {
