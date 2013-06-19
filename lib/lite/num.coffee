@@ -5,15 +5,56 @@ class NumericMethods
     if num is other then 0 else null
 
 
+  # Returns true if num is NaN.
+  #
+  # @example
+  #   _n.nan(2)            #=> false
+  #   _n.nan('test')       #=> true
+  #   _n.nan(true)         #=> false
+  #   _n.nan(NaN)          #=> true
+  #
+  # @return [Boolean]
+  #
+  nan: (num) ->
+    isNaN(num)
+
+
+  # Returns the absolute value of num.
+  #
+  # @example
+  #   _n.abs(12)          #=> 12
+  #   _n.abs(-34.56)      #=> 34.56
+  #
+  # @return [Number]
+  #
   abs: (num) ->
     if num < 0 then (- num) else num
 
 
+  # Returns square of num.
+  #
+  # @example
+  #   _n.abs2(2)          #=> 4
+  #   _n.abs2(-4)         #=> 16
+  #
+  # @return [Number]
+  #
   abs2: (num) ->
-    return num if @nan(num)
+    return num if _num.nan(num)
     Math.pow(num, 2)
 
 
+  # Returns the smallest Integer greater than or equal to num. Class Numeric achieves this by converting itself to
+  # a Float then invoking Float#ceil.
+  #
+  # @example
+  #   _n.ceil(1)      #=> 1
+  #   _n.ceil(1.2)    #=> 2
+  #   _n.ceil(-1.2)   #=> -1
+  #   _n.ceil(-1)     #=> -1
+  #
+  # @return [Number]
+  #
   ceil: (num) ->
     Math.ceil(num)
 
