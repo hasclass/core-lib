@@ -896,6 +896,12 @@ class ArrayMethods extends EnumerableMethods
       arr.slice(idx, length + idx)
 
 
+  # Assumes that self is an array of arrays and transposes the rows and columns.
+  #
+  # @example
+  #   arr = [[1,2], [3,4], [5,6]]
+  #   _a.transpose(arr)  // => [[1, 3, 5], [2, 4, 6]]
+  #
   transpose: (arr) ->
     return [] if arr.length == 0
 
@@ -921,6 +927,18 @@ class ArrayMethods extends EnumerableMethods
     out
 
 
+  # Returns a new array by removing duplicate values in self.
+  #
+  # @example
+  #   arr = [ "a", "a", "b", "b", "c" ]
+  #   _a.uniq(arr)      // => ["a", "b", "c"]
+  #   // Not yet implemented:
+  #   c = [ "a:def", "a:xyz", "b:abc", "b:xyz", "c:jkl" ]
+  #   _a.uniq(c, function(s) { return s[/^\w+/] })
+  #   // => [ "a:def", "b:abc", "c:jkl" ]
+  #
+  # @note Not yet correctly implemented. should use #eql on objects, but uses @include().
+  #
   uniq: (arr) ->
     idx = -1
     len = arr.length
@@ -937,11 +955,13 @@ class ArrayMethods extends EnumerableMethods
     args.concat(arr)
 
 
-  # values_at2: (arr, args...) ->
-  #   for idx in args
-  #   _arr.at(arr, __int(idx)) || null
-
-
+  # Set Union—Returns a new array by joining this array with other_ary,
+  # removing duplicates.
+  #
+  # @example
+  #   _a.union([ "a", "b", "c" ], [ "c", "d", "a" ])
+  #   // => [ "a", "b", "c", "d" ]
+  #
   union: (arr, other) ->
     _arr.uniq(arr.concat(__arr(other)))
 

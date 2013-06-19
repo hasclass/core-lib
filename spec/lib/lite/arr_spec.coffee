@@ -273,3 +273,15 @@ describe "docs", ->
     expect( _a.slice(arr, R.Range.new(5,10))           ).toEqual []
 
 
+  it "_a.transpose", ->
+    arr = [[1,2], [3,4], [5,6]]
+    expect( _a.transpose(arr) ).toEqual [[1, 3, 5], [2, 4, 6]]
+
+
+  it "_a.union", ->
+    expect(
+      _a.union([ "a", "b", "c" ], [ "c", "d", "a" ])
+    ).toEqual [ "a", "b", "c", "d" ]
+
+
+
