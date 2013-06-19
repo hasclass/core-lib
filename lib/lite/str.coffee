@@ -571,20 +571,22 @@ class StringMethods
     false
 
 
+  # Returns a copy of str with uppercase alphabetic characters converted to
+  # lowercase and lowercase characters converted to uppercase. Note: case
+  # conversion is effective only in ASCII region.
+  #
+  # @example
+  #   _s.swapcase("Hello")          // => "hELLO"
+  #   _s.swapcase("cYbEr_PuNk11")   // => "CyBeR_pUnK11"
+  #
   swapcase: (str) ->
     return str unless str.match(/[a-zA-Z]/)
 
-    chars = str.split('')
-    # TODO optimize using charCodeAt
-    for c,i in chars
-      # TODO: optimize using new String(c) to avoid shadow wrappers
-      # c = new String(c)
-      if c.match(/[a-z]/)
-        chars[i] = c.toUpperCase()
-      else if c.match(/[A-Z]/)
-        chars[i] = c.toLowerCase()
+    str.replace /[a-zA-Z]/g, (ch) ->
+      code = ch.charCodeAt(0)
+      swap = if code < 97 then (code | 32) else (code & ~32)
+      String.fromCharCode(swap)
 
-    chars.join('')
 
 
   to_i: (str, base) ->

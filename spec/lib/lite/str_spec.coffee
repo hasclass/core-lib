@@ -17,3 +17,7 @@ describe "_s", ->
      expect( _s.camel_case('-moz-foo-bar')   ).toEqual('MozFooBar')
      expect( _s.camel_case('-webkit-foo-bar')).toEqual('webkitFooBar')
      expect( _s.camel_case('-webkit-foo-bar')).toEqual('webkitFooBar')
+
+  describe "_s.swap_case", ->
+    expect( _s.swapcase("Hello")        ).toEqual "hELLO"
+    expect( _s.swapcase("cYbEr_PuNk11") ).toEqual "CyBeR_pUnK11"
