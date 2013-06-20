@@ -184,8 +184,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [Boolean]
   #
   nan: ->
-    isNaN(@to_native())
-
+    _num.nan(@__native__)
 
   # As flt is already a float, returns self.
   to_f: -> @dup()
