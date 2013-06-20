@@ -82,17 +82,17 @@ RubyJS is currently implemented in CoffeeScript 1.6.3. It's on the roadmap to mo
 - Run the coffee console loading the rubyjs files:
 
 ``` sh
-/path/to/rubyjs $ coffee -r ./ruby.coffee
-coffee> R('hello world').capitalize()
-"Hello world"
-coffee> R('hello world').capitalize().toNative()
-'Hello world'
+$ node
+> require('./ruby')
+> _s.swapcase("Hello world")
+'hELLO WORLD'
 ```
 
 - Set up development environment:
 
 ``` sh
 $ bundle install
+$ cake build                  # compiles and copies ruby.js it to spec/javascripts/
 $ cake build_tests            # compiles all test files
 $ bundle exec guard           # automatically compile coffeescript
 $ bundle exec rake jasmine    # starts jasmine server
