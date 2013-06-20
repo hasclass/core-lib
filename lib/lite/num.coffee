@@ -111,10 +111,28 @@ class NumericMethods
     num == other
 
 
+  # Returns the largest integer less than or equal to num.
+  #
+  # @example
+  #   _n.floor(1.5)   // => 1
+  #   _n.floor(-1)    // => -1
+  #   _n.floor(-2.5)  // => -3
+  #
+  # @return [Number]
+  #
   floor: (num) ->
     Math.floor(num)
 
 
+  # Returns num if num is not zero, null otherwise. This behavior is useful
+  # when chaining comparisons:
+  #
+  # @example
+  #   _n.nonzero(1)   // => 1
+  #   _n.nonzero(0)   // => null
+  #
+  # @return [Number] or null
+  #
   nonzero: (num) ->
     if num is 0 then null else num
 
@@ -193,6 +211,14 @@ class NumericMethods
 
     num
 
+
+  # Returns true if num has a zero value.
+  #
+  # @example
+  #   _n.zero(0)      // => true
+  #   _n.zero(1)      // => false
+  #
+  # @return [Boolean]
   zero: (num) ->
     num is 0
 
