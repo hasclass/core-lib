@@ -208,6 +208,16 @@ class StringMethods
     this
 
 
+  # Returns a copy of str with all uppercase letters replaced with their
+  # lowercase counterparts. The operation is locale insensitive—only characters
+  # “A” to “Z” are affected. Note: case replacement is effective only in ASCII
+  # region.
+  #
+  # @example
+  #   _s.downcase("hEllO")   // => "hello"
+  #
+  # @note unlike toLowerCase, donwcase doesnt change special characters ä,ö
+  #
   downcase: (str) ->
     return str unless nativeStrMatch.call(str, /[A-Z]/)
 
@@ -229,6 +239,8 @@ class StringMethods
     str.length == 0
 
 
+  # Returns true if str ends with one of the suffixes given.
+  #
   end_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
     for w in needles
@@ -257,10 +269,30 @@ class StringMethods
     str.replace(pattern, replacement)
 
 
+  # Returns true if str contains the given string or character.
+  #
+  # @example
+  #   _s.include("hello", "lo")   // => true
+  #   _s.include("hello", "ol")   // => false
+  #   _s.include("hello", "hh" )  // => true
+  #
   include: (str, other) ->
     str.indexOf(other) >= 0
 
 
+  # Returns the index of the first occurrence of the given substring or pattern
+  # (regexp) in str. Returns nil if not found. If the second parameter is
+  # present, it specifies the position in the string to begin the search.
+  #
+  # @example
+  #   _s.index("hello", 'e')           // => 1
+  #   _s.index("hello", 'lo')          // => 3
+  #   _s.index("hello", 'a')           // => null
+  #   _s.index("hello", 'el')          // => 1
+  #   _s.index("hello", /[aeiou]/, -3) // => 4
+  #
+  # @todo #index(regexp)
+  #
   index: (str, needle, offset) ->
     needle = __str(needle)
 
@@ -650,9 +682,31 @@ class StringMethods
 
 
 
+  # Returns the successor to str. The successor is calculated by incrementing
+  # characters starting from the rightmost alphanumeric (or the rightmost
+  # character if there are no alphanumerics) in the string. Incrementing a
+  # digit always results in another digit, and incrementing a letter results
+  # in another letter of the same case. Incrementing nonalphanumerics uses the
+  # underlying character set’s collating sequence.
+  #
+  # If the increment generates a “carry,” the character to the left of it is
+  # incremented. This process repeats until there is no carry, adding an
+  # additional character if necessary.
+  #
+  # @example
+  #   _s.succ("abcd")        // => "abce"
+  #   _s.succ("THX1138")     // => "THX1139"
+  #   _s.succ("<<koala>>")   // => "<<koalb>>"
+  #   _s.succ("1999zzz")     // => "2000aaa"
+  #   _s.succ("ZZZ9999")     // => "AAAA0000"
+  #   _s.succ("***")         // => "**+"
+  #
+  # @alias #next
+  #
   succ: (str) ->
     return '' if str.length == 0
 
+    # OPTIMIZE: use a while loop or so
     codes      = (c.charCodeAt(0) for c in str.split(""))
     carry      = null               # for "z".succ => "aa", carry is 'a'
     last_alnum = 0                  # last alpha numeric

@@ -70,6 +70,8 @@ describe 'doc-spec', ->
     expect( _s.delete("hello", "ej-m")       ).toEqual "ho"
 
 
+  it '_s.downcase', ->
+    expect( _s.downcase("hEllO") ).toEqual "hello"
 
   it '_s.each_char', ->
     acc = []
@@ -80,6 +82,15 @@ describe 'doc-spec', ->
   it "_s.swap_case", ->
     expect( _s.swapcase("Hello")        ).toEqual "hELLO"
     expect( _s.swapcase("cYbEr_PuNk11") ).toEqual "CyBeR_pUnK11"
+
+
+  it "_s.index", ->
+    expect( _s.index("hello", 'e')           ).toEqual 1
+    expect( _s.index("hello", 'lo')          ).toEqual 3
+    expect( _s.index("hello", 'a')           ).toEqual null
+    expect( _s.index("hello", 'el')          ).toEqual 1
+    # expect( _s.index("hello", /[aeiou]/, -3) ).toEqual 4
+
 
 
   it '_s.insert', ->
@@ -166,3 +177,10 @@ describe 'doc-spec', ->
     expect( _s.start_with("hello", "heaven", "hell")     ).toEqual true
     expect( _s.start_with("hello", "heaven", "paradise") ).toEqual false
 
+  it '_s.start_with', ->
+    expect( _s.succ("abcd")      ).toEqual "abce"
+    expect( _s.succ("THX1138")   ).toEqual "THX1139"
+    expect( _s.succ("<<koala>>") ).toEqual "<<koalb>>"
+    expect( _s.succ("1999zzz")   ).toEqual "2000aaa"
+    expect( _s.succ("ZZZ9999")   ).toEqual "AAAA0000"
+    expect( _s.succ("***")       ).toEqual "**+"
