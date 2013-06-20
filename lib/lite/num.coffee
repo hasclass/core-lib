@@ -8,10 +8,10 @@ class NumericMethods
   # Returns true if num is NaN.
   #
   # @example
-  #   _n.nan(2)              #=> false
-  #   _n.nan('test')         #=> true
-  #   _n.nan(true)           #=> false
-  #   _n.nan(NaN)            #=> true
+  #   _n.nan(2)              // => false
+  #   _n.nan('test')         // => true
+  #   _n.nan(true)           // => false
+  #   _n.nan(NaN)            // => true
   #
   # @return [Boolean]
   #
@@ -22,8 +22,8 @@ class NumericMethods
   # Returns the absolute value of num.
   #
   # @example
-  #   _n.abs(12)             #=> 12
-  #   _n.abs(-34.56)         #=> 34.56
+  #   _n.abs(12)             // => 12
+  #   _n.abs(-34.56)         // => 34.56
   #
   # @return [Number]
   #
@@ -34,8 +34,8 @@ class NumericMethods
   # Returns square of num.
   #
   # @example
-  #   _n.abs2(2)             #=> 4
-  #   _n.abs2(-4)            #=> 16
+  #   _n.abs2(2)             // => 4
+  #   _n.abs2(-4)            // => 16
   #
   # @return [Number]
   #
@@ -48,10 +48,10 @@ class NumericMethods
   # a Float then invoking Float#ceil.
   #
   # @example
-  #   _n.ceil(1)             #=> 1
-  #   _n.ceil(1.2)           #=> 2
-  #   _n.ceil(-1.2)          #=> -1
-  #   _n.ceil(-1)            #=> -1
+  #   _n.ceil(1)             // => 1
+  #   _n.ceil(1.2)           // => 2
+  #   _n.ceil(-1.2)          // => -1
+  #   _n.ceil(-1)            // => -1
   #
   # @return [Number]
   #
@@ -62,9 +62,9 @@ class NumericMethods
   # Returns an array with quotient and modulus as a result of division num by other.
   #
   # @example
-  #   _n.divmod(8, 4)        #=> [2, 0]
-  #   _n.divmod(13, 4)       #=> [3, 1]
-  #   _n.divmod(-8.5, -4)    #=> [2, -0.5]
+  #   _n.divmod(8, 4)        // => [2, 0]
+  #   _n.divmod(13, 4)       // => [3, 1]
+  #   _n.divmod(-8.5, -4)    // => [2, -0.5]
   #
   # @return [Array]
   #
@@ -81,8 +81,8 @@ class NumericMethods
   # @example
   #   var print = function(i) { console.log(i);}
   #
-  #   _n.downto(3, 1, print) #=> 3\n 2\n 1\n 3
-  #   _n.downto(3, 1)        #=> [3, 2, 1]
+  #   _n.downto(3, 1, print) // => 3\n 2\n 1\n 3
+  #   _n.downto(3, 1)        // => [3, 2, 1]
   #
   # @return [Array] or Number
   #
@@ -101,9 +101,9 @@ class NumericMethods
   # Returns true if num and other are the same type (or can be converted to the same type) and have equal values.
   #
   # @example
-  #     _n.eql(1, 1.0)       #=> true
-  #     _n.eql(2, 1)         #=> false
-  #     _n.eql(3.5, 2)       #=> false
+  #     _n.eql(1, 1.0)       // => true
+  #     _n.eql(2, 1)         // => false
+  #     _n.eql(3.5, 2)       // => false
   #
   # @return [Boolean]
   #
@@ -216,9 +216,9 @@ class NumericMethods
   #
   # @example
   #
-  #     _n.gcdlcm(2,  2)                   #=> [2, 2]
-  #     _n.gcdlcm(3, -7)                   #=> [1, 21]
-  #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #     _n.gcdlcm(2,  2)                   // => [2, 2]
+  #     _n.gcdlcm(3, -7)                   // => [1, 21]
+  #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    // => [1, 4951760154835678088235319297]
   #
   # @return [Array<Number, Number>]
   #
@@ -231,9 +231,9 @@ class NumericMethods
   #
   # @example
   #
-  #     _n.lcm(2,  2)                   #=> 2
-  #     _n.lcm(3, -7)                   #=> 21
-  #     _n.lcm((1<<31)-1, (1<<61)-1)    #=> 4951760154835678088235319297
+  #     _n.lcm(2,  2)                   // => 2
+  #     _n.lcm(3, -7)                   // => 21
+  #     _n.lcm((1<<31)-1, (1<<61)-1)    // => 4951760154835678088235319297
   #
   # @return [Number]
   #
@@ -258,7 +258,7 @@ class NumericMethods
 
   # Returns the int itself.
   #
-  #      a.ord    #=> 97
+  #      a.ord    // => 97
   #
   # This method is intended for compatibility to character constant in Ruby
   # 1.9. For example, ?a.ord returns 97 both in 1.8 and 1.9.
