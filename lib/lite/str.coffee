@@ -1,4 +1,5 @@
 class StringMethods
+  # @return [Boolean]
   equals: (str, other) ->
     str   = str.valueOf()   if typeof str   is 'object'
     other = other.valueOf() if typeof other is 'object'
@@ -14,6 +15,8 @@ class StringMethods
   #   _s.camelCase('')             // => ('')
   #   _s.camelCase('foo')          // => ('foo')
   #   _s.camelCase('fooBar')       // => ('fooBar')
+  #
+  # @return [String]
   #
   camel_case: (str) ->
     str.replace /([\:\-\_]+(.))/g, (_1, _2, letter, offset) ->
@@ -31,6 +34,8 @@ class StringMethods
   #   _s.capitalize("123ABC")   // => "123abc"
   #
   # @note Doesn't handle special characters like ä, ö.
+  #
+  # @return [String]
   #
   capitalize: (str) ->
     return "" if str.length == 0
@@ -50,6 +55,8 @@ class StringMethods
   #   _s.center("hello", 4)         // => "hello"
   #   _s.center("hello", 20)        // => "       hello        "
   #   _s.center("hello", 20, '123') // => "1231231hello12312312"
+  #
+  # @return [String]
   #
   center: (str, length, padString = ' ') ->
     _err.throw_argument() if padString.length == 0
@@ -101,6 +108,8 @@ class StringMethods
   #   _s.chomp("hello \n there")   // => "hello \n there"
   #   _s.chomp("hello", "llo")     // => "he"
   #
+  # @return [String]
+  #
   chomp: (str, sep) ->
     sep = "\n" unless sep?
     sep = __str(sep)
@@ -126,6 +135,8 @@ class StringMethods
   #   _s.chop("string")       // => "strin"
   #   _s.chop(_s.chop("x"))   // => ""
   #
+  # @return [String]
+  #
   chop: (str) ->
     return str if str.length == 0
 
@@ -147,9 +158,13 @@ class StringMethods
   #   _s.count(str, "hello", "^l")  // => 4
   #   _s.count(str, "ej-m")         // => 4
   #
+  # @param str [String]
+  # @param needles [String]
   # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
   #
-  count: (str) ->
+  # @return [Number]
+  #
+  count: (str, needle) ->
     _err.throw_argument("String.count needs arguments") if arguments.length == 1
     args = _coerce.split_args(arguments, 1)
 
@@ -167,6 +182,8 @@ class StringMethods
   #   _s.delete("hello", "ej-m")         // => "ho"
   #
   # @todo expect( R("ABCabc[]").delete("A-a") ).toEqual R("bc")
+  #
+  # @return [String]
   #
   'delete': (str) ->
     _err.throw_argument() if arguments.length == 1
@@ -216,7 +233,9 @@ class StringMethods
   # @example
   #   _s.downcase("hEllO")   // => "hello"
   #
-  # @note unlike toLowerCase, donwcase doesnt change special characters ä,ö
+  # @note unlike toLowerCase, downcase doesnt change special characters ä,ö
+  #
+  # @return [String]
   #
   downcase: (str) ->
     return str unless nativeStrMatch.call(str, /[A-Z]/)
@@ -225,6 +244,8 @@ class StringMethods
       String.fromCharCode(ch.charCodeAt(0) | 32)
 
 
+  # @return [String]
+  #
   dump: (str) ->
     escaped =  str.replace(/[\f]/g, '\\f')
       .replace(/["]/g, "\\\"")
@@ -235,11 +256,15 @@ class StringMethods
     "\"#{escaped}\""
 
 
+  # @return [Boolean]
+  #
   empty: (str) ->
     str.length == 0
 
 
   # Returns true if str ends with one of the suffixes given.
+  #
+  # @return [Boolean]
   #
   end_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
@@ -276,6 +301,8 @@ class StringMethods
   #   _s.include("hello", "ol")   // => false
   #   _s.include("hello", "hh" )  // => true
   #
+  # @return [Boolean]
+  #
   include: (str, other) ->
     str.indexOf(other) >= 0
 
@@ -292,6 +319,8 @@ class StringMethods
   #   _s.index("hello", /[aeiou]/, -3) // => 4
   #
   # @todo #index(regexp)
+  #
+  # @return [Number]
   #
   index: (str, needle, offset) ->
     needle = __str(needle)
@@ -327,6 +356,8 @@ class StringMethods
   #   _s.insert("abcd", -3, 'X')   // => "abXcd"
   #   _s.insert("abcd", -1, 'X')   // => "abcdX"
   #
+  # @return [String]
+  #
   insert: (str, idx, other) ->
     if idx < 0
       # On negative count
@@ -349,6 +380,8 @@ class StringMethods
   #   _s.ljust("hello", 20)          // => "hello               "
   #   _s.ljust("hello", 20, '1234')  // => "hello123412341234123"
   #
+  # @return [String]
+  #
   ljust: (str, width, padString = " ") ->
     len = str.length
     if len >= width
@@ -369,6 +402,8 @@ class StringMethods
   # @example
   #   _s.lstrip("  hello  ")  // => "hello  "
   #   _s.lstrip("hello")      // => "hello"
+  #
+  # @return [String]
   #
   lstrip: (str) ->
     str.replace(/^[\s\n\t]+/g, '')
@@ -411,6 +446,8 @@ class StringMethods
   # @example
   #   _s.multiply("Ho! ", 3)   // => "Ho! Ho! Ho! "
   #
+  # @return [String]
+  #
   multiply: (str, num) ->
     _err.throw_argument() if num < 0
     out = ""
@@ -438,6 +475,8 @@ class StringMethods
   # @example
   #   _s.reverse("stressed")   // => "desserts"
   #
+  # @return [String]
+  #
   reverse: (str) ->
     str.split("").reverse().join("")
 
@@ -455,6 +494,8 @@ class StringMethods
   #   _s.rindex("hello", /[aeiou]/, -2)   // => 1
   #
   # @todo #rindex(/.../) does not add matches to R['$~'] as it should
+  #
+  # @return [Number, null]
   #
   rindex: (str, needle, offset) ->
     if offset != undefined
@@ -503,6 +544,8 @@ class StringMethods
   #   _s.rjust("hello", 20)           // => "               hello"
   #   _s.rjust("hello", 20, '1234')   // => "123412341234123hello"
   #
+  # @return [String]
+  #
   rjust: (str, width, pad_str = " ") ->
     width = __int(width)
     len = str.length
@@ -534,6 +577,8 @@ class StringMethods
   # @todo does not yet accept regexp as pattern
   # @todo does not yet affect R['$~']
   #
+  # @return [Array]
+  #
   rpartition: (str, pattern) ->
     pattern = __str(pattern)
 
@@ -556,6 +601,8 @@ class StringMethods
   # @example
   #   _s.rstrip("  hello  ")  // => "  hello"
   #   _s.rstrip("hello")      // => "hello"
+  #
+  # @return [String]
   #
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
@@ -632,6 +679,8 @@ class StringMethods
   #
   # @todo Fix A-a bug
   #
+  # @return [String]
+  #
   squeeze: (str) ->
     pattern = _coerce.split_args(arguments, 1)
 
@@ -659,6 +708,8 @@ class StringMethods
   # @example
   #   _s.strip("    hello    ")   // => "hello"
   #   _s.strip("\tgoodbye\r\n")   // => "goodbye"
+  #
+  # @return [String]
   #
   strip: (str) ->
     # TODO Optimize
@@ -702,6 +753,8 @@ class StringMethods
   #   _s.succ("***")         // => "**+"
   #
   # @alias #next
+  #
+  # @return [String]
   #
   succ: (str) ->
     return '' if str.length == 0
@@ -837,6 +890,8 @@ class StringMethods
   #   _s.start_with("hello", "heaven", "hell")     // => true
   #   _s.start_with("hello", "heaven", "paradise") // => false
   #
+  # @return [Boolean]
+  #
   start_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
 
@@ -858,6 +913,8 @@ class StringMethods
   #   _s.swapcase("Hello")          // => "hELLO"
   #   _s.swapcase("cYbEr_PuNk11")   // => "CyBeR_pUnK11"
   #
+  # @return [String]
+  #
   swapcase: (str) ->
     return str unless str.match(/[a-zA-Z]/)
 
@@ -868,6 +925,8 @@ class StringMethods
 
 
 
+  # @return [Number]
+  #
   to_i: (str, base) ->
     base = 10 if base is undefined
     base = __int(base)
@@ -895,13 +954,26 @@ class StringMethods
     parseInt(lit, base)
 
 
+  # @return [Number]
+  #
   to_f: (str) ->
     number_match  = str.match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
     number_string = number_match?[0] ? "0.0"
     Number(number_string.replace(/_/g, ''))
 
 
-
+  # Returns a copy of str with all lowercase letters replaced with their
+  # uppercase counterparts. The operation is locale insensitive—only
+  # characters “a” to “z” are affected. Note: case replacement is effective
+  # only in ASCII region.
+  #
+  # @example
+  #   _s.upcase("hEllO")   // => "HELLO"
+  #
+  # @note unlike toUpperCase(), upcase doesnt change special characters ä,ö
+  #
+  # @return [String]
+  #
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
 
