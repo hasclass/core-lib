@@ -184,3 +184,20 @@ describe 'doc-spec', ->
     expect( _s.succ("1999zzz")   ).toEqual "2000aaa"
     expect( _s.succ("ZZZ9999")   ).toEqual "AAAA0000"
     expect( _s.succ("***")       ).toEqual "**+"
+
+
+  it '_s.to_i', ->
+    expect( _s.to_i("12345")           ).toEqual 12345
+    expect( _s.to_i("1_23_45")         ).toEqual 12345
+    expect( _s.to_i("99 red balloons") ).toEqual 99
+    expect( _s.to_i("0a")              ).toEqual 0
+    expect( _s.to_i("0a", 16)          ).toEqual 10
+    expect( _s.to_i("hello")           ).toEqual 0
+    expect( _s.to_i("1100101", 2)      ).toEqual 101
+    expect( _s.to_i("1100101", 8)      ).toEqual 294977
+    expect( _s.to_i("1100101", 10)     ).toEqual 1100101
+    expect( _s.to_i("1100101", 16)     ).toEqual 17826049
+    expect( _s.to_i("_12345")          ).toEqual 0
+    # _s.to_i("0b10101").to_i(0)        #=> 21
+    # _s.to_i("0b1010134").to_i(2)      #=> 21
+

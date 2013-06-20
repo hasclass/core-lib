@@ -925,6 +925,32 @@ class StringMethods
 
 
 
+  # Returns the result of interpreting leading characters in str as an integer
+  # base base (between 2 and 36). Extraneous characters past the end of a valid
+  # number are ignored. If there is not a valid number at the start of str, 0 is
+  # returned. This method never raises an exception when base is valid.
+  #
+  # @example
+  #   _s.to_i("12345")           // => 12345
+  #   _s.to_i("1_23_45")         // => 12345
+  #   _s.to_i("99 red balloons") // => 99
+  #   _s.to_i("0a")              // => 0
+  #   _s.to_i("0a", 16)          // => 10
+  #   _s.to_i("hello")           // => 0
+  #   _s.to_i("1100101", 2)      // => 101
+  #   _s.to_i("1100101", 8)      // => 294977
+  #   _s.to_i("1100101", 10)     // => 1100101
+  #   _s.to_i("1100101", 16)     // => 17826049
+  #   // but:
+  #   _s.to_i("_12345")          // => 0
+  #   // TODO:
+  #   _s.to_i("0b10101").to_i(0)        #=> 21
+  #   _s.to_i("0b1010134").to_i(2)      #=> 21
+  #
+  # @todo #to_i(base) does not remove invalid characters:
+  #       - e.g: R("1012").to_i(2) should return 5, but due to 2 being invalid it retunrs 0 now.
+  # @todo #to_i(0) does not auto-detect base
+  #
   # @return [Number]
   #
   to_i: (str, base) ->
@@ -951,7 +977,8 @@ class StringMethods
     #   base_str = if lit[0].match(/[\+\-]/) then lit[1..2] else lit[0..1]
     #   base = R.String.BASE_IDENTIFIER[base_str]
 
-    parseInt(lit, base)
+    int = parseInt(lit, base)
+    if isNaN(int) then 0 else int
 
 
   # @return [Number]
