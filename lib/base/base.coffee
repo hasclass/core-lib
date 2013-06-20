@@ -85,7 +85,7 @@ class RubyJS.Base
               proto[new_name] = callFunctionWithThis(func)
           else
             console.log("#{proto}.#{new_name} exists. skipped.")
-
+    true
 
   i_am_feeling_evil: ->
     @god_mode('', true)
