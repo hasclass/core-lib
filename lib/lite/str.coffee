@@ -1,6 +1,6 @@
 class StringMethods
   equals: (str, other) ->
-    str   = str.valueOf()   if typeof str is 'object'
+    str   = str.valueOf()   if typeof str   is 'object'
     other = other.valueOf() if typeof other is 'object'
     str is other
 
@@ -20,7 +20,18 @@ class StringMethods
       if offset then letter.toUpperCase() else letter
 
 
-
+  # Returns a copy of str with the first character converted to uppercase and
+  # the remainder to lowercase. Note: case conversion is effective only in
+  # ASCII region.
+  #
+  # @example
+  #   _s.capitalize("hello")    // => "Hello"
+  #   _s.capitalize("HELLO")    // => "Hello"
+  #   _s.capitalize("äöü")      // => "äöü"
+  #   _s.capitalize("123ABC")   // => "123abc"
+  #
+  # @note Doesn't handle special characters like ä, ö.
+  #
   capitalize: (str) ->
     return "" if str.length == 0
     b = _str.downcase(str)
@@ -28,6 +39,18 @@ class StringMethods
     a + nativeStrSlice.call(b, 1)
 
 
+  # TODO: casecmp
+
+
+  # If integer is greater than the length of str, returns a new String of
+  # length integer with str centered and padded with padstr; otherwise,
+  # returns str.
+  #
+  # @example
+  #   _s.center("hello", 4)         // => "hello"
+  #   _s.center("hello", 20)        // => "       hello        "
+  #   _s.center("hello", 20, '123') // => "1231231hello12312312"
+  #
   center: (str, length, padString = ' ') ->
     _err.throw_argument() if padString.length == 0
 
@@ -42,6 +65,16 @@ class StringMethods
     padString[0...lft] + str + padString[0...rgt]
 
 
+  # Passes each character in str to the given block, or returns an enumerator if
+  # no block is given.
+  #
+  # @example
+  #     acc = []
+  #     _s.chars("foo", function (c) { acc.push(c + ' ') })
+  #     acc // => ["f ", "o ", "o "]
+  #
+  # @note Does *not* typecast chars to R.Strings.
+  #
   chars: (str, block) ->
     idx = -1
     len = str.length
@@ -50,30 +83,72 @@ class StringMethods
     str
 
 
-  chomp: (str, sep = null) ->
-    if sep == null
-      if _str.empty(str) then "" else null
+  # @alias #chars
+  each_char: @prototype.chars
+
+
+  # Returns a new String with the given record separator removed from the end
+  # of str (if present). If $/ has not been changed from the default Ruby
+  # record separator, then chomp also removes carriage return characters (that
+  # is it will remove \n, \r, and \r\n).
+  #
+  # @example
+  #   _s.chomp("hello")            // => "hello"
+  #   _s.chomp("hello\n")          // => "hello"
+  #   _s.chomp("hello\r\n")        // => "hello"
+  #   _s.chomp("hello\n\r")        // => "hello\n"
+  #   _s.chomp("hello\r")          // => "hello"
+  #   _s.chomp("hello \n there")   // => "hello \n there"
+  #   _s.chomp("hello", "llo")     // => "he"
+  #
+  chomp: (str, sep) ->
+    sep = "\n" unless sep?
+    sep = __str(sep)
+    if sep.length == 0
+      regexp = /((\r\n)|\n)+$/
+    else if sep is "\n" or sep is "\r" or sep is "\r\n"
+      ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+      regexp = new RegExp("(#{_rgx.escape(ending)})$")
     else
-      sep = __str(sep)
-      if sep.length == 0
-        regexp = /((\r\n)|\n)+$/
-      else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{_rgx.escape(ending)})$")
-      else
-        regexp = new RegExp("(#{_rgx.escape(sep)})$")
-      str.replace(regexp, '')
+      regexp = new RegExp("(#{_rgx.escape(sep)})$")
+    str.replace(regexp, '')
 
 
+  # Returns a new String with the last character removed. If the string ends
+  # with \r\n, both characters are removed. Applying chop to an empty string
+  # returns an empty string. String#chomp is often a safer alternative, as it
+  # leaves the string unchanged if it doesn’t end in a record separator.
+  #
+  # @example
+  #   _s.chop("string\r\n")   // => "string"
+  #   _s.chop("string\n\r")   // => "string\n"
+  #   _s.chop("string\n")     // => "string"
+  #   _s.chop("string")       // => "strin"
+  #   _s.chop(_s.chop("x"))   // => ""
+  #
   chop: (str) ->
     return str if str.length == 0
 
     if str.lastIndexOf("\r\n") == str.length - 2
-      str.replace(/\r\n$/, '')
+      str.slice(0, -2)
     else
-      _str.slice str, 0, str.length - 1
+      str.slice(0, -1)
 
 
+  # Each other_str parameter defines a set of characters to count. The
+  # intersection of these sets defines the characters to count in str. Any
+  # other_str that starts with a caret (^) is negated. The sequence c1–c2 means
+  # all characters between c1 and c2.
+  #
+  # @example
+  #   str = "hello world"
+  #   _s.count(str, "lo")           // => 5
+  #   _s.count(str, "lo", "o")      // => 2
+  #   _s.count(str, "hello", "^l")  // => 4
+  #   _s.count(str, "ej-m")         // => 4
+  #
+  # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
+  #
   count: (str) ->
     _err.throw_argument("String.count needs arguments") if arguments.length == 1
     args = _coerce.split_args(arguments, 1)
@@ -81,6 +156,18 @@ class StringMethods
     _str.__matched__(str, args).length
 
 
+  # Returns a copy of str with all characters in the intersection of its
+  # arguments deleted. Uses the same rules for building the set of characters as
+  # String#count.
+  #
+  # @example
+  #   _s.delete("hello", "l","lo")       // => "heo"
+  #   _s.delete("hello", "lo")           // => "he"
+  #   _s.delete("hello", "aeiou", "^e")  // => "hell"
+  #   _s.delete("hello", "ej-m")         // => "ho"
+  #
+  # @todo expect( R("ABCabc[]").delete("A-a") ).toEqual R("bc")
+  #
   'delete': (str) ->
     _err.throw_argument() if arguments.length == 1
     args  = _coerce.split_args(arguments, 1)

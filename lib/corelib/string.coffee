@@ -260,6 +260,7 @@ class RubyJS.String extends RubyJS.Object
 
     new RString(_str.center(@__native__, length, padString))
 
+
   # Passes each character in str to the given block, or returns an enumerator if
   # no block is given.
   #
@@ -289,7 +290,7 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello \n there").chomp()   # => "hello \n there"
   #     R("hello").chomp("llo")       # => "he"
   #
-  chomp: (sep = null) ->
+  chomp: (sep) ->
     if sep is null
       this
     else
