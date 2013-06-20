@@ -45,3 +45,20 @@ describe "_n.ceil", ->
     expect( _n.ceil(1)    ).toEqual 1
     expect( _n.ceil(1.55) ).toEqual 2
     expect( _n.ceil(-5.1) ).toEqual -5
+
+describe "_n.divmod", ->
+  it "returns array with two numbers when passed two numbers as arguments", ->
+    expect( _n.divmod(8,4)      ).toEqual [2, 0]
+    expect( _n.divmod(13, 4)    ).toEqual [3, 1]
+    expect( _n.divmod(-8.5, -4) ).toEqual [2, -0.5]
+
+describe "_n.eql", ->
+  it "returns true when passed arguments are the same type (or can be converted)
+        and have equal values", ->
+    expect( _n.eql(1.0, 1)  ).toBeTrue
+    expect( _n.eql(2, 2)    ).toBeTrue
+
+  it "returns false when passed arguments cannot be converted to the same type
+        or their values are not equal", ->
+    expect( _n.eql(8,4)     ).toBeFalse
+    expect( _n.eql(1, 'a')  ).toBeFalse

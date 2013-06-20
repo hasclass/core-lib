@@ -8,10 +8,10 @@ class NumericMethods
   # Returns true if num is NaN.
   #
   # @example
-  #   _n.nan(2)            #=> false
-  #   _n.nan('test')       #=> true
-  #   _n.nan(true)         #=> false
-  #   _n.nan(NaN)          #=> true
+  #   _n.nan(2)              #=> false
+  #   _n.nan('test')         #=> true
+  #   _n.nan(true)           #=> false
+  #   _n.nan(NaN)            #=> true
   #
   # @return [Boolean]
   #
@@ -22,8 +22,8 @@ class NumericMethods
   # Returns the absolute value of num.
   #
   # @example
-  #   _n.abs(12)          #=> 12
-  #   _n.abs(-34.56)      #=> 34.56
+  #   _n.abs(12)             #=> 12
+  #   _n.abs(-34.56)         #=> 34.56
   #
   # @return [Number]
   #
@@ -34,8 +34,8 @@ class NumericMethods
   # Returns square of num.
   #
   # @example
-  #   _n.abs2(2)          #=> 4
-  #   _n.abs2(-4)         #=> 16
+  #   _n.abs2(2)             #=> 4
+  #   _n.abs2(-4)            #=> 16
   #
   # @return [Number]
   #
@@ -48,10 +48,10 @@ class NumericMethods
   # a Float then invoking Float#ceil.
   #
   # @example
-  #   _n.ceil(1)      #=> 1
-  #   _n.ceil(1.2)    #=> 2
-  #   _n.ceil(-1.2)   #=> -1
-  #   _n.ceil(-1)     #=> -1
+  #   _n.ceil(1)             #=> 1
+  #   _n.ceil(1.2)           #=> 2
+  #   _n.ceil(-1.2)          #=> -1
+  #   _n.ceil(-1)            #=> -1
   #
   # @return [Number]
   #
@@ -59,6 +59,15 @@ class NumericMethods
     Math.ceil(num)
 
 
+  # Returns an array with quotient and modulus as a result of division num by other.
+  #
+  # @example
+  #   _n.divmod(8, 4)        #=> [2, 0]
+  #   _n.divmod(13, 4)       #=> [3, 1]
+  #   _n.divmod(-8.5, -4)    #=> [2, -0.5]
+  #
+  # @return [Array]
+  #
   divmod: (num, other) ->
     quotient = Math.floor(num / other)
     modulus  = num % other
@@ -66,6 +75,17 @@ class NumericMethods
     [quotient, modulus]
 
 
+  # Returns array when passed no block.
+  # When passed a block, iterates block by passing decreasing values from num to stop (inclusive).
+  #
+  # @example
+  #   var print = function(i) { console.log(i);}
+  #
+  #   _n.downto(3, 1, print) #=> 3\n 2\n 1\n 3
+  #   _n.downto(3, 1)        #=> [3, 2, 1]
+  #
+  # @return [Array] or Number
+  #
   downto: (num, stop, block) ->
     return __enumerate(_num.downto, [num, stop]) unless block?.call?
     stop = Math.ceil(stop)
@@ -78,6 +98,15 @@ class NumericMethods
     num
 
 
+  # Returns true if num and other are the same type (or can be converted to the same type) and have equal values.
+  #
+  # @example
+  #     _n.eql(1, 1.0)       #=> true
+  #     _n.eql(2, 1)         #=> false
+  #     _n.eql(3.5, 2)       #=> false
+  #
+  # @return [Boolean]
+  #
   eql: (num, other) ->
     num == other
 
