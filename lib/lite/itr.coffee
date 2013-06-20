@@ -1,4 +1,16 @@
-# Module
+# EnumerableMethods work with Array, Hash/Objects and every object that
+# implements a #each method.
+#
+# EnumerableMethods are included in ArrayMethods and HashMethods.
+#
+# @example
+#   _e.each([1], function(key) { _puts(key)} )    // > 1
+#   _e.each({a: 1}, function(key,val) { _puts(key+val)} ) // > 'a1'
+#   _e.each("g", function(key,val) { _puts(key+val)} )    // > '0g'
+#   _e.each([1], _puts )    // > 1
+#   // works with arguments as well
+#   function foo() { _e.each(arguments, ... )}
+#
 class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
 
@@ -582,3 +594,4 @@ class SortedElement
 
 
 _itr = R._itr = new EnumerableMethods()
+_enum = R._enum = _itr

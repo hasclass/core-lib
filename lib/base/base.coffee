@@ -50,6 +50,7 @@ class RubyJS.Base
       _num:  'n'
       _str:  's'
       _itr:  'i'
+      _enum: 'e'
       _hsh:  'h'
       _time: 't'
 
