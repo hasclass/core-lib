@@ -2816,29 +2816,23 @@ http://www.rubyjs.org/LICENSE.txt
       return str;
     };
 
+    StringMethods.prototype.each_char = StringMethods.prototype.chars;
+
     StringMethods.prototype.chomp = function(str, sep) {
       var ending, regexp, _ref2;
       if (sep == null) {
-        sep = null;
+        sep = "\n";
       }
-      if (sep === null) {
-        if (_str.empty(str)) {
-          return "";
-        } else {
-          return null;
-        }
+      sep = __str(sep);
+      if (sep.length === 0) {
+        regexp = /((\r\n)|\n)+$/;
+      } else if (sep === "\n" || sep === "\r" || sep === "\r\n") {
+        ending = ((_ref2 = str.match(/((\r\n)|\n|\r)$/)) != null ? _ref2[0] : void 0) || "\n";
+        regexp = new RegExp("(" + (_rgx.escape(ending)) + ")$");
       } else {
-        sep = __str(sep);
-        if (sep.length === 0) {
-          regexp = /((\r\n)|\n)+$/;
-        } else if (sep === "\n" || sep === "\r" || sep === "\r\n") {
-          ending = ((_ref2 = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)) != null ? _ref2[0] : void 0) || "\n";
-          regexp = new RegExp("(" + (_rgx.escape(ending)) + ")$");
-        } else {
-          regexp = new RegExp("(" + (_rgx.escape(sep)) + ")$");
-        }
-        return str.replace(regexp, '');
+        regexp = new RegExp("(" + (_rgx.escape(sep)) + ")$");
       }
+      return str.replace(regexp, '');
     };
 
     StringMethods.prototype.chop = function(str) {
@@ -2846,9 +2840,9 @@ http://www.rubyjs.org/LICENSE.txt
         return str;
       }
       if (str.lastIndexOf("\r\n") === str.length - 2) {
-        return str.replace(/\r\n$/, '');
+        return str.slice(0, -2);
       } else {
-        return _str.slice(str, 0, str.length - 1);
+        return str.slice(0, -1);
       }
     };
 
@@ -2985,18 +2979,16 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     StringMethods.prototype.insert = function(str, idx, other) {
-      var after, before, chrs, insert;
+      var after, before;
       if (idx < 0) {
         idx = str.length - Math.abs(idx) + 1;
       }
       if (idx < 0 || idx > str.length) {
         _err.throw_index();
       }
-      chrs = str.split("");
-      before = chrs.slice(0, idx);
-      insert = other.split("");
-      after = chrs.slice(idx);
-      return before.concat(insert).concat(after).join('');
+      before = str.slice(0, idx);
+      after = str.slice(idx);
+      return before + other + after;
     };
 
     StringMethods.prototype.ljust = function(str, width, padString) {
@@ -3061,12 +3053,13 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     StringMethods.prototype.multiply = function(str, num) {
-      var n, out, _j;
+      var n, out;
       if (num < 0) {
         _err.throw_argument();
       }
       out = "";
-      for (n = _j = 0; 0 <= num ? _j < num : _j > num; n = 0 <= num ? ++_j : --_j) {
+      n = 0;
+      while (++n <= num) {
         out += str;
       }
       return out;
@@ -6623,9 +6616,6 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     String.prototype.chomp = function(sep) {
-      if (sep == null) {
-        sep = null;
-      }
       if (sep === null) {
         return this;
       } else {

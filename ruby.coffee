@@ -792,6 +792,16 @@ _coerce =
     ary
 
 
+  # Use call_with when you want to delegate a method call to a functional one
+  # when the original method has flexible length of arguments.
+  #
+  # @example
+  #   class RString
+  #     #   new RString("foo").count('o')
+  #     #   new RString("foo").count('o', 'of')
+  #     count: () ->
+  #       __call( _str.count, @__native__, arguments)
+  #
   call_with: (func, thisArg, args) ->
     a = args
     switch args.length
@@ -2827,7 +2837,7 @@ R.extend(_arr, new ArrayMethods())
 
 class StringMethods
   equals: (str, other) ->
-    str   = str.valueOf()   if typeof str is 'object'
+    str   = str.valueOf()   if typeof str   is 'object'
     other = other.valueOf() if typeof other is 'object'
     str is other
 
@@ -2847,7 +2857,18 @@ class StringMethods
       if offset then letter.toUpperCase() else letter
 
 
-
+  # Returns a copy of str with the first character converted to uppercase and
+  # the remainder to lowercase. Note: case conversion is effective only in
+  # ASCII region.
+  #
+  # @example
+  #   _s.capitalize("hello")    // => "Hello"
+  #   _s.capitalize("HELLO")    // => "Hello"
+  #   _s.capitalize("äöü")      // => "äöü"
+  #   _s.capitalize("123ABC")   // => "123abc"
+  #
+  # @note Doesn't handle special characters like ä, ö.
+  #
   capitalize: (str) ->
     return "" if str.length == 0
     b = _str.downcase(str)
@@ -2855,6 +2876,18 @@ class StringMethods
     a + nativeStrSlice.call(b, 1)
 
 
+  # TODO: casecmp
+
+
+  # If integer is greater than the length of str, returns a new String of
+  # length integer with str centered and padded with padstr; otherwise,
+  # returns str.
+  #
+  # @example
+  #   _s.center("hello", 4)         // => "hello"
+  #   _s.center("hello", 20)        // => "       hello        "
+  #   _s.center("hello", 20, '123') // => "1231231hello12312312"
+  #
   center: (str, length, padString = ' ') ->
     _err.throw_argument() if padString.length == 0
 
@@ -2869,6 +2902,16 @@ class StringMethods
     padString[0...lft] + str + padString[0...rgt]
 
 
+  # Passes each character in str to the given block, or returns an enumerator if
+  # no block is given.
+  #
+  # @example
+  #     acc = []
+  #     _s.chars("foo", function (c) { acc.push(c + ' ') })
+  #     acc // => ["f ", "o ", "o "]
+  #
+  # @note Does *not* typecast chars to R.Strings.
+  #
   chars: (str, block) ->
     idx = -1
     len = str.length
@@ -2877,30 +2920,72 @@ class StringMethods
     str
 
 
-  chomp: (str, sep = null) ->
-    if sep == null
-      if _str.empty(str) then "" else null
+  # @alias #chars
+  each_char: @prototype.chars
+
+
+  # Returns a new String with the given record separator removed from the end
+  # of str (if present). If $/ has not been changed from the default Ruby
+  # record separator, then chomp also removes carriage return characters (that
+  # is it will remove \n, \r, and \r\n).
+  #
+  # @example
+  #   _s.chomp("hello")            // => "hello"
+  #   _s.chomp("hello\n")          // => "hello"
+  #   _s.chomp("hello\r\n")        // => "hello"
+  #   _s.chomp("hello\n\r")        // => "hello\n"
+  #   _s.chomp("hello\r")          // => "hello"
+  #   _s.chomp("hello \n there")   // => "hello \n there"
+  #   _s.chomp("hello", "llo")     // => "he"
+  #
+  chomp: (str, sep) ->
+    sep = "\n" unless sep?
+    sep = __str(sep)
+    if sep.length == 0
+      regexp = /((\r\n)|\n)+$/
+    else if sep is "\n" or sep is "\r" or sep is "\r\n"
+      ending = str.match(/((\r\n)|\n|\r)$/)?[0] || "\n"
+      regexp = new RegExp("(#{_rgx.escape(ending)})$")
     else
-      sep = __str(sep)
-      if sep.length == 0
-        regexp = /((\r\n)|\n)+$/
-      else if sep is "\n" or sep is "\r" or sep is "\r\n"
-        ending = nativeStrMatch.call(str, /((\r\n)|\n|\r)$/)?[0] || "\n"
-        regexp = new RegExp("(#{_rgx.escape(ending)})$")
-      else
-        regexp = new RegExp("(#{_rgx.escape(sep)})$")
-      str.replace(regexp, '')
+      regexp = new RegExp("(#{_rgx.escape(sep)})$")
+    str.replace(regexp, '')
 
 
+  # Returns a new String with the last character removed. If the string ends
+  # with \r\n, both characters are removed. Applying chop to an empty string
+  # returns an empty string. String#chomp is often a safer alternative, as it
+  # leaves the string unchanged if it doesn’t end in a record separator.
+  #
+  # @example
+  #   _s.chop("string\r\n")   // => "string"
+  #   _s.chop("string\n\r")   // => "string\n"
+  #   _s.chop("string\n")     // => "string"
+  #   _s.chop("string")       // => "strin"
+  #   _s.chop(_s.chop("x"))   // => ""
+  #
   chop: (str) ->
     return str if str.length == 0
 
     if str.lastIndexOf("\r\n") == str.length - 2
-      str.replace(/\r\n$/, '')
+      str.slice(0, -2)
     else
-      _str.slice str, 0, str.length - 1
+      str.slice(0, -1)
 
 
+  # Each other_str parameter defines a set of characters to count. The
+  # intersection of these sets defines the characters to count in str. Any
+  # other_str that starts with a caret (^) is negated. The sequence c1–c2 means
+  # all characters between c1 and c2.
+  #
+  # @example
+  #   str = "hello world"
+  #   _s.count(str, "lo")           // => 5
+  #   _s.count(str, "lo", "o")      // => 2
+  #   _s.count(str, "hello", "^l")  // => 4
+  #   _s.count(str, "ej-m")         // => 4
+  #
+  # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
+  #
   count: (str) ->
     _err.throw_argument("String.count needs arguments") if arguments.length == 1
     args = _coerce.split_args(arguments, 1)
@@ -2908,6 +2993,18 @@ class StringMethods
     _str.__matched__(str, args).length
 
 
+  # Returns a copy of str with all characters in the intersection of its
+  # arguments deleted. Uses the same rules for building the set of characters as
+  # String#count.
+  #
+  # @example
+  #   _s.delete("hello", "l","lo")       // => "heo"
+  #   _s.delete("hello", "lo")           // => "he"
+  #   _s.delete("hello", "aeiou", "^e")  // => "hell"
+  #   _s.delete("hello", "ej-m")         // => "ho"
+  #
+  # @todo expect( R("ABCabc[]").delete("A-a") ).toEqual R("bc")
+  #
   'delete': (str) ->
     _err.throw_argument() if arguments.length == 1
     args  = _coerce.split_args(arguments, 1)
@@ -2948,6 +3045,16 @@ class StringMethods
     this
 
 
+  # Returns a copy of str with all uppercase letters replaced with their
+  # lowercase counterparts. The operation is locale insensitive—only characters
+  # “A” to “Z” are affected. Note: case replacement is effective only in ASCII
+  # region.
+  #
+  # @example
+  #   _s.downcase("hEllO")   // => "hello"
+  #
+  # @note unlike toLowerCase, donwcase doesnt change special characters ä,ö
+  #
   downcase: (str) ->
     return str unless nativeStrMatch.call(str, /[A-Z]/)
 
@@ -2969,6 +3076,8 @@ class StringMethods
     str.length == 0
 
 
+  # Returns true if str ends with one of the suffixes given.
+  #
   end_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
     for w in needles
@@ -2997,10 +3106,30 @@ class StringMethods
     str.replace(pattern, replacement)
 
 
+  # Returns true if str contains the given string or character.
+  #
+  # @example
+  #   _s.include("hello", "lo")   // => true
+  #   _s.include("hello", "ol")   // => false
+  #   _s.include("hello", "hh" )  // => true
+  #
   include: (str, other) ->
     str.indexOf(other) >= 0
 
 
+  # Returns the index of the first occurrence of the given substring or pattern
+  # (regexp) in str. Returns nil if not found. If the second parameter is
+  # present, it specifies the position in the string to begin the search.
+  #
+  # @example
+  #   _s.index("hello", 'e')           // => 1
+  #   _s.index("hello", 'lo')          // => 3
+  #   _s.index("hello", 'a')           // => null
+  #   _s.index("hello", 'el')          // => 1
+  #   _s.index("hello", /[aeiou]/, -3) // => 4
+  #
+  # @todo #index(regexp)
+  #
   index: (str, needle, offset) ->
     needle = __str(needle)
 
@@ -3021,6 +3150,20 @@ class StringMethods
       idx
 
 
+  # Inserts other_str before the character at the given index, modifying str.
+  # Negative indices count from the end of the string, and insert after the
+  # given character. The intent is insert aString so that it starts at the
+  # given index.
+  #
+  # @example
+  #   _s.insert("abcd", 0, 'X')    // => "Xabcd"
+  #   _s.insert("abcd", 3, 'X')    // => "abcXd"
+  #   _s.insert("abcd", 4, 'X')    // => "abcdX"
+  #
+  # @example inserts after with negative counts
+  #   _s.insert("abcd", -3, 'X')   // => "abXcd"
+  #   _s.insert("abcd", -1, 'X')   // => "abcdX"
+  #
   insert: (str, idx, other) ->
     if idx < 0
       # On negative count
@@ -3029,15 +3172,20 @@ class StringMethods
     if idx < 0 or idx > str.length
       _err.throw_index()
 
-    chrs = str.split("")
-
-    # TODO: OPTIMIZE!
-    before = chrs[0...idx]
-    insert = other.split("")
-    after  = chrs.slice(idx)
-    before.concat(insert).concat(after).join('')
+    before = str.slice(0, idx)
+    after  = str.slice(idx)
+    before + other + after
 
 
+  # If integer is greater than the length of str, returns a new String of
+  # length integer with str left justified and padded with padstr; otherwise,
+  # returns str.
+  #
+  # @example
+  #   _s.ljust("hello", 4)           // => "hello"
+  #   _s.ljust("hello", 20)          // => "hello               "
+  #   _s.ljust("hello", 20, '1234')  // => "hello123412341234123"
+  #
   ljust: (str, width, padString = " ") ->
     len = str.length
     if len >= width
@@ -3049,9 +3197,16 @@ class StringMethods
       out = ""
       # TODO refactor
       out += padString while ++idx <= pad_length
-      str + out[0...pad_length]
+      str + out.slice(0, pad_length)
 
 
+  # Returns a copy of str with leading whitespace removed. See also
+  # String#rstrip and String#strip.
+  #
+  # @example
+  #   _s.lstrip("  hello  ")  // => "hello  "
+  #   _s.lstrip("hello")      // => "hello"
+  #
   lstrip: (str) ->
     str.replace(/^[\s\n\t]+/g, '')
 
@@ -3088,10 +3243,17 @@ class StringMethods
       result
 
 
+  # Copy—Returns a new String containing integer copies of the receiver.
+  #
+  # @example
+  #   _s.multiply("Ho! ", 3)   // => "Ho! Ho! Ho! "
+  #
   multiply: (str, num) ->
     _err.throw_argument() if num < 0
     out = ""
-    out += str for n in [0...num]
+    n = 0
+    while ++n <= num
+      out += str
     out
 
 
@@ -3108,10 +3270,29 @@ class StringMethods
       [str, '', '']
 
 
+  # Returns a new string with the characters from str in reverse order.
+  #
+  # @example
+  #   _s.reverse("stressed")   // => "desserts"
+  #
   reverse: (str) ->
     str.split("").reverse().join("")
 
 
+
+  # Returns the index of the last occurrence of the given substring or pattern
+  # (regexp) in str. Returns nil if not found. If the second parameter is
+  # present, it specifies the position in the string to end the
+  # search—characters beyond this point will not be considered.
+  #
+  # @example
+  #   _s.rindex("hello", 'e')             // => 1
+  #   _s.rindex("hello", 'l')             // => 3
+  #   _s.rindex("hello", 'a')             // => null
+  #   _s.rindex("hello", /[aeiou]/, -2)   // => 1
+  #
+  # @todo #rindex(/.../) does not add matches to R['$~'] as it should
+  #
   rindex: (str, needle, offset) ->
     if offset != undefined
       offset = offset + str.length if offset < 0
@@ -3150,6 +3331,15 @@ class StringMethods
     idx
 
 
+  # If integer is greater than the length of str, returns a new String of
+  # length integer with str right justified and padded with padstr; otherwise,
+  # returns str.
+  #
+  # @example
+  #   _s.rjust("hello", 4)            // => "hello"
+  #   _s.rjust("hello", 20)           // => "               hello"
+  #   _s.rjust("hello", 20, '1234')   // => "123412341234123hello"
+  #
   rjust: (str, width, pad_str = " ") ->
     width = __int(width)
     len = str.length
@@ -3162,6 +3352,25 @@ class StringMethods
       _str.multiply(pad_str, pad_len)[0...pad_len] + str
 
 
+
+  # Searches sep or pattern (regexp) in the string from the end of the string,
+  # and returns the part before it, the match, and the part after it. If it is
+  # not found, returns two empty strings and str.
+  #
+  # @example
+  #   _s.rpartition("hello", "l")     // => ["hel", "l", "o"]
+  #   _s.rpartition("hello", "x")     // => ["", "", "hello"]
+  #
+  # @example edge cases
+  #   _s.rpartition("hello", "x")     // => ["", "", "hello"]
+  #   _s.rpartition("hello", "hello") // => ["", "hello", ""]
+  #
+  # @example todo:
+  #   _s.rpartition("hello", /.l/)    // => ["he", "ll", "o"]
+  #
+  # @todo does not yet accept regexp as pattern
+  # @todo does not yet affect R['$~']
+  #
   rpartition: (str, pattern) ->
     pattern = __str(pattern)
 
@@ -3178,10 +3387,40 @@ class StringMethods
 
 
 
+  # Returns a copy of str with trailing whitespace removed. See also
+  # String#lstrip and String#strip.
+  #
+  # @example
+  #   _s.rstrip("  hello  ")  // => "  hello"
+  #   _s.rstrip("hello")      // => "hello"
+  #
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
 
 
+  # Both forms iterate through str, matching the pattern (which may be a
+  # Regexp or a String). For each match, a result is generated and either
+  # added to the result array or passed to the block. If the pattern contains
+  # no groups, each individual result consists of the matched string, $&. If
+  # the pattern contains groups, each individual result is itself an array
+  # containing one entry per group.
+  #
+  # @example
+  #     str = "cruel world"
+  #     _s.scan(str, /\w+/)        #=> ["cruel", "world"]
+  #     _s.scan(str, /.../)        #=> ["cru", "el ", "wor"]
+  #     _s.scan(str, /(...)/)      #=> [["cru"], ["el "], ["wor"]]
+  #     _s.scan(str, /(..)(..)/)   #=> [["cr", "ue"], ["l ", "wo"]]
+  #     // And the block form:
+  #     _s.scan(str, /\w+/, function (w) { _puts("<<#{w}>> ") } )
+  #     // > <<cruel>> <<world>>
+  #     // TODO:
+  #     // _s.scan(str, /(.)(.)/, function (x,y) { _puts(y, x)} )
+  #     // > rceu lowlr
+  #
+  #
+  # @todo some untested specs
+  #
   scan: (str, pattern, block = null) ->
     unless __isRgx(pattern)
       pattern = __str(pattern)
@@ -3217,6 +3456,19 @@ class StringMethods
     if block != null then str else match_arr
 
 
+  # Builds a set of characters from the other_str parameter(s) using the
+  # procedure described for String#count. Returns a new string where runs of
+  # the same character that occur in this set are replaced by a single
+  # character. If no arguments are given, all runs of identical characters are
+  # replaced by a single character.
+  #
+  # @example
+  #   _s.squeeze("yellow moon")                 // => "yelow mon"
+  #   _s.squeeze("  now   is  the", " ")        // => " now is the"
+  #   _s.squeeze("putters shoot balls", "m-z")  // => "puters shot balls"
+  #
+  # @todo Fix A-a bug
+  #
   squeeze: (str) ->
     pattern = _coerce.split_args(arguments, 1)
 
@@ -3239,7 +3491,14 @@ class StringMethods
     chars.join('')
 
 
+  # Returns a copy of str with leading and trailing whitespace removed.
+  #
+  # @example
+  #   _s.strip("    hello    ")   // => "hello"
+  #   _s.strip("\tgoodbye\r\n")   // => "goodbye"
+  #
   strip: (str) ->
+    # TODO Optimize
     _str.rstrip(_str.lstrip(str))
 
 
@@ -3260,9 +3519,31 @@ class StringMethods
 
 
 
+  # Returns the successor to str. The successor is calculated by incrementing
+  # characters starting from the rightmost alphanumeric (or the rightmost
+  # character if there are no alphanumerics) in the string. Incrementing a
+  # digit always results in another digit, and incrementing a letter results
+  # in another letter of the same case. Incrementing nonalphanumerics uses the
+  # underlying character set’s collating sequence.
+  #
+  # If the increment generates a “carry,” the character to the left of it is
+  # incremented. This process repeats until there is no carry, adding an
+  # additional character if necessary.
+  #
+  # @example
+  #   _s.succ("abcd")        // => "abce"
+  #   _s.succ("THX1138")     // => "THX1139"
+  #   _s.succ("<<koala>>")   // => "<<koalb>>"
+  #   _s.succ("1999zzz")     // => "2000aaa"
+  #   _s.succ("ZZZ9999")     // => "AAAA0000"
+  #   _s.succ("***")         // => "**+"
+  #
+  # @alias #next
+  #
   succ: (str) ->
     return '' if str.length == 0
 
+    # OPTIMIZE: use a while loop or so
     codes      = (c.charCodeAt(0) for c in str.split(""))
     carry      = null               # for "z".succ => "aa", carry is 'a'
     last_alnum = 0                  # last alpha numeric
@@ -3385,6 +3666,14 @@ class StringMethods
     ary
 
 
+  # Returns true if str starts with one of the prefixes given.
+  #
+  # @example
+  #   _s.start_with("hello", "hell")               // => true
+  #   // returns true if one of the prefixes matches.
+  #   _s.start_with("hello", "heaven", "hell")     // => true
+  #   _s.start_with("hello", "heaven", "paradise") // => false
+  #
   start_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
 
@@ -3476,6 +3765,7 @@ class StringMethods
 
 
 
+  # @private
   __matched__: (str, args) ->
     for el in args
       rgx = _str.__to_regexp__(el)
@@ -3484,6 +3774,7 @@ class StringMethods
 
 
   # creates a regexp from the "a-z", "^ab" arguments used in #count
+  # @private
   __to_regexp__: (str) ->
     r = ""
 
@@ -7646,6 +7937,7 @@ class RubyJS.String extends RubyJS.Object
 
     new RString(_str.center(@__native__, length, padString))
 
+
   # Passes each character in str to the given block, or returns an enumerator if
   # no block is given.
   #
@@ -7675,7 +7967,7 @@ class RubyJS.String extends RubyJS.Object
   #     R("hello \n there").chomp()   # => "hello \n there"
   #     R("hello").chomp("llo")       # => "he"
   #
-  chomp: (sep = null) ->
+  chomp: (sep) ->
     if sep is null
       this
     else
