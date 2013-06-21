@@ -62,3 +62,27 @@ describe "_n.eql", ->
         or their values are not equal", ->
     expect( _n.eql(8,4)     ).toBeFalse
     expect( _n.eql(1, 'a')  ).toBeFalse
+
+describe "_n.floor", ->
+  it "returns the largest integer less than or equal to passed argument", ->
+    expect( _n.floor(2)    ).toEqual 2
+    expect( _n.floor(-1.5) ).toEqual -2
+
+  it "returns NaN if no argument is passed or passed argument is not a Number", ->
+    expect( _n.floor() ).toBeNaN
+    expect( _n.floor('test')).toBeNaN
+
+describe "_n.nonzero", ->
+  it "returns argument if argument is not 0", ->
+    expect( _n.nonzero(2)  ).toEqual 2
+    expect( _n.nonzero(-5) ).toEqual -5
+
+  it 'returns null if argument is 0', ->
+    expect( _n.nonzero(0) ).toEqual null
+
+describe "_n.zero", ->
+  it "returns false if argument is not zero", ->
+    expect( _n.zero(2) ).toBeFalse
+
+  it "returns true if argument is zero", ->
+    expect( _n.zero(0) ).toBeTrue
