@@ -75,7 +75,7 @@ class NumericMethods
     [quotient, modulus]
 
 
-  # Returns array when passed no block.
+  # Returns array from num to stop (inclusive) when passed no block.
   # When passed a block, iterates block by passing decreasing values from num to stop (inclusive).
   #
   # @example
@@ -200,6 +200,17 @@ class NumericMethods
   #   @to_f().truncate()
 
 
+  # Returns array of numbers from num to stop (inclusive) when passed no block.
+  # When passed a block, iterates block by passing increasing values from num to stop (inclusive).
+  #
+  # @example
+  #   var print = function(i) { console.log(i);}
+  #
+  #   _n.upto(1, 3, print) // => 1\n 2\n 3\n 1
+  #   _n.upto(1, 3)        // => [1, 2, 3]
+  #
+  # @return [Array] or Number
+  #
   upto: (num, stop, block) ->
     return __enumerate(_num.upto, [num, stop]) unless block?.call?
     stop = Math.floor(stop)
@@ -219,14 +230,31 @@ class NumericMethods
   #   _n.zero(1)      // => false
   #
   # @return [Boolean]
+  #
   zero: (num) ->
     num is 0
 
 
+  # Returns true if num is even number. Returns false otherwise.
+  #
+  # @example
+  #   _n.even(2)      // => true
+  #   _n.even(3)      // => false
+  #
+  # @return [Boolean]
+  #
   even: (num) ->
     num % 2 == 0
 
 
+  # Returns number that is greatest common divisor of num and other.
+  #
+  # @example
+  #   _n.gcd(4, 2)    // => 2
+  #   _n.gcd(21, 14)  // => 7
+  #
+  # @return [Number]
+  #
   gcd: (num, other) ->
     t = null
     other = __int(other)
