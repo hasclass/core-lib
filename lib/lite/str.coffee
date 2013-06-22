@@ -1069,6 +1069,6 @@ class StringMethods
 
 
 _str = R._str = (str) ->
-  new RWrapper(str, _str)
+  new Chain(str, _str)
 
 R.extend(_str, new StringMethods())

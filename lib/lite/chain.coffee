@@ -1,4 +1,9 @@
-class RWrapper
+# Experimental.
+#
+# Chain objects are a more lightweight oo approach for chaining multiple
+# methods. similar to underscores _.chain(obj).
+#
+class Chain
   constructor: (@value, @type) ->
     @chain = false
 
@@ -7,7 +12,7 @@ class RWrapper
     @value
 
 
-R.Wrapper = RWrapper
+R.Wrapper = Chain
 
 
 lookupFunction = (val, name) ->
@@ -54,5 +59,5 @@ klasses = [
 for klass in klasses
   for own name, fn of klass.prototype
     do (name,fn) ->
-      RWrapper.prototype[name] = dispatchFunction(name)
+      Chain.prototype[name] = dispatchFunction(name)
 

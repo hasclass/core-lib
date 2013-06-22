@@ -1110,7 +1110,7 @@ class ArrayMethods extends EnumerableMethods
 
 
 _arr = R._arr = (arr) ->
-  new RWrapper(arr, _arr)
+  new Chain(arr, _arr)
 
 
 R.extend(_arr, new ArrayMethods())
