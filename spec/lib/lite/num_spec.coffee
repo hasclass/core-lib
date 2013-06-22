@@ -86,3 +86,16 @@ describe "_n.zero", ->
 
   it "returns true if argument is zero", ->
     expect( _n.zero(0) ).toBeTrue
+
+describe "_n.even", ->
+  it "returns true if argument is even number", ->
+    expect( _n.even(4) ).toBeTrue
+
+  it "returns false if argument is not even number", ->
+    expect( _n.even(3) ).toBeFalse
+
+describe "_n.gcd", ->
+  it "returns greatest common divisor as number", ->
+    expect( _n.gcd(4, 2)   ).toEqual 2
+    expect( _n.gcd(11, 2)  ).toEqual 1
+    expect( _n.gcd(21, 14) ).toEqual 7
