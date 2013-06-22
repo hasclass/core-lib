@@ -20,7 +20,7 @@ liteFiles = [
   'lite/rgx'
   'lite/hsh'
   'lite/time'
-  'lite/wrapper'
+  'lite/chain'
 ]
 
 chainFiles = [
