@@ -67,23 +67,18 @@ R.Support =
 #     "foo".capitalize() // => "Foo"
 #
 callFunctionWithThis = (func) ->
-  (a, b, c, d, e, f) ->
-    # Ugly, but fast implementation.
-    idx = arguments.length
-    while idx--
-      break if arguments[idx] isnt undefined
-
-    val = this.valueOf()
-    switch idx + 1
-      when 0 then func(val)
-      when 1 then func(val, a)
-      when 2 then func(val, a, b)
-      when 3 then func(val, a, b, c)
-      when 4 then func(val, a, b, c, d)
-      when 5 then func(val, a, b, c, d, e)
-      when 6 then func(val, a, b, c, d, e, f)
+  () ->
+    a = arguments
+    switch arguments.length
+      when 0 then func(this)
+      when 1 then func(this, a[0])
+      when 2 then func(this, a[0], a[1])
+      when 3 then func(this, a[0], a[1], a[2])
+      when 4 then func(this, a[0], a[1], a[2], a[3])
+      when 5 then func(this, a[0], a[1], a[2], a[3], a[4])
+      when 6 then func(this, a[0], a[1], a[2], a[3], a[4], a[5])
       # Slow fallback when passed more than 6 arguments.
-      else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
+      else func.apply(null, [this].concat(nativeSlice.call(arguments, 0)))
 
 
 # RubyJS specific helper methods
@@ -529,6 +524,7 @@ class RubyJS.Base
       _num:  'n'
       _str:  's'
       _itr:  'i'
+      _enum: 'e'
       _hsh:  'h'
       _time: 't'
 
@@ -545,7 +541,7 @@ class RubyJS.Base
   #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
   #     # =>['oof', 'rab']
   #
-  god_mode: (prefix = 'rb_', overwrite = false) ->
+  god_mode: (prefix = 'rb_') ->
     overwrites = [
       [Array.prototype,  _arr],
       [Number.prototype, _num],
@@ -558,17 +554,13 @@ class RubyJS.Base
         new_name = prefix + name
 
         if typeof func == 'function'
-          if overwrite or proto[new_name] is undefined
+          if proto[new_name] is undefined
             do (new_name, func) ->
               # The following is 100x faster than slicing.
               proto[new_name] = callFunctionWithThis(func)
-          else
+          else if prefix == '' && proto['rb_'+new_name]
             console.log("#{proto}.#{new_name} exists. skipped.")
-
-
-  i_am_feeling_evil: ->
-    @god_mode('', true)
-    "harr harr"
+    true
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
@@ -888,19 +880,69 @@ class NumericMethods
     if num is other then 0 else null
 
 
+  # Returns true if num is NaN.
+  #
+  # @example
+  #   _n.nan(2)              // => false
+  #   _n.nan('test')         // => true
+  #   _n.nan(true)           // => false
+  #   _n.nan(NaN)            // => true
+  #
+  # @return [Boolean]
+  #
+  nan: (num) ->
+    isNaN(num)
+
+
+  # Returns the absolute value of num.
+  #
+  # @example
+  #   _n.abs(12)             // => 12
+  #   _n.abs(-34.56)         // => 34.56
+  #
+  # @return [Number]
+  #
   abs: (num) ->
     if num < 0 then (- num) else num
 
 
+  # Returns square of num.
+  #
+  # @example
+  #   _n.abs2(2)             // => 4
+  #   _n.abs2(-4)            // => 16
+  #
+  # @return [Number]
+  #
   abs2: (num) ->
-    return num if @nan(num)
+    return num if _num.nan(num)
     Math.pow(num, 2)
 
 
+  # Returns the smallest Integer greater than or equal to num. Class Numeric achieves this by converting itself to
+  # a Float then invoking Float#ceil.
+  #
+  # @example
+  #   _n.ceil(1)             // => 1
+  #   _n.ceil(1.2)           // => 2
+  #   _n.ceil(-1.2)          // => -1
+  #   _n.ceil(-1)            // => -1
+  #
+  # @return [Number]
+  #
   ceil: (num) ->
     Math.ceil(num)
 
 
+  # Returns an array with quotient and modulus as a result of division num by other.
+  #
+  # @example
+  #   _n.divmod(8, 4)        // => [2, 0]
+  #   _n.divmod(13, 4)       // => [3, 1]
+  #   _n.divmod(-8.5, -4)    // => [2, -0.5]
+  #
+  # @return [Array]
+  #
   divmod: (num, other) ->
     quotient = Math.floor(num / other)
     modulus  = num % other
@@ -908,6 +950,17 @@ class NumericMethods
     [quotient, modulus]
 
 
+  # Returns array from num to stop (inclusive) when passed no block.
+  # When passed a block, iterates block by passing decreasing values from num to stop (inclusive).
+  #
+  # @example
+  #   var print = function(i) { console.log(i);}
+  #
+  #   _n.downto(3, 1, print) // => 3\n 2\n 1\n 3
+  #   _n.downto(3, 1)        // => [3, 2, 1]
+  #
+  # @return [Array] or Number
+  #
   downto: (num, stop, block) ->
     return __enumerate(_num.downto, [num, stop]) unless block?.call?
     stop = Math.ceil(stop)
@@ -920,14 +973,41 @@ class NumericMethods
     num
 
 
+  # Returns true if num and other are the same type (or can be converted to the same type) and have equal values.
+  #
+  # @example
+  #     _n.eql(1, 1.0)       // => true
+  #     _n.eql(2, 1)         // => false
+  #     _n.eql(3.5, 2)       // => false
+  #
+  # @return [Boolean]
+  #
   eql: (num, other) ->
     num == other
 
 
+  # Returns the largest integer less than or equal to num.
+  #
+  # @example
+  #   _n.floor(1.5)   // => 1
+  #   _n.floor(-1)    // => -1
+  #   _n.floor(-2.5)  // => -3
+  #
+  # @return [Number]
+  #
   floor: (num) ->
     Math.floor(num)
 
 
+  # Returns num if num is not zero, null otherwise. This behavior is useful
+  # when chaining comparisons:
+  #
+  # @example
+  #   _n.nonzero(1)   // => 1
+  #   _n.nonzero(0)   // => null
+  #
+  # @return [Number] or null
+  #
   nonzero: (num) ->
     if num is 0 then null else num
 
@@ -995,6 +1075,17 @@ class NumericMethods
   #   @to_f().truncate()
 
 
+  # Returns array of numbers from num to stop (inclusive) when passed no block.
+  # When passed a block, iterates block by passing increasing values from num to stop (inclusive).
+  #
+  # @example
+  #   var print = function(i) { console.log(i);}
+  #
+  #   _n.upto(1, 3, print) // => 1\n 2\n 3\n 1
+  #   _n.upto(1, 3)        // => [1, 2, 3]
+  #
+  # @return [Array] or Number
+  #
   upto: (num, stop, block) ->
     return __enumerate(_num.upto, [num, stop]) unless block?.call?
     stop = Math.floor(stop)
@@ -1006,14 +1097,39 @@ class NumericMethods
 
     num
 
+
+  # Returns true if num has a zero value.
+  #
+  # @example
+  #   _n.zero(0)      // => true
+  #   _n.zero(1)      // => false
+  #
+  # @return [Boolean]
+  #
   zero: (num) ->
     num is 0
 
 
+  # Returns true if num is even number. Returns false otherwise.
+  #
+  # @example
+  #   _n.even(2)      // => true
+  #   _n.even(3)      // => false
+  #
+  # @return [Boolean]
+  #
   even: (num) ->
     num % 2 == 0
 
 
+  # Returns number that is greatest common divisor of num and other.
+  #
+  # @example
+  #   _n.gcd(4, 2)    // => 2
+  #   _n.gcd(21, 14)  // => 7
+  #
+  # @return [Number]
+  #
   gcd: (num, other) ->
     t = null
     other = __int(other)
@@ -1029,9 +1145,9 @@ class NumericMethods
   #
   # @example
   #
-  #     _n.gcdlcm(2,  2)                   #=> [2, 2]
-  #     _n.gcdlcm(3, -7)                   #=> [1, 21]
-  #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    #=> [1, 4951760154835678088235319297]
+  #     _n.gcdlcm(2,  2)                   // => [2, 2]
+  #     _n.gcdlcm(3, -7)                   // => [1, 21]
+  #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    // => [1, 4951760154835678088235319297]
   #
   # @return [Array<Number, Number>]
   #
@@ -1044,9 +1160,9 @@ class NumericMethods
   #
   # @example
   #
-  #     _n.lcm(2,  2)                   #=> 2
-  #     _n.lcm(3, -7)                   #=> 21
-  #     _n.lcm((1<<31)-1, (1<<61)-1)    #=> 4951760154835678088235319297
+  #     _n.lcm(2,  2)                   // => 2
+  #     _n.lcm(3, -7)                   // => 21
+  #     _n.lcm((1<<31)-1, (1<<61)-1)    // => 4951760154835678088235319297
   #
   # @return [Number]
   #
@@ -1071,7 +1187,7 @@ class NumericMethods
 
   # Returns the int itself.
   #
-  #      a.ord    #=> 97
+  #      a.ord    // => 97
   #
   # This method is intended for compatibility to character constant in Ruby
   # 1.9. For example, ?a.ord returns 97 both in 1.8 and 1.9.
@@ -1145,7 +1261,19 @@ class NumericMethods
 
 _num = R._num = new NumericMethods()
 
-# Module
+# EnumerableMethods work with Array, Hash/Objects and every object that
+# implements a #each method.
+#
+# EnumerableMethods are included in ArrayMethods and HashMethods.
+#
+# @example
+#   _e.each([1], function(key) { _puts(key)} )    // > 1
+#   _e.each({a: 1}, function(key,val) { _puts(key+val)} ) // > 'a1'
+#   _e.each("g", function(key,val) { _puts(key+val)} )    // > '0g'
+#   _e.each([1], _puts )    // > 1
+#   // works with arguments as well
+#   function foo() { _e.each(arguments, ... )}
+#
 class EnumerableMethods
   catch_break: R.Kernel.prototype.catch_break
 
@@ -1729,9 +1857,27 @@ class SortedElement
 
 
 _itr = R._itr = new EnumerableMethods()
+_enum = R._enum = _itr
 
 
 class ArrayMethods extends EnumerableMethods
+  # Checks if arr is an Array or can be coerced to an array
+  # using valueOf()
+  #
+  # @example
+  #   _a.isArray([])     // => true
+  #   _a.isArray({})     // => false
+  #   _a.isArray("")     // => false
+  #   _a.isArray(null)   // => false
+  #   // Arguments are not arrays
+  #   function () { return _a.isArray(arguments) }(1,2)  // => false
+  #   // Checks if valueOf() returns an array
+  #   _a.isArray({valueOf: function(){return [];}}) // => true
+  #
+  isArray: __isArr
+
+
+
   # Checks if arrays have the same elements.
   #
   # @example
@@ -2616,6 +2762,18 @@ class ArrayMethods extends EnumerableMethods
     ary.slice(0, n)
 
 
+  # Length of array.
+  #
+  # @example
+  #   _a.size([])      // => 0
+  #   _a.size([1,2])   // => 2
+  #
+  # @return [Number]
+  #
+  size: (arr) ->
+    arr.length
+
+
   # Returns a new array with elements of this array shuffled.
   #
   # @example
@@ -2816,6 +2974,22 @@ class ArrayMethods extends EnumerableMethods
 
     ary
 
+
+  map_with_object: (arr, obj, block) ->
+    unless block?.call?
+      return __enumerate(_arr.map_with_object, [arr, obj])
+
+    callback = block
+
+    len = arr.length
+    idx = -1
+    ary = new Array(len)
+    while ++idx < len
+      ary[idx] = callback(arr[idx], obj)
+
+    ary
+
+
   # @alias #first
   take: @prototype.first
 
@@ -2830,12 +3004,13 @@ class ArrayMethods extends EnumerableMethods
 
 
 _arr = R._arr = (arr) ->
-  new RWrapper(arr, _arr)
+  new Chain(arr, _arr)
 
 
 R.extend(_arr, new ArrayMethods())
 
 class StringMethods
+  # @return [Boolean]
   equals: (str, other) ->
     str   = str.valueOf()   if typeof str   is 'object'
     other = other.valueOf() if typeof other is 'object'
@@ -2851,6 +3026,8 @@ class StringMethods
   #   _s.camelCase('')             // => ('')
   #   _s.camelCase('foo')          // => ('foo')
   #   _s.camelCase('fooBar')       // => ('fooBar')
+  #
+  # @return [String]
   #
   camel_case: (str) ->
     str.replace /([\:\-\_]+(.))/g, (_1, _2, letter, offset) ->
@@ -2868,6 +3045,8 @@ class StringMethods
   #   _s.capitalize("123ABC")   // => "123abc"
   #
   # @note Doesn't handle special characters like ä, ö.
+  #
+  # @return [String]
   #
   capitalize: (str) ->
     return "" if str.length == 0
@@ -2887,6 +3066,8 @@ class StringMethods
   #   _s.center("hello", 4)         // => "hello"
   #   _s.center("hello", 20)        // => "       hello        "
   #   _s.center("hello", 20, '123') // => "1231231hello12312312"
+  #
+  # @return [String]
   #
   center: (str, length, padString = ' ') ->
     _err.throw_argument() if padString.length == 0
@@ -2938,6 +3119,8 @@ class StringMethods
   #   _s.chomp("hello \n there")   // => "hello \n there"
   #   _s.chomp("hello", "llo")     // => "he"
   #
+  # @return [String]
+  #
   chomp: (str, sep) ->
     sep = "\n" unless sep?
     sep = __str(sep)
@@ -2963,6 +3146,8 @@ class StringMethods
   #   _s.chop("string")       // => "strin"
   #   _s.chop(_s.chop("x"))   // => ""
   #
+  # @return [String]
+  #
   chop: (str) ->
     return str if str.length == 0
 
@@ -2984,9 +3169,13 @@ class StringMethods
   #   _s.count(str, "hello", "^l")  // => 4
   #   _s.count(str, "ej-m")         // => 4
   #
+  # @param str [String]
+  # @param needles [String]
   # @todo expect( s.count("A-a")).toEqual s.count("A-Z[\\]^_`a")
   #
-  count: (str) ->
+  # @return [Number]
+  #
+  count: (str, needle) ->
     _err.throw_argument("String.count needs arguments") if arguments.length == 1
     args = _coerce.split_args(arguments, 1)
 
@@ -3004,6 +3193,8 @@ class StringMethods
   #   _s.delete("hello", "ej-m")         // => "ho"
   #
   # @todo expect( R("ABCabc[]").delete("A-a") ).toEqual R("bc")
+  #
+  # @return [String]
   #
   'delete': (str) ->
     _err.throw_argument() if arguments.length == 1
@@ -3053,7 +3244,9 @@ class StringMethods
   # @example
   #   _s.downcase("hEllO")   // => "hello"
   #
-  # @note unlike toLowerCase, donwcase doesnt change special characters ä,ö
+  # @note unlike toLowerCase, downcase doesnt change special characters ä,ö
+  #
+  # @return [String]
   #
   downcase: (str) ->
     return str unless nativeStrMatch.call(str, /[A-Z]/)
@@ -3062,6 +3255,8 @@ class StringMethods
       String.fromCharCode(ch.charCodeAt(0) | 32)
 
 
+  # @return [String]
+  #
   dump: (str) ->
     escaped =  str.replace(/[\f]/g, '\\f')
       .replace(/["]/g, "\\\"")
@@ -3072,11 +3267,15 @@ class StringMethods
     "\"#{escaped}\""
 
 
+  # @return [Boolean]
+  #
   empty: (str) ->
     str.length == 0
 
 
   # Returns true if str ends with one of the suffixes given.
+  #
+  # @return [Boolean]
   #
   end_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
@@ -3113,6 +3312,8 @@ class StringMethods
   #   _s.include("hello", "ol")   // => false
   #   _s.include("hello", "hh" )  // => true
   #
+  # @return [Boolean]
+  #
   include: (str, other) ->
     str.indexOf(other) >= 0
 
@@ -3129,6 +3330,8 @@ class StringMethods
   #   _s.index("hello", /[aeiou]/, -3) // => 4
   #
   # @todo #index(regexp)
+  #
+  # @return [Number]
   #
   index: (str, needle, offset) ->
     needle = __str(needle)
@@ -3164,6 +3367,8 @@ class StringMethods
   #   _s.insert("abcd", -3, 'X')   // => "abXcd"
   #   _s.insert("abcd", -1, 'X')   // => "abcdX"
   #
+  # @return [String]
+  #
   insert: (str, idx, other) ->
     if idx < 0
       # On negative count
@@ -3186,6 +3391,8 @@ class StringMethods
   #   _s.ljust("hello", 20)          // => "hello               "
   #   _s.ljust("hello", 20, '1234')  // => "hello123412341234123"
   #
+  # @return [String]
+  #
   ljust: (str, width, padString = " ") ->
     len = str.length
     if len >= width
@@ -3206,6 +3413,8 @@ class StringMethods
   # @example
   #   _s.lstrip("  hello  ")  // => "hello  "
   #   _s.lstrip("hello")      // => "hello"
+  #
+  # @return [String]
   #
   lstrip: (str) ->
     str.replace(/^[\s\n\t]+/g, '')
@@ -3248,6 +3457,8 @@ class StringMethods
   # @example
   #   _s.multiply("Ho! ", 3)   // => "Ho! Ho! Ho! "
   #
+  # @return [String]
+  #
   multiply: (str, num) ->
     _err.throw_argument() if num < 0
     out = ""
@@ -3275,6 +3486,8 @@ class StringMethods
   # @example
   #   _s.reverse("stressed")   // => "desserts"
   #
+  # @return [String]
+  #
   reverse: (str) ->
     str.split("").reverse().join("")
 
@@ -3292,6 +3505,8 @@ class StringMethods
   #   _s.rindex("hello", /[aeiou]/, -2)   // => 1
   #
   # @todo #rindex(/.../) does not add matches to R['$~'] as it should
+  #
+  # @return [Number, null]
   #
   rindex: (str, needle, offset) ->
     if offset != undefined
@@ -3340,6 +3555,8 @@ class StringMethods
   #   _s.rjust("hello", 20)           // => "               hello"
   #   _s.rjust("hello", 20, '1234')   // => "123412341234123hello"
   #
+  # @return [String]
+  #
   rjust: (str, width, pad_str = " ") ->
     width = __int(width)
     len = str.length
@@ -3371,6 +3588,8 @@ class StringMethods
   # @todo does not yet accept regexp as pattern
   # @todo does not yet affect R['$~']
   #
+  # @return [Array]
+  #
   rpartition: (str, pattern) ->
     pattern = __str(pattern)
 
@@ -3393,6 +3612,8 @@ class StringMethods
   # @example
   #   _s.rstrip("  hello  ")  // => "  hello"
   #   _s.rstrip("hello")      // => "hello"
+  #
+  # @return [String]
   #
   rstrip: (str) ->
     str.replace(/[\s\n\t]+$/g, '')
@@ -3456,6 +3677,18 @@ class StringMethods
     if block != null then str else match_arr
 
 
+  # Length of string
+  #
+  # @example
+  #   _s.size('')  // => 0
+  #   _s.size('foo')  // => 3
+  #
+  # @return [Number]
+  #
+  size: (str) ->
+    str.length
+
+
   # Builds a set of characters from the other_str parameter(s) using the
   # procedure described for String#count. Returns a new string where runs of
   # the same character that occur in this set are replaced by a single
@@ -3468,6 +3701,8 @@ class StringMethods
   #   _s.squeeze("putters shoot balls", "m-z")  // => "puters shot balls"
   #
   # @todo Fix A-a bug
+  #
+  # @return [String]
   #
   squeeze: (str) ->
     pattern = _coerce.split_args(arguments, 1)
@@ -3496,6 +3731,8 @@ class StringMethods
   # @example
   #   _s.strip("    hello    ")   // => "hello"
   #   _s.strip("\tgoodbye\r\n")   // => "goodbye"
+  #
+  # @return [String]
   #
   strip: (str) ->
     # TODO Optimize
@@ -3539,6 +3776,8 @@ class StringMethods
   #   _s.succ("***")         // => "**+"
   #
   # @alias #next
+  #
+  # @return [String]
   #
   succ: (str) ->
     return '' if str.length == 0
@@ -3674,6 +3913,8 @@ class StringMethods
   #   _s.start_with("hello", "heaven", "hell")     // => true
   #   _s.start_with("hello", "heaven", "paradise") // => false
   #
+  # @return [Boolean]
+  #
   start_with: (str) ->
     needles = _coerce.split_args(arguments, 1)
 
@@ -3695,6 +3936,8 @@ class StringMethods
   #   _s.swapcase("Hello")          // => "hELLO"
   #   _s.swapcase("cYbEr_PuNk11")   // => "CyBeR_pUnK11"
   #
+  # @return [String]
+  #
   swapcase: (str) ->
     return str unless str.match(/[a-zA-Z]/)
 
@@ -3705,6 +3948,34 @@ class StringMethods
 
 
 
+  # Returns the result of interpreting leading characters in str as an integer
+  # base base (between 2 and 36). Extraneous characters past the end of a valid
+  # number are ignored. If there is not a valid number at the start of str, 0 is
+  # returned. This method never raises an exception when base is valid.
+  #
+  # @example
+  #   _s.to_i("12345")           // => 12345
+  #   _s.to_i("1_23_45")         // => 12345
+  #   _s.to_i("99 red balloons") // => 99
+  #   _s.to_i("0a")              // => 0
+  #   _s.to_i("0a", 16)          // => 10
+  #   _s.to_i("hello")           // => 0
+  #   _s.to_i("1100101", 2)      // => 101
+  #   _s.to_i("1100101", 8)      // => 294977
+  #   _s.to_i("1100101", 10)     // => 1100101
+  #   _s.to_i("1100101", 16)     // => 17826049
+  #   // but:
+  #   _s.to_i("_12345")          // => 0
+  #   // TODO:
+  #   _s.to_i("0b10101").to_i(0)        #=> 21
+  #   _s.to_i("0b1010134").to_i(2)      #=> 21
+  #
+  # @todo #to_i(base) does not remove invalid characters:
+  #       - e.g: R("1012").to_i(2) should return 5, but due to 2 being invalid it retunrs 0 now.
+  # @todo #to_i(0) does not auto-detect base
+  #
+  # @return [Number]
+  #
   to_i: (str, base) ->
     base = 10 if base is undefined
     base = __int(base)
@@ -3729,16 +4000,30 @@ class StringMethods
     #   base_str = if lit[0].match(/[\+\-]/) then lit[1..2] else lit[0..1]
     #   base = R.String.BASE_IDENTIFIER[base_str]
 
-    parseInt(lit, base)
+    int = parseInt(lit, base)
+    if isNaN(int) then 0 else int
 
 
+  # @return [Number]
+  #
   to_f: (str) ->
     number_match  = str.match(/^([\+\-]?[_\d\.]+)([Ee\+\-\d]+)?/)
     number_string = number_match?[0] ? "0.0"
     Number(number_string.replace(/_/g, ''))
 
 
-
+  # Returns a copy of str with all lowercase letters replaced with their
+  # uppercase counterparts. The operation is locale insensitive—only
+  # characters “a” to “z” are affected. Note: case replacement is effective
+  # only in ASCII region.
+  #
+  # @example
+  #   _s.upcase("hEllO")   // => "HELLO"
+  #
+  # @note unlike toUpperCase(), upcase doesnt change special characters ä,ö
+  #
+  # @return [String]
+  #
   upcase: (str) ->
     return str unless str.match(/[a-z]/)
 
@@ -3763,6 +4048,13 @@ class StringMethods
 
     orig
 
+
+  # toLowerCase: (str) ->
+  #   str.toUpperCase()
+
+
+  # toUpperCase: (str) ->
+  #   str.toUpperCase()
 
 
   # @private
@@ -3795,7 +4087,7 @@ class StringMethods
 
 
 _str = R._str = (str) ->
-  new RWrapper(str, _str)
+  new Chain(str, _str)
 
 R.extend(_str, new StringMethods())
 
@@ -4289,7 +4581,12 @@ _time = R._time = (arr) ->
 R.extend(_time, new TimeMethods())
 
 
-class RWrapper
+# Experimental.
+#
+# Chain objects are a more lightweight oo approach for chaining multiple
+# methods. similar to underscores _.chain(obj).
+#
+class Chain
   constructor: (@value, @type) ->
     @chain = false
 
@@ -4298,7 +4595,7 @@ class RWrapper
     @value
 
 
-R.Wrapper = RWrapper
+R.Wrapper = Chain
 
 
 lookupFunction = (val, name) ->
@@ -4345,7 +4642,7 @@ klasses = [
 for klass in klasses
   for own name, fn of klass.prototype
     do (name,fn) ->
-      RWrapper.prototype[name] = dispatchFunction(name)
+      Chain.prototype[name] = dispatchFunction(name)
 
 
 
@@ -8628,8 +8925,9 @@ class RubyJS.String extends RubyJS.Object
 
   #setbyte
 
+
   size: ->
-    @$Integer(@to_native().length)
+    new R.Fixnum(_s.size(@__native__))
 
 
   # Element Reference—If passed a single Fixnum, returns a substring of one
@@ -10471,8 +10769,7 @@ class RubyJS.Float extends RubyJS.Numeric
   # @return [Boolean]
   #
   nan: ->
-    isNaN(@to_native())
-
+    _num.nan(@__native__)
 
   # As flt is already a float, returns self.
   to_f: -> @dup()
