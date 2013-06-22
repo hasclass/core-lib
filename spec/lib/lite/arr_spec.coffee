@@ -269,6 +269,12 @@ describe "_a docs", ->
     expect( _a.sample(arr, 4).length  ).toEqual 3
 
 
+  it '_a.size', ->
+    expect( _a.size([]) ).toEqual 0
+    expect( _a.size([1,2]) ).toEqual 2
+    expect( _a.size([,]) ).toEqual 2
+
+
   it "_a.slice", ->
     arr = [ "a", "b", "c", "d", "e" ]
     expect( _a.slice(arr, 2) +  arr[0] + arr[1]    ).toEqual "cab"

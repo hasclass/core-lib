@@ -161,6 +161,11 @@ describe 'doc-spec', ->
     # expect( acc ).toEqual ["cr", 'ue', 'l ', 'wo', 'rl']
 
 
+  it '_s.size', ->
+    expect( _s.size("") ).toEqual 0
+    expect( _s.size("foo") ).toEqual 3
+
+
   it '_s.squeeze', ->
     expect( _s.squeeze("yellow moon")                ).toEqual "yelow mon"
     expect( _s.squeeze("  now   is  the", " ")       ).toEqual " now is the"
