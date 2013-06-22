@@ -666,6 +666,18 @@ class StringMethods
     if block != null then str else match_arr
 
 
+  # Length of string
+  #
+  # @example
+  #   _s.size('')  // => 0
+  #   _s.size('foo')  // => 3
+  #
+  # @return [Number]
+  #
+  size: (str) ->
+    str.length
+
+
   # Builds a set of characters from the other_str parameter(s) using the
   # procedure described for String#count. Returns a new string where runs of
   # the same character that occur in this set are replaced by a single

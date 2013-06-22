@@ -884,6 +884,18 @@ class ArrayMethods extends EnumerableMethods
     ary.slice(0, n)
 
 
+  # Length of array.
+  #
+  # @example
+  #   _a.size([])      // => 0
+  #   _a.size([1,2])   // => 2
+  #
+  # @return [Number]
+  #
+  size: (arr) ->
+    arr.length
+
+
   # Returns a new array with elements of this array shuffled.
   #
   # @example

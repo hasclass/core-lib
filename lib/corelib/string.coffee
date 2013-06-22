@@ -951,8 +951,9 @@ class RubyJS.String extends RubyJS.Object
 
   #setbyte
 
+
   size: ->
-    @$Integer(@to_native().length)
+    new R.Fixnum(_s.size(@__native__))
 
 
   # Element Reference—If passed a single Fixnum, returns a substring of one
