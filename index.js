@@ -1,1 +1,1 @@
-require('./ruby.js')
+module.exports = require('./ruby.js')
