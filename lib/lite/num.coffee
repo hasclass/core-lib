@@ -269,7 +269,6 @@ class NumericMethods
   # Returns an array; [int.gcd(int2), int.lcm(int2)].
   #
   # @example
-  #
   #     _n.gcdlcm(2,  2)                   // => [2, 2]
   #     _n.gcdlcm(3, -7)                   // => [1, 21]
   #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    // => [1, 4951760154835678088235319297]
@@ -284,7 +283,6 @@ class NumericMethods
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
   # @example
-  #
   #     _n.lcm(2,  2)                   // => 2
   #     _n.lcm(3, -7)                   // => 21
   #     _n.lcm((1<<31)-1, (1<<61)-1)    // => 4951760154835678088235319297
@@ -323,33 +321,46 @@ class NumericMethods
     this
 
 
-  # Returns the Integer equal to int + 1.
+  # Returns Number equal to num + 1.
   #
   # @example
+  #   _n.next(0)     // => 1
+  #   _n.next(5)     // => 6
+  #   _n.next(-3)    // => -4
   #
-  #     R(1).next(     #=> 2
-  #     R(-1).next()   #=> 0
-  #
-  # @return [R.Fixnum]
+  # @return [Number]
   # @alias #succ
   #
   next: (num) ->
     num + 1
 
 
-  # Returns the Integer equal to int - 1.
+  # Returns Number equal to num - 1.
   #
   # @example
+  #   _n.pred(0)     // => -1
+  #   _n.pred(9)     // => 8
+  #   _n.pred(-3)    // => -4
+  #   _n.pred(-5.5)  // => -6.5
   #
-  #     R(1).pred()    #=> 0
-  #     R(-1).pred()   #=> -2
-  #
-  # @return [R.Fixnum]
+  # @return [Number]
   #
   pred: (num) ->
     num - 1
 
 
+  # Rounds num to a given precision n in decimal digits and returns Number.
+  # When given precision n is negative returns 0.
+  #
+  # @example
+  #   _n.round(3, 2)     // => 3
+  #   _n.round(3.12, 0)  // => 3
+  #   _n.round(3.123, 2) // => 3.12
+  #   _n.round(3.12, -2) // => 0
+  #   _n.round(-3.12, 1) // => -3.1
+  #
+  # @return [Number]
+  #
   round: (num, n) ->
     return num if n is undefined
 
