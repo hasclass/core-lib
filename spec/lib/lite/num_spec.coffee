@@ -99,3 +99,27 @@ describe "_n.gcd", ->
     expect( _n.gcd(4, 2)   ).toEqual 2
     expect( _n.gcd(11, 2)  ).toEqual 1
     expect( _n.gcd(21, 14) ).toEqual 7
+
+describe "_n.next", ->
+  it "returns number equal to argument + 1", ->
+    expect( _n.next(0)   ).toEqual 1
+    expect( _n.next(5)   ).toEqual 6
+    expect( _n.next(-3)  ).toEqual -2
+    expect( _n.next(2.5) ).toEqual 3.5
+
+describe "_n.pred", ->
+  it "returns number equal to argument - 1", ->
+    expect( _n.pred(0)    ).toEqual -1
+    expect( _n.pred(9)    ).toEqual 8
+    expect( _n.pred(-3)   ).toEqual -4
+    expect( _n.pred(-5.5) ).toEqual -6.5
+
+describe "_n.round", ->
+  it "returns rounded argument when precision is >= 0", ->
+    expect( _n.round(3, 2)     ).toEqual 3
+    expect( _n.round(3.12, 0)  ).toEqual 3
+    expect( _n.round(3.123, 2) ).toEqual 3.12
+    expect( _n.round(-3.12, 1) ).toEqual -3.1
+
+  it "returns zero if precision is negative", ->
+    expect( _n.round(3.12, -2) ).toEqual 0
