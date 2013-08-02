@@ -1221,7 +1221,10 @@ class NumericMethods
   #   _n.pred(-3)    // => -4
   #   _n.pred(-5.5)  // => -6.5
   #
-  # @return [Number]
+  #     _n.pred(1)    #=> 0
+  #     _n.pred(-1)   #=> -2
+  #
+  # @return [R.Fixnum]
   #
   pred: (num) ->
     num - 1
