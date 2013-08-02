@@ -12,9 +12,6 @@ class Chain
     @value
 
 
-R.Wrapper = Chain
-
-
 lookupFunction = (val, name) ->
   if val is null
     return -> throw new TypeError("wrapper has null value")
