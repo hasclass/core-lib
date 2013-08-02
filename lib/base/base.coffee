@@ -67,7 +67,7 @@ class RubyJS.Base
   #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
   #     # =>['oof', 'rab']
   #
-  god_mode: (prefix = 'rb_', overwrite = false) ->
+  god_mode: (prefix = 'rb_') ->
     overwrites = [
       [Array.prototype,  _arr],
       [Number.prototype, _num],
@@ -80,17 +80,13 @@ class RubyJS.Base
         new_name = prefix + name
 
         if typeof func == 'function'
-          if overwrite or proto[new_name] is undefined
+          if proto[new_name] is undefined
             do (new_name, func) ->
               # The following is 100x faster than slicing.
               proto[new_name] = callFunctionWithThis(func)
-          else
+          else if prefix == '' && proto['rb_'+new_name]
             console.log("#{proto}.#{new_name} exists. skipped.")
     true
-
-  i_am_feeling_evil: ->
-    @god_mode('', true)
-    "harr harr"
 
 
   # proc() is the equivalent to symbol to proc functionality of Ruby.
