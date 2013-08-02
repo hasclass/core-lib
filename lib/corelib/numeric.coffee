@@ -100,11 +100,11 @@ class RubyJS.Numeric extends RubyJS.Object
     throw RubyJS.TypeError.new() if !other? or other is false
     other = R(other)
     # throw RubyJS.TypeError.new() unless other.to_f?
-    if      other.is_string?    then @$Array [@$Float(other), @to_f()]
-    else if other.constructor.prototype is @constructor.prototype then @$Array([other, this])
-    else if other.is_float?     then @$Array [other, @to_f()]
-    else if other.is_fixnum?    then @$Array [other, this]
-    else if other.is_numeric?   then @$Array [other.to_f(), this.to_f()]
+    if      other.is_string?    then new RArray([@$Float(other), @to_f()])
+    else if other.constructor.prototype is @constructor.prototype then new RArray([other, this])
+    else if other.is_float?     then new RArray([other, @to_f()])
+    else if other.is_fixnum?    then new RArray([other, this])
+    else if other.is_numeric?   then new RArray([other.to_f(), this.to_f()])
     else
       throw RubyJS.TypeError.new()
 
