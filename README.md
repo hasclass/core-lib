@@ -30,6 +30,21 @@ More documentation (in the works): http://rubyjs.org/reloaded
 
 Or watch my talk at RubyKaigi: http://ustream.tv/recorded/33526011
 
+# RubyJS Packages
+
+## RubyJS Core
+
+Shared functionality required for RubyJS Base.
+
+## RubyJS Base
+
+Implementation of Ruby methods as functional style methods.
+
+## RubyJS OO
+
+Object-oriented wrappers for Ruby classes. Required for test suite and legacy reasons.
+
+
 
 
 # RubyJS

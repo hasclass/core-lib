@@ -1,8 +1,7 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
 
-
-liteFiles = [
+coreFiles = [
   'base/support'
   'base/aliases'
   'base/block'
@@ -11,7 +10,9 @@ liteFiles = [
   'base/base'
   'base/errors'
   'base/coerce'
+]
 
+baseFiles = [
   'lite/err'
   'lite/num'
   'lite/itr'
@@ -23,7 +24,7 @@ liteFiles = [
   'lite/chain'
 ]
 
-chainFiles = [
+ooFiles = [
   'corelib/object'
   'corelib/coerce'
   'corelib/comparable'
@@ -47,7 +48,8 @@ chainFiles = [
   'corelib/time'
 ]
 
-appFiles = ['ruby'].concat(liteFiles).concat(chainFiles).concat(['boot'])
+baseFiles = ['ruby'].concat(coreFiles).concat(baseFiles);
+appFiles = baseFiles.concat(ooFiles).concat(['boot']);
 
 task 'stats', '', ->
   require './lib/rubyjs'
