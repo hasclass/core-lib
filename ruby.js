@@ -507,7 +507,7 @@ http://www.rubyjs.org/LICENSE.txt
       return 'null';
     } else if (obj.inspect != null) {
       return obj.inspect();
-    } else if (R.Array.isNativeArray(obj)) {
+    } else if (_a.isArray(obj)) {
       return "[" + obj + "]";
     } else {
       return obj;
@@ -1137,7 +1137,11 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  _num = R._num = new NumericMethods();
+  _num = R._num = function(arr) {
+    return new Chain(arr, _num);
+  };
+
+  R.extend(_num, new NumericMethods());
 
   EnumerableMethods = (function() {
     function EnumerableMethods() {}
@@ -3926,8 +3930,8 @@ http://www.rubyjs.org/LICENSE.txt
 
   })(EnumerableMethods);
 
-  _hsh = R._hsh = function(arr) {
-    return new RHash(arr);
+  _hsh = R._hsh = function(hsh) {
+    return new Chain(hsh, _hsh);
   };
 
   R.extend(_hsh, new HashMethods());
@@ -4149,8 +4153,8 @@ http://www.rubyjs.org/LICENSE.txt
 
   })();
 
-  _time = R._time = function(arr) {
-    return new R.Time(arr);
+  _time = R._time = function(time) {
+    return new Chain(time, _time);
   };
 
   R.extend(_time, new TimeMethods());
@@ -4209,15 +4213,11 @@ http://www.rubyjs.org/LICENSE.txt
         func = lookupFunction(self.value, name);
       }
       self.value = __call(func, self.value, arguments);
-      if (self.chain) {
-        return this;
-      } else {
-        return self.value;
-      }
+      return this;
     };
   };
 
-  klasses = [ArrayMethods, StringMethods, NumericMethods, TimeMethods];
+  klasses = [ArrayMethods, HashMethods, StringMethods, NumericMethods, TimeMethods];
 
   for (_j = 0, _len1 = klasses.length; _j < _len1; _j++) {
     klass = klasses[_j];

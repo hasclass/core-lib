@@ -499,7 +499,7 @@ RubyJS.inspect = (obj) ->
     'null'
   else if obj.inspect?
     obj.inspect()
-  else if R.Array.isNativeArray(obj)
+  else if _a.isArray(obj)
     "[#{obj}]"
   else
     obj
@@ -1273,7 +1273,11 @@ class NumericMethods
 
   succ: @prototype.next
 
-_num = R._num = new NumericMethods()
+
+_num = R._num = (arr) ->
+  new Chain(arr, _num)
+
+R.extend(_num, new NumericMethods())
 
 # EnumerableMethods work with Array, Hash/Objects and every object that
 # implements a #each method.
@@ -4351,8 +4355,8 @@ class HashMethods extends EnumerableMethods
 
 
 
-_hsh = R._hsh = (arr) ->
-  new RHash(arr)
+_hsh = R._hsh = (hsh) ->
+  new Chain(hsh, _hsh)
 
 R.extend(_hsh, new HashMethods())
 
@@ -4566,8 +4570,8 @@ class TimeMethods
     (sign+hour+mins)
 
 
-_time = R._time = (arr) ->
-  new R.Time(arr)
+_time = R._time = (time) ->
+  new Chain(time, _time)
 
 R.extend(_time, new TimeMethods())
 
@@ -4620,11 +4624,12 @@ dispatchFunction = (name) ->
       func = lookupFunction(self.value, name)
     self.value = __call(func, self.value, arguments)
 
-    if self.chain then this else self.value
-
+    # if self.chain then this else self.value
+    this
 
 klasses = [
   ArrayMethods,
+  HashMethods,
   StringMethods,
   NumericMethods,
   TimeMethods
