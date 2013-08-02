@@ -10,7 +10,7 @@ root = global ? window
 # TODO: link rubyjs/_r directly to RubyJS.RubyJS.prototype.box
 #       this is a suboptimal solution as of now.
 root.RubyJS = (obj, recursive, block) ->
-  RubyJS.Base.prototype.box(obj, recursive, block)
+  RubyJS.box(obj, recursive, block)
 
 RubyJS.VERSION = '0.8.0-beta1'
 
@@ -23,8 +23,6 @@ RubyJS.noConflict = ->
 
 # Alias to RubyJS
 root.R  = RubyJS
-
-
 
 RubyJS.extend = (obj, mixin) ->
   obj[name] = method for name, method of mixin
@@ -44,15 +42,20 @@ if typeof(exports) != 'undefined'
 
 
 
-# R.Support includes aliases for private methods. So that they can be used
-# outside RubyJS.
+########################################
+# Private methods of RubyJS base object
+########################################
+
+
+# helper method to get an arguments object
 #
-R.Support =
-  # helper method to get an arguments object
-  argify: -> arguments
+# @return [Arguments]
+# @private
+#
+RubyJS.argify = -> arguments
 
 # Creates a wrapper method that calls a functional style
-# method with this as the first arguments
+# method with this as the first arguments. Tries to avoid apply.
 #
 #     callFunctionWithThis(_s.ljust)
 #     // creates a function similar to this:
@@ -66,7 +69,9 @@ R.Support =
 #     String.prototype.capitalize = callFunctionWithThis(_s.capitalize)
 #     "foo".capitalize() // => "Foo"
 #
-callFunctionWithThis = (func) ->
+# @private
+#
+RubyJS.callFunctionWithThis = callFunctionWithThis = (func) ->
   () ->
     a = arguments
     switch arguments.length
@@ -83,7 +88,7 @@ callFunctionWithThis = (func) ->
 
 # RubyJS specific helper methods
 # @private
-__ensure_args_length = (args, length) ->
+RubyJS.ensure_args_length = __ensure_args_length = (args, length) ->
   throw R.ArgumentError.new() unless args.length is length
 
 
@@ -99,16 +104,11 @@ __ensure_args_length = (args, length) ->
 #
 # @private
 #
-__extract_block = (args) ->
+RubyJS.extract_block = __extract_block = (args) ->
   idx = args.length
   while --idx >= 0
     return args.pop() if args[idx]?.call?
   null
-
-
-R.Support.callFunctionWithThis = callFunctionWithThis
-R.Support.ensure_args_length = __ensure_args_length
-R.Support.extract_block = __extract_block
 
 
 
@@ -472,207 +472,214 @@ __enumerate = (func, args) ->
 
 __rand = RubyJS.Kernel.prototype.rand
 
-# Methods in Base are added to `R`.
-#
-class RubyJS.Base
-  RubyJS.include.call(this, R.Kernel)
-
-  #
-  '$~': null
-
-  #
-  '$,': null
-
-  #
-  '$;': "\n"
-
-  #
-  '$/': "\n"
-
-
-  inspect: (obj) ->
-    if obj is null or obj is 'undefined'
-      'null'
-    else if obj.inspect?
-      obj.inspect()
-    else if R.Array.isNativeArray(obj)
-      "[#{obj}]"
-    else
-      obj
-
-
-  # Adds useful methods to the global namespace.
-  #
-  # e.g. _proc, _puts, _truthy, _inspect, _falsey
-  #
-  pollute_global_with_kernel: (prefix = "_") ->
-    args = [
-      'w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'
-    ]
-
-    for name in args
-      root[prefix + name] = R[name]
-
-    null
-
-
-  # Adds the _a, _n, etc shortcuts to the global namespace.
-  #
-  pollute_global_with_shortcuts: (prefix = "_") ->
-    shortcuts =
-      _arr:  'a'
-      _num:  'n'
-      _str:  's'
-      _itr:  'i'
-      _enum: 'e'
-      _hsh:  'h'
-      _time: 't'
-
-    for k,v of shortcuts
-      R[prefix + v]    = R[k]
-      root[prefix + v] = R[k]
-
-    null
-
-
-  # Adds RubyJS methods to JS native classes.
-  #
-  #     RubyJS.i_am_feeling_evil()
-  #     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
-  #     # =>['oof', 'rab']
-  #
-  god_mode: (prefix = 'rb_') ->
-    overwrites = [
-      [Array.prototype,  _arr],
-      [Number.prototype, _num],
-      [String.prototype, _str],
-      [Date.prototype,   _time]
-    ]
-
-    for [proto, methods] in overwrites
-      for name, func of methods
-        new_name = prefix + name
-
-        if typeof func == 'function'
-          if proto[new_name] is undefined
-            do (new_name, func) ->
-              # The following is 100x faster than slicing.
-              proto[new_name] = callFunctionWithThis(func)
-          else if prefix == '' && proto['rb_'+new_name]
-            console.log("#{proto}.#{new_name} exists. skipped.")
-    true
-
-
-  # proc() is the equivalent to symbol to proc functionality of Ruby.
-  #
-  # proc accepts additional arguments which are passed to the block.
-  #
-  # @note proc() calls methods and not properties
-  #
-  # @example
-  #
-  #     R.w('foo bar').map( R.proc('capitalize') )
-  #     R.w('foo bar').map( R.proc('ljust', 10) )
-  #
-  proc: (key) ->
-    if arguments.length == 1
-      # Wrapper block doesnt need to mangle arguments
-      (el) ->
-        fn = el[key]
-        if typeof fn is 'function'
-          fn.call(el)
-        else if fn is undefined
-          # RELOADED: dont use R()
-          R(el)[key]().valueOf()
-        else
-          fn
-    else
-      args = nativeSlice.call(arguments, 1)
-      # Wrapper block that mangles arguments
-      (el) ->
-        fn = el[key]
-        if typeof fn is 'function'
-          el[key].apply(el, args)
-        else
-          # no method found, now check if it exists in rubyjs equivalent
-          el = R(el)
-          el[key].apply(el, args).valueOf()
-
-
-  fn: (func) ->
-    (el) ->
-      arguments[0] = el
-      func.apply(null, arguments)
-
-
-  # Check wether an obj is falsey according to Ruby
-  #
-  falsey: (obj) -> obj is false or obj is null or obj is undefined
-
-
-  # Check wether an obj is truthy according to Ruby
-  #
-  truthy: (obj) ->
-    !__falsey(obj)
-
-
-  respond_to: (obj, function_name) ->
-    obj[function_name] != undefined
-
-
-  # Compares to objects.
-  #
-  #      // => true
-  #      R.is_equal(1,1)
-  #      R.is_equal(1, new Number(1))
-  #      R.is_equal(1, {valueOf: function () {return 1;}})
-  #      R.is_equal(1, {equals: function (n) {return n === 1;}})
-  #
-  is_equal: (a, b) ->
-    return true if a is b
-
-    if typeof a is 'object'
-      if a.equals?
-        a.equals(b)
-      else if __isArr(a)
-        _arr.equals(a,b)
-      else if a.valueOf?
-        a.valueOf() is b.valueOf()
-      else
-        false
-    else if typeof b is 'object'
-      if b.equals?
-        b.equals(a)
-      else if __isArr(b)
-        _arr.equals(a,b)
-      else if b.valueOf?
-        b.valueOf() is a.valueOf()
-      else
-        false
-    else
-      # for elements that are literals
-      a is b
-
-
-  is_eql: (a, b) ->
-    if typeof a is 'object'
-      a.eql(b)
-    else if typeof b is 'object'
-      b.eql(a)
-    else
-      a is b
-
-
-  extend: (obj, mixin) ->
-    obj[name] = method for name, method of mixin
-    obj
-
-
+########################################
+# Public methods of RubyJS base object
+########################################
 
 
 # adds all methods to the global R object
-for own name, method of RubyJS.Base.prototype
+for own name, method of RubyJS.Kernel.prototype
   RubyJS[name] = method
+
+#
+RubyJS['$~'] = null
+
+#
+RubyJS['$,'] = null
+
+#
+RubyJS['$;'] = "\n"
+
+#
+RubyJS['$/'] = "\n"
+
+
+RubyJS.inspect = (obj) ->
+  if obj is null or obj is 'undefined'
+    'null'
+  else if obj.inspect?
+    obj.inspect()
+  else if R.Array.isNativeArray(obj)
+    "[#{obj}]"
+  else
+    obj
+
+
+# Adds useful methods to the global namespace.
+#
+# e.g. _proc, _puts, _truthy, _inspect, _falsey
+#
+RubyJS.pollute_global_with_kernel = (prefix = "_") ->
+  args = [
+    'w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'
+  ]
+
+  for name in args
+    root[prefix + name] = R[name]
+
+  null
+
+
+# Adds the _a, _n, etc shortcuts to the global namespace.
+#
+RubyJS.pollute_global_with_shortcuts = (prefix = "_") ->
+  shortcuts =
+    _arr:  'a'
+    _num:  'n'
+    _str:  's'
+    _itr:  'i'
+    _enum: 'e'
+    _hsh:  'h'
+    _time: 't'
+
+  for k,v of shortcuts
+    R[prefix + v]    = R[k]
+    root[prefix + v] = R[k]
+
+  null
+
+
+# Adds RubyJS methods to JS native classes.
+#
+#     RubyJS.i_am_feeling_evil()
+#     ['foo', 'bar'].rb_map(proc('rb_reverse')).rb_sort()
+#     # =>['oof', 'rab']
+#
+RubyJS.god_mode = (prefix = 'rb_') ->
+  overwrites = [
+    [Array.prototype,  _arr],
+    [Number.prototype, _num],
+    [String.prototype, _str],
+    [Date.prototype,   _time]
+  ]
+
+  for [proto, methods] in overwrites
+    for name, func of methods
+      new_name = prefix + name
+
+      if typeof func == 'function'
+        if proto[new_name] is undefined
+          do (new_name, func) ->
+            # The following is 100x faster than slicing.
+            proto[new_name] = callFunctionWithThis(func)
+        else if prefix == '' && proto['rb_'+new_name]
+          console.log("#{proto}.#{new_name} exists. skipped.")
+  true
+
+
+# proc() is the equivalent to symbol to proc functionality of Ruby.
+#
+# proc accepts additional arguments which are passed to the block.
+#
+# @note proc() calls methods and not properties
+#
+# @example
+#
+#     R.w('foo bar').map( R.proc('capitalize') )
+#     R.w('foo bar').map( R.proc('ljust', 10) )
+#
+RubyJS.proc = (key) ->
+  if arguments.length == 1
+    # Wrapper block doesnt need to mangle arguments
+    (el) ->
+      fn = el[key]
+      if typeof fn is 'function'
+        fn.call(el)
+      else if fn is undefined
+        # RELOADED: dont use R()
+        R(el)[key]().valueOf()
+      else
+        fn
+  else
+    args = nativeSlice.call(arguments, 1)
+    # Wrapper block that mangles arguments
+    (el) ->
+      fn = el[key]
+      if typeof fn is 'function'
+        el[key].apply(el, args)
+      else
+        # no method found, now check if it exists in rubyjs equivalent
+        el = R(el)
+        el[key].apply(el, args).valueOf()
+
+
+RubyJS.fn = (func) ->
+  (el) ->
+    arguments[0] = el
+    func.apply(null, arguments)
+
+
+# Check wether an obj is falsey according to Ruby
+#
+#     RubyJS.falsey(null)      // => true
+#     RubyJS.falsey(false)     // => true
+#     RubyJS.falsey(undefined) // => true
+#     RubyJS.falsey(0)         // => false
+#     RubyJS.falsey("0")       // => false
+#     RubyJS.falsey(-1)        // => false
+#
+RubyJS.falsey = (obj) ->
+  obj is false or obj is null or obj is undefined
+
+
+# Check wether an obj is truthy according to Ruby
+#
+#     RubyJS.truthy(null)      // => false
+#     RubyJS.truthy(false)     // => false
+#     RubyJS.truthy(undefined) // => false
+#     RubyJS.truthy(0)         // => true
+#     RubyJS.truthy("0")       // => true
+#     RubyJS.truthy(-1)        // => true
+#
+RubyJS.truthy = (obj) ->
+  !__falsey(obj)
+
+
+RubyJS.respond_to = (obj, function_name) ->
+  obj[function_name] != undefined
+
+
+# Compares to objects.
+#
+#      // => true
+#      R.is_equal(1,1)
+#      R.is_equal(1, new Number(1))
+#      R.is_equal(1, {valueOf: function () {return 1;}})
+#      R.is_equal(1, {equals: function (n) {return n === 1;}})
+#
+RubyJS.is_equal = (a, b) ->
+  return true if a is b
+
+  if typeof a is 'object'
+    if a.equals?
+      a.equals(b)
+    else if __isArr(a)
+      _arr.equals(a,b)
+    else if a.valueOf?
+      a.valueOf() is b.valueOf()
+    else
+      false
+  else if typeof b is 'object'
+    if b.equals?
+      b.equals(a)
+    else if __isArr(b)
+      _arr.equals(a,b)
+    else if b.valueOf?
+      b.valueOf() is a.valueOf()
+    else
+      false
+  else
+    # for elements that are literals
+    a is b
+
+
+RubyJS.is_eql = (a, b) ->
+  if typeof a is 'object'
+    a.eql(b)
+  else if typeof b is 'object'
+    b.eql(a)
+  else
+    a is b
 
 
 __falsey = R.falsey
@@ -705,7 +712,7 @@ for error in errors
 # Singleton class for type coercion inside RubyJS.
 #
 # @private
-_coerce =
+RubyJS.coerce = _coerce =
 
   native: (obj) ->
     if typeof obj != 'object'
@@ -838,9 +845,6 @@ _coerce =
 
 
 
-
-
-R.Support.coerce = _coerce
 __str   = _coerce.str
 __int   = _coerce.int
 __num   = _coerce.num
@@ -870,7 +874,6 @@ _err =
   throw_key: (msg) ->
     throw RKeyError.new(msg)
 
-R.Support.err = _err
 
 
 
@@ -1144,7 +1147,6 @@ class NumericMethods
   # Returns an array; [int.gcd(int2), int.lcm(int2)].
   #
   # @example
-  #
   #     _n.gcdlcm(2,  2)                   // => [2, 2]
   #     _n.gcdlcm(3, -7)                   // => [1, 21]
   #     _n.gcdlcm((1<<31)-1, (1<<61)-1)    // => [1, 4951760154835678088235319297]
@@ -1159,7 +1161,6 @@ class NumericMethods
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
   # @example
-  #
   #     _n.lcm(2,  2)                   // => 2
   #     _n.lcm(3, -7)                   // => 21
   #     _n.lcm((1<<31)-1, (1<<61)-1)    // => 4951760154835678088235319297
@@ -1198,33 +1199,46 @@ class NumericMethods
     this
 
 
-  # Returns the Integer equal to int + 1.
+  # Returns Number equal to num + 1.
   #
   # @example
+  #   _n.next(0)     // => 1
+  #   _n.next(5)     // => 6
+  #   _n.next(-3)    // => -4
   #
-  #     R(1).next(     #=> 2
-  #     R(-1).next()   #=> 0
-  #
-  # @return [R.Fixnum]
+  # @return [Number]
   # @alias #succ
   #
   next: (num) ->
     num + 1
 
 
-  # Returns the Integer equal to int - 1.
+  # Returns Number equal to num - 1.
   #
   # @example
+  #   _n.pred(0)     // => -1
+  #   _n.pred(9)     // => 8
+  #   _n.pred(-3)    // => -4
+  #   _n.pred(-5.5)  // => -6.5
   #
-  #     R(1).pred()    #=> 0
-  #     R(-1).pred()   #=> -2
-  #
-  # @return [R.Fixnum]
+  # @return [Number]
   #
   pred: (num) ->
     num - 1
 
 
+  # Rounds num to a given precision n in decimal digits and returns Number.
+  # When given precision n is negative returns 0.
+  #
+  # @example
+  #   _n.round(3, 2)     // => 3
+  #   _n.round(3.12, 0)  // => 3
+  #   _n.round(3.123, 2) // => 3.12
+  #   _n.round(3.12, -2) // => 0
+  #   _n.round(-3.12, 1) // => -3.1
+  #
+  # @return [Number]
+  #
   round: (num, n) ->
     return num if n is undefined
 
@@ -2974,22 +2988,6 @@ class ArrayMethods extends EnumerableMethods
 
     ary
 
-
-  map_with_object: (arr, obj, block) ->
-    unless block?.call?
-      return __enumerate(_arr.map_with_object, [arr, obj])
-
-    callback = block
-
-    len = arr.length
-    idx = -1
-    ary = new Array(len)
-    while ++idx < len
-      ary[idx] = callback(arr[idx], obj)
-
-    ary
-
-
   # @alias #first
   take: @prototype.first
 
@@ -4048,13 +4046,6 @@ class StringMethods
 
     orig
 
-
-  # toLowerCase: (str) ->
-  #   str.toUpperCase()
-
-
-  # toUpperCase: (str) ->
-  #   str.toUpperCase()
 
 
   # @private
@@ -9884,11 +9875,11 @@ class RubyJS.Numeric extends RubyJS.Object
     throw RubyJS.TypeError.new() if !other? or other is false
     other = R(other)
     # throw RubyJS.TypeError.new() unless other.to_f?
-    if      other.is_string?    then @$Array [@$Float(other), @to_f()]
-    else if other.constructor.prototype is @constructor.prototype then @$Array([other, this])
-    else if other.is_float?     then @$Array [other, @to_f()]
-    else if other.is_fixnum?    then @$Array [other, this]
-    else if other.is_numeric?   then @$Array [other.to_f(), this.to_f()]
+    if      other.is_string?    then new RArray([@$Float(other), @to_f()])
+    else if other.constructor.prototype is @constructor.prototype then new RArray([other, this])
+    else if other.is_float?     then new RArray([other, @to_f()])
+    else if other.is_fixnum?    then new RArray([other, this])
+    else if other.is_numeric?   then new RArray([other.to_f(), this.to_f()])
     else
       throw RubyJS.TypeError.new()
 

@@ -16,7 +16,7 @@ http://www.rubyjs.org/LICENSE.txt
   root = typeof global !== "undefined" && global !== null ? global : window;
 
   root.RubyJS = function(obj, recursive, block) {
-    return RubyJS.Base.prototype.box(obj, recursive, block);
+    return RubyJS.box(obj, recursive, block);
   };
 
   RubyJS.VERSION = '0.8.0-beta1';
@@ -65,13 +65,11 @@ http://www.rubyjs.org/LICENSE.txt
     exports.RubyJS = RubyJS;
   }
 
-  R.Support = {
-    argify: function() {
-      return arguments;
-    }
+  RubyJS.argify = function() {
+    return arguments;
   };
 
-  callFunctionWithThis = function(func) {
+  RubyJS.callFunctionWithThis = callFunctionWithThis = function(func) {
     return function() {
       var a;
       a = arguments;
@@ -96,13 +94,13 @@ http://www.rubyjs.org/LICENSE.txt
     };
   };
 
-  __ensure_args_length = function(args, length) {
+  RubyJS.ensure_args_length = __ensure_args_length = function(args, length) {
     if (args.length !== length) {
       throw R.ArgumentError["new"]();
     }
   };
 
-  __extract_block = function(args) {
+  RubyJS.extract_block = __extract_block = function(args) {
     var idx, _ref;
     idx = args.length;
     while (--idx >= 0) {
@@ -112,12 +110,6 @@ http://www.rubyjs.org/LICENSE.txt
     }
     return null;
   };
-
-  R.Support.callFunctionWithThis = callFunctionWithThis;
-
-  R.Support.ensure_args_length = __ensure_args_length;
-
-  R.Support.extract_block = __extract_block;
 
   nativeArray = Array;
 
@@ -495,197 +487,179 @@ http://www.rubyjs.org/LICENSE.txt
 
   __rand = RubyJS.Kernel.prototype.rand;
 
-  RubyJS.Base = (function() {
-    function Base() {}
-
-    RubyJS.include.call(Base, R.Kernel);
-
-    Base.prototype['$~'] = null;
-
-    Base.prototype['$,'] = null;
-
-    Base.prototype['$;'] = "\n";
-
-    Base.prototype['$/'] = "\n";
-
-    Base.prototype.inspect = function(obj) {
-      if (obj === null || obj === 'undefined') {
-        return 'null';
-      } else if (obj.inspect != null) {
-        return obj.inspect();
-      } else if (R.Array.isNativeArray(obj)) {
-        return "[" + obj + "]";
-      } else {
-        return obj;
-      }
-    };
-
-    Base.prototype.pollute_global_with_kernel = function(prefix) {
-      var args, name, _i, _len;
-      if (prefix == null) {
-        prefix = "_";
-      }
-      args = ['w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
-      for (_i = 0, _len = args.length; _i < _len; _i++) {
-        name = args[_i];
-        root[prefix + name] = R[name];
-      }
-      return null;
-    };
-
-    Base.prototype.pollute_global_with_shortcuts = function(prefix) {
-      var k, shortcuts, v;
-      if (prefix == null) {
-        prefix = "_";
-      }
-      shortcuts = {
-        _arr: 'a',
-        _num: 'n',
-        _str: 's',
-        _itr: 'i',
-        _enum: 'e',
-        _hsh: 'h',
-        _time: 't'
-      };
-      for (k in shortcuts) {
-        v = shortcuts[k];
-        R[prefix + v] = R[k];
-        root[prefix + v] = R[k];
-      }
-      return null;
-    };
-
-    Base.prototype.god_mode = function(prefix) {
-      var func, methods, name, new_name, overwrites, proto, _i, _len, _ref;
-      if (prefix == null) {
-        prefix = 'rb_';
-      }
-      overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str], [Date.prototype, _time]];
-      for (_i = 0, _len = overwrites.length; _i < _len; _i++) {
-        _ref = overwrites[_i], proto = _ref[0], methods = _ref[1];
-        for (name in methods) {
-          func = methods[name];
-          new_name = prefix + name;
-          if (typeof func === 'function') {
-            if (proto[new_name] === void 0) {
-              (function(new_name, func) {
-                return proto[new_name] = callFunctionWithThis(func);
-              })(new_name, func);
-            } else if (prefix === '' && proto['rb_' + new_name]) {
-              console.log("" + proto + "." + new_name + " exists. skipped.");
-            }
-          }
-        }
-      }
-      return true;
-    };
-
-    Base.prototype.proc = function(key) {
-      var args;
-      if (arguments.length === 1) {
-        return function(el) {
-          var fn;
-          fn = el[key];
-          if (typeof fn === 'function') {
-            return fn.call(el);
-          } else if (fn === void 0) {
-            return R(el)[key]().valueOf();
-          } else {
-            return fn;
-          }
-        };
-      } else {
-        args = nativeSlice.call(arguments, 1);
-        return function(el) {
-          var fn;
-          fn = el[key];
-          if (typeof fn === 'function') {
-            return el[key].apply(el, args);
-          } else {
-            el = R(el);
-            return el[key].apply(el, args).valueOf();
-          }
-        };
-      }
-    };
-
-    Base.prototype.fn = function(func) {
-      return function(el) {
-        arguments[0] = el;
-        return func.apply(null, arguments);
-      };
-    };
-
-    Base.prototype.falsey = function(obj) {
-      return obj === false || obj === null || obj === void 0;
-    };
-
-    Base.prototype.truthy = function(obj) {
-      return !__falsey(obj);
-    };
-
-    Base.prototype.respond_to = function(obj, function_name) {
-      return obj[function_name] !== void 0;
-    };
-
-    Base.prototype.is_equal = function(a, b) {
-      if (a === b) {
-        return true;
-      }
-      if (typeof a === 'object') {
-        if (a.equals != null) {
-          return a.equals(b);
-        } else if (__isArr(a)) {
-          return _arr.equals(a, b);
-        } else if (a.valueOf != null) {
-          return a.valueOf() === b.valueOf();
-        } else {
-          return false;
-        }
-      } else if (typeof b === 'object') {
-        if (b.equals != null) {
-          return b.equals(a);
-        } else if (__isArr(b)) {
-          return _arr.equals(a, b);
-        } else if (b.valueOf != null) {
-          return b.valueOf() === a.valueOf();
-        } else {
-          return false;
-        }
-      } else {
-        return a === b;
-      }
-    };
-
-    Base.prototype.is_eql = function(a, b) {
-      if (typeof a === 'object') {
-        return a.eql(b);
-      } else if (typeof b === 'object') {
-        return b.eql(a);
-      } else {
-        return a === b;
-      }
-    };
-
-    Base.prototype.extend = function(obj, mixin) {
-      var method, name;
-      for (name in mixin) {
-        method = mixin[name];
-        obj[name] = method;
-      }
-      return obj;
-    };
-
-    return Base;
-
-  })();
-
-  _ref = RubyJS.Base.prototype;
+  _ref = RubyJS.Kernel.prototype;
   for (name in _ref) {
     if (!__hasProp.call(_ref, name)) continue;
     method = _ref[name];
     RubyJS[name] = method;
   }
+
+  RubyJS['$~'] = null;
+
+  RubyJS['$,'] = null;
+
+  RubyJS['$;'] = "\n";
+
+  RubyJS['$/'] = "\n";
+
+  RubyJS.inspect = function(obj) {
+    if (obj === null || obj === 'undefined') {
+      return 'null';
+    } else if (obj.inspect != null) {
+      return obj.inspect();
+    } else if (R.Array.isNativeArray(obj)) {
+      return "[" + obj + "]";
+    } else {
+      return obj;
+    }
+  };
+
+  RubyJS.pollute_global_with_kernel = function(prefix) {
+    var args, _i, _len;
+    if (prefix == null) {
+      prefix = "_";
+    }
+    args = ['w', 'fn', 'proc', 'puts', 'truthy', 'falsey', 'inspect'];
+    for (_i = 0, _len = args.length; _i < _len; _i++) {
+      name = args[_i];
+      root[prefix + name] = R[name];
+    }
+    return null;
+  };
+
+  RubyJS.pollute_global_with_shortcuts = function(prefix) {
+    var k, shortcuts, v;
+    if (prefix == null) {
+      prefix = "_";
+    }
+    shortcuts = {
+      _arr: 'a',
+      _num: 'n',
+      _str: 's',
+      _itr: 'i',
+      _enum: 'e',
+      _hsh: 'h',
+      _time: 't'
+    };
+    for (k in shortcuts) {
+      v = shortcuts[k];
+      R[prefix + v] = R[k];
+      root[prefix + v] = R[k];
+    }
+    return null;
+  };
+
+  RubyJS.god_mode = function(prefix) {
+    var func, methods, new_name, overwrites, proto, _i, _len, _ref1;
+    if (prefix == null) {
+      prefix = 'rb_';
+    }
+    overwrites = [[Array.prototype, _arr], [Number.prototype, _num], [String.prototype, _str], [Date.prototype, _time]];
+    for (_i = 0, _len = overwrites.length; _i < _len; _i++) {
+      _ref1 = overwrites[_i], proto = _ref1[0], methods = _ref1[1];
+      for (name in methods) {
+        func = methods[name];
+        new_name = prefix + name;
+        if (typeof func === 'function') {
+          if (proto[new_name] === void 0) {
+            (function(new_name, func) {
+              return proto[new_name] = callFunctionWithThis(func);
+            })(new_name, func);
+          } else if (prefix === '' && proto['rb_' + new_name]) {
+            console.log("" + proto + "." + new_name + " exists. skipped.");
+          }
+        }
+      }
+    }
+    return true;
+  };
+
+  RubyJS.proc = function(key) {
+    var args;
+    if (arguments.length === 1) {
+      return function(el) {
+        var fn;
+        fn = el[key];
+        if (typeof fn === 'function') {
+          return fn.call(el);
+        } else if (fn === void 0) {
+          return R(el)[key]().valueOf();
+        } else {
+          return fn;
+        }
+      };
+    } else {
+      args = nativeSlice.call(arguments, 1);
+      return function(el) {
+        var fn;
+        fn = el[key];
+        if (typeof fn === 'function') {
+          return el[key].apply(el, args);
+        } else {
+          el = R(el);
+          return el[key].apply(el, args).valueOf();
+        }
+      };
+    }
+  };
+
+  RubyJS.fn = function(func) {
+    return function(el) {
+      arguments[0] = el;
+      return func.apply(null, arguments);
+    };
+  };
+
+  RubyJS.falsey = function(obj) {
+    return obj === false || obj === null || obj === void 0;
+  };
+
+  RubyJS.truthy = function(obj) {
+    return !__falsey(obj);
+  };
+
+  RubyJS.respond_to = function(obj, function_name) {
+    return obj[function_name] !== void 0;
+  };
+
+  RubyJS.is_equal = function(a, b) {
+    if (a === b) {
+      return true;
+    }
+    if (typeof a === 'object') {
+      if (a.equals != null) {
+        return a.equals(b);
+      } else if (__isArr(a)) {
+        return _arr.equals(a, b);
+      } else if (a.valueOf != null) {
+        return a.valueOf() === b.valueOf();
+      } else {
+        return false;
+      }
+    } else if (typeof b === 'object') {
+      if (b.equals != null) {
+        return b.equals(a);
+      } else if (__isArr(b)) {
+        return _arr.equals(a, b);
+      } else if (b.valueOf != null) {
+        return b.valueOf() === a.valueOf();
+      } else {
+        return false;
+      }
+    } else {
+      return a === b;
+    }
+  };
+
+  RubyJS.is_eql = function(a, b) {
+    if (typeof a === 'object') {
+      return a.eql(b);
+    } else if (typeof b === 'object') {
+      return b.eql(a);
+    } else {
+      return a === b;
+    }
+  };
 
   __falsey = R.falsey;
 
@@ -718,7 +692,7 @@ http://www.rubyjs.org/LICENSE.txt
     _fn(error);
   }
 
-  _coerce = {
+  RubyJS.coerce = _coerce = {
     "native": function(obj) {
       if (typeof obj !== 'object') {
         return obj;
@@ -890,8 +864,6 @@ http://www.rubyjs.org/LICENSE.txt
     }
   };
 
-  R.Support.coerce = _coerce;
-
   __str = _coerce.str;
 
   __int = _coerce.int;
@@ -931,8 +903,6 @@ http://www.rubyjs.org/LICENSE.txt
       throw RKeyError["new"](msg);
     }
   };
-
-  R.Support.err = _err;
 
   NumericMethods = (function() {
     function NumericMethods() {}
@@ -2719,21 +2689,6 @@ http://www.rubyjs.org/LICENSE.txt
       ary = new Array(len);
       while (++idx < len) {
         ary[idx] = callback(arr[idx]);
-      }
-      return ary;
-    };
-
-    ArrayMethods.prototype.map_with_object = function(arr, obj, block) {
-      var ary, callback, idx, len;
-      if ((block != null ? block.call : void 0) == null) {
-        return __enumerate(_arr.map_with_object, [arr, obj]);
-      }
-      callback = block;
-      len = arr.length;
-      idx = -1;
-      ary = new Array(len);
-      while (++idx < len) {
-        ary[idx] = callback(arr[idx], obj);
       }
       return ary;
     };
@@ -7441,15 +7396,15 @@ http://www.rubyjs.org/LICENSE.txt
       }
       other = R(other);
       if (other.is_string != null) {
-        return this.$Array([this.$Float(other), this.to_f()]);
+        return new RArray([this.$Float(other), this.to_f()]);
       } else if (other.constructor.prototype === this.constructor.prototype) {
-        return this.$Array([other, this]);
+        return new RArray([other, this]);
       } else if (other.is_float != null) {
-        return this.$Array([other, this.to_f()]);
+        return new RArray([other, this.to_f()]);
       } else if (other.is_fixnum != null) {
-        return this.$Array([other, this]);
+        return new RArray([other, this]);
       } else if (other.is_numeric != null) {
-        return this.$Array([other.to_f(), this.to_f()]);
+        return new RArray([other.to_f(), this.to_f()]);
       } else {
         throw RubyJS.TypeError["new"]();
       }
