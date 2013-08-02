@@ -1,5 +1,22 @@
 
 class ArrayMethods extends EnumerableMethods
+  # Checks if arr is an Array or can be coerced to an array
+  # using valueOf()
+  #
+  # @example
+  #   _a.isArray([])     // => true
+  #   _a.isArray({})     // => false
+  #   _a.isArray("")     // => false
+  #   _a.isArray(null)   // => false
+  #   // Arguments are not arrays
+  #   function () { return _a.isArray(arguments) }(1,2)  // => false
+  #   // Checks if valueOf() returns an array
+  #   _a.isArray({valueOf: function(){return [];}}) // => true
+  #
+  isArray: __isArr
+
+
+
   # Checks if arrays have the same elements.
   #
   # @example

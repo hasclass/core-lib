@@ -1,6 +1,14 @@
-describe "_arr", ->
+describe "_a", ->
   array = [1,[1,2],2]
   args = R.Support.argify(1,[1,2],2)
+
+  it "isArray", ->
+    expect( _a.isArray([])     ).toBe(true)
+    expect( _a.isArray({})     ).toBe(false)
+    expect( _a.isArray("")     ).toBe(false)
+    expect( _a.isArray(null)   ).toBe(false)
+    expect( (() -> _a.isArray(arguments))(1,2)  ).toBe(false)
+    expect( _a.isArray({valueOf: -> []})   ).toBe(true)
 
   describe "rindex", ->
     it "splats block arguments", ->
