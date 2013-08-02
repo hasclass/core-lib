@@ -280,7 +280,7 @@ describe "_a docs", ->
   it '_a.size', ->
     expect( _a.size([]) ).toEqual 0
     expect( _a.size([1,2]) ).toEqual 2
-    expect( _a.size([,]) ).toEqual 2
+    `expect( _a.size([1,,3]) ).toEqual(3);`
 
 
   it "_a.slice", ->
