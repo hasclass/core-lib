@@ -1,9 +1,14 @@
-# R.Support includes aliases for private methods. So that they can be used
-# outside RubyJS.
+########################################
+# Private methods of RubyJS base object
+########################################
+
+
+# helper method to get an arguments object
 #
-R.Support =
-  # helper method to get an arguments object
-  argify: -> arguments
+# @return [Arguments]
+# @private
+#
+RubyJS.argify = -> arguments
 
 # Creates a wrapper method that calls a functional style
 # method with this as the first arguments. Tries to avoid apply.
@@ -20,7 +25,9 @@ R.Support =
 #     String.prototype.capitalize = callFunctionWithThis(_s.capitalize)
 #     "foo".capitalize() // => "Foo"
 #
-callFunctionWithThis = (func) ->
+# @private
+#
+RubyJS.callFunctionWithThis = callFunctionWithThis = (func) ->
   () ->
     a = arguments
     switch arguments.length
@@ -37,7 +44,7 @@ callFunctionWithThis = (func) ->
 
 # RubyJS specific helper methods
 # @private
-__ensure_args_length = (args, length) ->
+RubyJS.ensure_args_length = __ensure_args_length = (args, length) ->
   throw R.ArgumentError.new() unless args.length is length
 
 
@@ -53,15 +60,10 @@ __ensure_args_length = (args, length) ->
 #
 # @private
 #
-__extract_block = (args) ->
+RubyJS.extract_block = __extract_block = (args) ->
   idx = args.length
   while --idx >= 0
     return args.pop() if args[idx]?.call?
   null
-
-
-R.Support.callFunctionWithThis = callFunctionWithThis
-R.Support.ensure_args_length = __ensure_args_length
-R.Support.extract_block = __extract_block
 
 

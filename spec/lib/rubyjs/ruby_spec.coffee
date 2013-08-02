@@ -57,26 +57,39 @@ describe "R.is_equal", ->
     expect( R.is_equal([[1]], [[2]]) ).toEqual false
 
 
-describe "R.Support.extract_block", ->
+describe "R.falsey", ->
+
+  it "true for null, false, undefined", ->
+    expect( RubyJS.falsey(null)      ).toEqual true
+    expect( RubyJS.falsey(false)     ).toEqual true
+    expect( RubyJS.falsey(undefined) ).toEqual true
+
+  it "false for 0,-1, etc", ->
+    expect( RubyJS.falsey(0  ) ).toEqual false
+    expect( RubyJS.falsey("0") ).toEqual false
+    expect( RubyJS.falsey(-1 ) ).toEqual false
+
+
+describe "RubyJS.extract_block", ->
   beforeEach ->
     @fn   = ->
     @args = (args...) -> return args
 
   it "returns the block/function if it finds one", ->
-    expect( R.Support.extract_block(@args(@fn)) ).toEqual @fn
-    expect( R.Support.extract_block(@args 1,2, @fn) ).toEqual @fn
+    expect( RubyJS.extract_block(@args(@fn)) ).toEqual @fn
+    expect( RubyJS.extract_block(@args 1,2, @fn) ).toEqual @fn
 
   it "returns the last block/function", ->
     fn1 = ->
-    expect( R.Support.extract_block(@args(fn1, @fn)) ).toEqual @fn
+    expect( RubyJS.extract_block(@args(fn1, @fn)) ).toEqual @fn
 
   it "returns null if it does not find a block", ->
-    expect( R.Support.extract_block(@args null) ).toEqual null
-    expect( R.Support.extract_block(@args 1,2) ).toEqual null
+    expect( RubyJS.extract_block(@args null) ).toEqual null
+    expect( RubyJS.extract_block(@args 1,2) ).toEqual null
 
   it "removes function if it finds one", ->
     args = @args( @fn )
     expect( args.length ).toEqual 1
-    R.Support.extract_block(args)
+    RubyJS.extract_block(args)
     expect( args.length ).toEqual 0
 

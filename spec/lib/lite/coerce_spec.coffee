@@ -1,10 +1,10 @@
 
 describe "_coerce", ->
-  _coerce = R.Support.coerce
+  _coerce = RubyJS.coerce
 
   describe "call_with", ->
     call_with = _coerce.call_with
-    arg = R.Support.argify
+    arg = RubyJS.argify
 
     fn0 = (me) -> [me]
     fn1 = (me, a) -> [me, a]
@@ -31,38 +31,38 @@ describe "_coerce", ->
 
   describe "is_rgx", ->
     it "should recognize //, valueOf: rgxp", ->
-      expect( R.Support.coerce.is_rgx(/a/) ).toEqual true
-      expect( R.Support.coerce.is_rgx({valueOf: -> /a/}) ).toEqual true
-      expect( R.Support.coerce.is_rgx({}) ).toEqual false
-      expect( R.Support.coerce.is_rgx([]) ).toEqual false
-      expect( R.Support.coerce.is_rgx("") ).toEqual false
-      expect( R.Support.coerce.is_rgx(1)  ).toEqual false
-      expect( R.Support.coerce.is_rgx(undefined) ).toEqual false
-      expect( R.Support.coerce.is_rgx(null) ).toEqual false
+      expect( RubyJS.coerce.is_rgx(/a/) ).toEqual true
+      expect( RubyJS.coerce.is_rgx({valueOf: -> /a/}) ).toEqual true
+      expect( RubyJS.coerce.is_rgx({}) ).toEqual false
+      expect( RubyJS.coerce.is_rgx([]) ).toEqual false
+      expect( RubyJS.coerce.is_rgx("") ).toEqual false
+      expect( RubyJS.coerce.is_rgx(1)  ).toEqual false
+      expect( RubyJS.coerce.is_rgx(undefined) ).toEqual false
+      expect( RubyJS.coerce.is_rgx(null) ).toEqual false
 
 
   describe "is_str", ->
     it "should recognize '', new String(''), valueOf: ''", ->
-      expect( R.Support.coerce.is_str("") ).toEqual true
-      expect( R.Support.coerce.is_str(new String("")) ).toEqual true
-      expect( R.Support.coerce.is_str({valueOf: -> "foo"}) ).toEqual true
-      expect( R.Support.coerce.is_str(/a/) ).toEqual false
-      expect( R.Support.coerce.is_str({}) ).toEqual false
-      expect( R.Support.coerce.is_str([]) ).toEqual false
-      expect( R.Support.coerce.is_str(1)  ).toEqual false
-      expect( R.Support.coerce.is_str(undefined) ).toEqual false
-      expect( R.Support.coerce.is_str(null) ).toEqual false
+      expect( RubyJS.coerce.is_str("") ).toEqual true
+      expect( RubyJS.coerce.is_str(new String("")) ).toEqual true
+      expect( RubyJS.coerce.is_str({valueOf: -> "foo"}) ).toEqual true
+      expect( RubyJS.coerce.is_str(/a/) ).toEqual false
+      expect( RubyJS.coerce.is_str({}) ).toEqual false
+      expect( RubyJS.coerce.is_str([]) ).toEqual false
+      expect( RubyJS.coerce.is_str(1)  ).toEqual false
+      expect( RubyJS.coerce.is_str(undefined) ).toEqual false
+      expect( RubyJS.coerce.is_str(null) ).toEqual false
 
 
 
   describe "is_arr", ->
     it "should recognize []", ->
-      expect( R.Support.coerce.is_arr([]) ).toEqual true
-      expect( R.Support.coerce.is_arr({valueOf: -> []}) ).toEqual true
-      expect( R.Support.coerce.is_arr("") ).toEqual false
-      expect( R.Support.coerce.is_arr(new String("")) ).toEqual false
-      expect( R.Support.coerce.is_arr(/a/) ).toEqual false
-      expect( R.Support.coerce.is_arr({}) ).toEqual false
-      expect( R.Support.coerce.is_arr(1)  ).toEqual false
-      expect( R.Support.coerce.is_arr(undefined) ).toEqual false
-      expect( R.Support.coerce.is_arr(null) ).toEqual false
+      expect( RubyJS.coerce.is_arr([]) ).toEqual true
+      expect( RubyJS.coerce.is_arr({valueOf: -> []}) ).toEqual true
+      expect( RubyJS.coerce.is_arr("") ).toEqual false
+      expect( RubyJS.coerce.is_arr(new String("")) ).toEqual false
+      expect( RubyJS.coerce.is_arr(/a/) ).toEqual false
+      expect( RubyJS.coerce.is_arr({}) ).toEqual false
+      expect( RubyJS.coerce.is_arr(1)  ).toEqual false
+      expect( RubyJS.coerce.is_arr(undefined) ).toEqual false
+      expect( RubyJS.coerce.is_arr(null) ).toEqual false

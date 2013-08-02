@@ -1,6 +1,6 @@
 describe "_a", ->
   array = [1,[1,2],2]
-  args = R.Support.argify(1,[1,2],2)
+  args = RubyJS.argify(1,[1,2],2)
 
   it "isArray", ->
     expect( _a.isArray([])     ).toBe(true)

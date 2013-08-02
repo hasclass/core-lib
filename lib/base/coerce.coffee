@@ -1,7 +1,7 @@
 # Singleton class for type coercion inside RubyJS.
 #
 # @private
-_coerce =
+RubyJS.coerce = _coerce =
 
   native: (obj) ->
     if typeof obj != 'object'
@@ -134,9 +134,6 @@ _coerce =
 
 
 
-
-
-R.Support.coerce = _coerce
 __str   = _coerce.str
 __int   = _coerce.int
 __num   = _coerce.num

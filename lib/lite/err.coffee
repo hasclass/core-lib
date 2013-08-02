@@ -14,4 +14,3 @@ _err =
   throw_key: (msg) ->
     throw RKeyError.new(msg)
 
-R.Support.err = _err

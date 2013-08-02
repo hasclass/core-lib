@@ -10,7 +10,7 @@ root = global ? window
 # TODO: link rubyjs/_r directly to RubyJS.RubyJS.prototype.box
 #       this is a suboptimal solution as of now.
 root.RubyJS = (obj, recursive, block) ->
-  RubyJS.Base.prototype.box(obj, recursive, block)
+  RubyJS.box(obj, recursive, block)
 
 RubyJS.VERSION = '0.8.0-beta1'
 
@@ -23,8 +23,6 @@ RubyJS.noConflict = ->
 
 # Alias to RubyJS
 root.R  = RubyJS
-
-
 
 RubyJS.extend = (obj, mixin) ->
   obj[name] = method for name, method of mixin

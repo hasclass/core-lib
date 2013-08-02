@@ -2,12 +2,12 @@ fs     = require 'fs'
 {exec} = require 'child_process'
 
 coreFiles = [
-  'base/support'
+  'base/base_private'
   'base/aliases'
   'base/block'
   'base/breaker'
   'base/kernel'
-  'base/base'
+  'base/base_public'
   'base/errors'
   'base/coerce'
 ]
