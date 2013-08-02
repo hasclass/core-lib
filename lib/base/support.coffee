@@ -6,7 +6,7 @@ R.Support =
   argify: -> arguments
 
 # Creates a wrapper method that calls a functional style
-# method with this as the first arguments
+# method with this as the first arguments. Tries to avoid apply.
 #
 #     callFunctionWithThis(_s.ljust)
 #     // creates a function similar to this:
@@ -21,23 +21,18 @@ R.Support =
 #     "foo".capitalize() // => "Foo"
 #
 callFunctionWithThis = (func) ->
-  (a, b, c, d, e, f) ->
-    # Ugly, but fast implementation.
-    idx = arguments.length
-    while idx--
-      break if arguments[idx] isnt undefined
-
-    val = this.valueOf()
-    switch idx + 1
-      when 0 then func(val)
-      when 1 then func(val, a)
-      when 2 then func(val, a, b)
-      when 3 then func(val, a, b, c)
-      when 4 then func(val, a, b, c, d)
-      when 5 then func(val, a, b, c, d, e)
-      when 6 then func(val, a, b, c, d, e, f)
+  () ->
+    a = arguments
+    switch arguments.length
+      when 0 then func(this)
+      when 1 then func(this, a[0])
+      when 2 then func(this, a[0], a[1])
+      when 3 then func(this, a[0], a[1], a[2])
+      when 4 then func(this, a[0], a[1], a[2], a[3])
+      when 5 then func(this, a[0], a[1], a[2], a[3], a[4])
+      when 6 then func(this, a[0], a[1], a[2], a[3], a[4], a[5])
       # Slow fallback when passed more than 6 arguments.
-      else func.apply(null, [val].concat(nativeSlice.call(arguments, 0)))
+      else func.apply(null, [this].concat(nativeSlice.call(arguments, 0)))
 
 
 # RubyJS specific helper methods
