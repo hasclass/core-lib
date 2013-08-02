@@ -46,11 +46,12 @@ dispatchFunction = (name) ->
       func = lookupFunction(self.value, name)
     self.value = __call(func, self.value, arguments)
 
-    if self.chain then this else self.value
-
+    # if self.chain then this else self.value
+    this
 
 klasses = [
   ArrayMethods,
+  HashMethods,
   StringMethods,
   NumericMethods,
   TimeMethods

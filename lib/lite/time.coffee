@@ -208,7 +208,7 @@ class TimeMethods
     (sign+hour+mins)
 
 
-_time = R._time = (arr) ->
-  new R.Time(arr)
+_time = R._time = (time) ->
+  new Chain(time, _time)
 
 R.extend(_time, new TimeMethods())

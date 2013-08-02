@@ -231,7 +231,7 @@ class HashMethods extends EnumerableMethods
 
 
 
-_hsh = R._hsh = (arr) ->
-  new RHash(arr)
+_hsh = R._hsh = (hsh) ->
+  new Chain(hsh, _hsh)
 
 R.extend(_hsh, new HashMethods())

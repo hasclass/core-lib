@@ -395,4 +395,8 @@ class NumericMethods
 
   succ: @prototype.next
 
-_num = R._num = new NumericMethods()
+
+_num = R._num = (arr) ->
+  new Chain(arr, _num)
+
+R.extend(_num, new NumericMethods())

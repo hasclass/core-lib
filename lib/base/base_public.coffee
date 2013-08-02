@@ -25,7 +25,7 @@ RubyJS.inspect = (obj) ->
     'null'
   else if obj.inspect?
     obj.inspect()
-  else if R.Array.isNativeArray(obj)
+  else if _a.isArray(obj)
     "[#{obj}]"
   else
     obj
