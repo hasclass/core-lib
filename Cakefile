@@ -2,50 +2,50 @@ fs     = require 'fs'
 {exec} = require 'child_process'
 
 coreFiles = [
-  'base/base_private'
-  'base/aliases'
-  'base/block'
-  'base/breaker'
-  'base/kernel'
-  'base/base_public'
-  'base/errors'
-  'base/coerce'
+  'core/base_private'
+  'core/aliases'
+  'core/block'
+  'core/breaker'
+  'core/kernel'
+  'core/base_public'
+  'core/errors'
+  'core/coerce'
 ]
 
 baseFiles = [
-  'lite/err'
-  'lite/num'
-  'lite/itr'
-  'lite/arr'
-  'lite/str'
-  'lite/rgx'
-  'lite/hsh'
-  'lite/time'
-  'lite/chain'
+  'base/err'
+  'base/num'
+  'base/itr'
+  'base/arr'
+  'base/str'
+  'base/rgx'
+  'base/hsh'
+  'base/time'
+  'base/chain'
 ]
 
 ooFiles = [
-  'corelib/object'
-  'corelib/coerce'
-  'corelib/comparable'
+  'oo/object'
+  'oo/coerce'
+  'oo/comparable'
 
-  'corelib/enumerable'
-  'corelib/enumerator'
+  'oo/enumerable'
+  'oo/enumerator'
 
-  'corelib/array'
-  'corelib/hash'
-  'corelib/range'
+  'oo/array'
+  'oo/hash'
+  'oo/range'
 
-  'corelib/match_data'
-  'corelib/string'
-  'corelib/regexp'
+  'oo/match_data'
+  'oo/string'
+  'oo/regexp'
 
-  'corelib/numeric'
-  'corelib/integer'
-  'corelib/fixnum'
-  'corelib/float'
+  'oo/numeric'
+  'oo/integer'
+  'oo/fixnum'
+  'oo/float'
 
-  'corelib/time'
+  'oo/time'
 ]
 
 baseFiles = ['ruby'].concat(coreFiles).concat(baseFiles);
