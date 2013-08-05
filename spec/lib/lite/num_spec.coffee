@@ -123,3 +123,21 @@ describe "_n.round", ->
 
   it "returns zero if precision is negative", ->
     expect( _n.round(3.12, -2) ).toEqual 0
+
+
+describe "_n.numerator", ->
+  it "returns positive number", ->
+    expect( _n.numerator(2)   ).toEqual 2
+    expect( _n.numerator(-22) ).toEqual 22
+
+
+describe "_n.step", ->
+  it "decrements numbers from num to limit", ->
+    expect( _n.step(5, 3, -1) ).toEqual [5, 4, 3]
+
+  it "increments numbers from num to limit", ->
+    expect( _n.step(3, 5) ).toEqual [3, 4, 5]
+
+  it "returns an array with floating point numbers", ->
+    expect( _n.step(3, 5, 0.5) ).toEqual [3, 3.5, 4, 4.5, 5]
+
