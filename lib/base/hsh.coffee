@@ -70,7 +70,7 @@ class HashMethods extends EnumerableMethods
   # @example
   #   var print = function(i) {console.log(i + '..')};
   #   var hsh = {one: 1, two: 2}
-  #   _h.each_key(hsh, print)   // => "1..\n2..\n{one: 1, two: 2}"
+  #   _h.each_key(hsh, print)   // => "one..\ntwo..\n{one: 1, two: 2}"
   #
   # @return [Object]
   #
