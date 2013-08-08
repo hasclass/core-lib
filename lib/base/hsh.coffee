@@ -1,4 +1,15 @@
 class HashMethods extends EnumerableMethods
+
+  # Returns array of [ key, value ] if needle equals to a key in the hsh.
+  # Otherwise, returns null.
+  #
+  # @example
+  #   var hsh = {one: 1, two: 2}
+  #   _h.assoc(hsh, 'two')        // => ['two', 2]
+  #   _h.assoc(hsh, 2)            // => null
+  #
+  # @return [Array] or [null]
+  #
   assoc: (hsh, needle) ->
     if typeof needle is 'object' and needle.equals?
       for own k, v of hsh
@@ -10,6 +21,20 @@ class HashMethods extends EnumerableMethods
     null
 
 
+  # Deletes key from hsh.
+  # Returns value of the key if the key was found in hsh.
+  # Invokes block if key was not found and block has been passed.
+  # Returns null if key was not found in hsh.
+  #
+  # @example
+  #   var hsh = {one: 1, two: 2}
+  #   var print = function(i) {console.log(i + '..')};
+  #   _h.delete(hsh, 'one')         // => 1
+  #   _h.delete(hsh, 2, print )     // => 2..
+  #   _h.delete(hsh, 'four')        // => null
+  #
+  # @return [String] or [this] or [null]
+  #
   delete: (hsh, key, block) ->
     if `key in hsh`
       value = hsh[key]
@@ -39,6 +64,16 @@ class HashMethods extends EnumerableMethods
     hsh
 
 
+  # Invokes block for each key in hsh.
+  # Returns hsh.
+  #
+  # @example
+  #   var print = function(i) {console.log(i + '..')};
+  #   var hsh = {one: 1, two: 2}
+  #   _h.each_key(hsh, print)   // => "one..\ntwo..\n{one: 1, two: 2}"
+  #
+  # @return [Object]
+  #
   each_key: (hsh, block) ->
     for own k,v of hsh
       block(k)
