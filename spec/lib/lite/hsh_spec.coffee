@@ -13,9 +13,8 @@ describe "_h.delete", ->
     expect( _h.delete({one: 1, two: 2}, 4) ).toEqual null
 
 describe "_h.each_key", ->
-  print = (i) -> console.log(i + '..')
-  hsh = {one: 1, two: 2}
-
   it "invokes block for each key and returns hash", ->
+    print = (i) -> console.log(i + '..')
+    hsh = {one: 1, two: 2}
     expect( _h.each_key(hsh, print) ).toEqual hsh
 
