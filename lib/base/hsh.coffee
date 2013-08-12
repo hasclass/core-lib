@@ -80,18 +80,60 @@ class HashMethods extends EnumerableMethods
     hsh
 
 
+  # Invokes block for each value in hsh.
+  # Returns hsh.
+  #
+  # @example
+  #   var print = function(i) {console.log(i + '..')};
+  #   var hsh = {one: 1, two: 2}
+  #   _h.each_key(hsh, print)   // => "1..\n2..\n{one: 1, two: 2}"
+  #
+  # @return [Object]
+  #
   each_value: (hsh, block) ->
     for own k,v of hsh
       block(v)
     hsh
 
 
+  # Checks if hsh contains any keys and values.
+  # Returns false if hsh contains any keys and values.
+  # Returns true otherwise.
+  #
+  # @example
+  #   var hsh = {one: 1, two: 2}
+  #   _h.empty(hsh)       // => false
+  #   _h.empty({})        // => true
+  #
+  # @return [Boolean]
+  #
   empty: (hsh) ->
     for own k, v of hsh
       return false
     true
 
 
+  # Returns a value for a passed key in hsh.
+  # Throws ArgumentError if only one or no arguments were passed.
+  # If the key cannot be found on hsh and default_value is not a function, then
+  # value of default_value will be returned.
+  # If the key cannot be found and default_value is a function, then
+  # the function will be executed passing the key as a parameter.
+  # Returns undefined after the execution of the function.
+  # Throws KeyError if default_value was not passed and the key cannot be found
+  # in hsh.
+  #
+  # @example
+  #   var print = function(i) {console.log(i + '..')};
+  #   var hsh = {one: 1, two: 2}
+  #   _h.fetch(hsh, 'one')              // => 1
+  #   _h.fetch(hsh, 'four')             // => Error: KeyError
+  #   _h.fetch(hsh, 'four', 3)          // => 3
+  #   _h.fetch(hsh)                     // => Error: ArgumentError
+  #   _h.fetch(hsh, 'four', print)      // => four..\n undefined
+  #
+  # @return [this] or [String] or [Number] or [Undefined]
+  #
   fetch: (hsh, key, default_value) ->
     if arguments.length <= 1
       _err.throw_argument()
