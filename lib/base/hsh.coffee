@@ -148,15 +148,45 @@ class HashMethods extends EnumerableMethods
       _err.throw_key()
 
 
+  # Flattens a hsh into array.
+  # By default, recursively flattens elements of the hsh and
+  # returns one-dimensional array.
+  # Recursion can be disabled by passing 0 as a second argument.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.flatten(hsh)                     // => ['one', 1, 'two', 2]
+  #   _h.flatten(hsh, 0)                  // => [ ['one', 1], ['two', 2] ]
+  #
+  # @return [Array]
   flatten: (hsh, recursion = 1) ->
     recursion = __int(recursion)
     _arr.flatten(_hsh.to_a(hsh), recursion)
 
 
+  # Returns value of the key in hsh.
+  # Returns undefined If key was not found or not provided.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.get(hsh, 'one')                  // => 1
+  #   _h.get(hsh, 1)                      // => undefined
+  #
+  # @return [Object]
   get: (hsh, key) ->
     hsh[key]
 
 
+  # Returns true if a value is present for some key in hsh.
+  # Returns false otherwise or if a value was not passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.has_value(hsh, 2)               // => true
+  #   _h.has_value(hsh, 'one')           // => false
+  #   _h.has_value(hsh)                  // => false
+  #
+  # @return [Boolean]
   has_value: (hsh, val) ->
     if typeof val is 'object' && val.equals?
       for own k, v of hsh
