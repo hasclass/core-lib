@@ -198,6 +198,15 @@ class HashMethods extends EnumerableMethods
     false
 
 
+  # Returns true if key was found in hsh.
+  # Otherwise, returns false.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.has_key(hsh, 'one')                // => true
+  #   _h.has_key(hsh, 2)                    // => false
+  #
+  # @return [Boolean]
   has_key: (hsh, key) ->
     `key in hsh`
 
@@ -206,11 +215,31 @@ class HashMethods extends EnumerableMethods
   member:  @prototype.has_key
 
 
+  # Deletes all key-value pairs from hsh for which block evaluates to false.
+  # Returns hash.
+  # Modifies original hash (destructive).
+  # Throws error if no block was passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.keep_if(hsh, function(k, v) { return v == 1 })     // => {one: 1}
+  #   _h.keep_if(hsh)                                       // => TypeError: undefined is not a function
+  #
+  # @return [Object]
   keep_if: (hsh, block) ->
     _hsh.reject$(hsh, block)
     hsh
 
 
+  # Returns a key from hsh for a given value.
+  # Returns null if the value was not found in hsh or was not passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.key(hsh, 2)                                        // => 'two'
+  #   _h.key(hsh, 'three')                                  // => null
+  #
+  # @return [String] or [Object]
   key: (hsh, value) ->
     if typeof value is 'object' && value.equals?
       for own k, v of hsh
