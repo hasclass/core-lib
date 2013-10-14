@@ -148,15 +148,45 @@ class HashMethods extends EnumerableMethods
       _err.throw_key()
 
 
+  # Flattens a hsh into array.
+  # By default, recursively flattens elements of the hsh and
+  # returns one-dimensional array.
+  # Recursion can be disabled by passing 0 as a second argument.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.flatten(hsh)                     // => ['one', 1, 'two', 2]
+  #   _h.flatten(hsh, 0)                  // => [ ['one', 1], ['two', 2] ]
+  #
+  # @return [Array]
   flatten: (hsh, recursion = 1) ->
     recursion = __int(recursion)
     _arr.flatten(_hsh.to_a(hsh), recursion)
 
 
+  # Returns value of the key in hsh.
+  # Returns undefined If key was not found or not provided.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.get(hsh, 'one')                  // => 1
+  #   _h.get(hsh, 1)                      // => undefined
+  #
+  # @return [Object]
   get: (hsh, key) ->
     hsh[key]
 
 
+  # Returns true if a value is present for some key in hsh.
+  # Returns false otherwise or if a value was not passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.has_value(hsh, 2)               // => true
+  #   _h.has_value(hsh, 'one')           // => false
+  #   _h.has_value(hsh)                  // => false
+  #
+  # @return [Boolean]
   has_value: (hsh, val) ->
     if typeof val is 'object' && val.equals?
       for own k, v of hsh
@@ -168,6 +198,15 @@ class HashMethods extends EnumerableMethods
     false
 
 
+  # Returns true if key was found in hsh.
+  # Otherwise, returns false.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.has_key(hsh, 'one')                // => true
+  #   _h.has_key(hsh, 2)                    // => false
+  #
+  # @return [Boolean]
   has_key: (hsh, key) ->
     `key in hsh`
 
@@ -176,11 +215,31 @@ class HashMethods extends EnumerableMethods
   member:  @prototype.has_key
 
 
+  # Deletes all key-value pairs from hsh for which block evaluates to false.
+  # Returns hash.
+  # Modifies original hash (destructive).
+  # Throws error if no block was passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.keep_if(hsh, function(k, v) { return v == 1 })     // => {one: 1}
+  #   _h.keep_if(hsh)                                       // => TypeError: undefined is not a function
+  #
+  # @return [Object]
   keep_if: (hsh, block) ->
     _hsh.reject$(hsh, block)
     hsh
 
 
+  # Returns a key from hsh for a given value.
+  # Returns null if the value was not found in hsh or was not passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.key(hsh, 2)                                        // => 'two'
+  #   _h.key(hsh, 'three')                                  // => null
+  #
+  # @return [String] or [Object]
   key: (hsh, value) ->
     if typeof value is 'object' && value.equals?
       for own k, v of hsh

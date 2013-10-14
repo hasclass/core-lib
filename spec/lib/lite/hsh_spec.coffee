@@ -51,4 +51,66 @@ describe "_h.fetch", ->
     it "throws KeyError if default_value wasn't passed", ->
       expect( -> _h.fetch({one: 1, two: 2}, 'four') ).toThrow("KeyError")
 
+describe "_h.flatten", ->
+  it "returns an array", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.flatten(hsh) ).toBeInstanceOf(Array)
+
+  it "returns one-dimensional array", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.flatten(hsh).length ).toEqual 4
+
+  describe "with 0 as a second argument", ->
+    it "returns array of arrays", ->
+      hsh = {one: 1, two: 2}
+      expect( _h.flatten(hsh, 0)[0] ).toBeInstanceOf(Array)
+      expect( _h.flatten(hsh, 0)[1] ).toBeInstanceOf(Array)
+
+describe "_h.get", ->
+  it "returns value of the key in hsh", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.get(hsh, 'two') ).toEqual 2
+
+  it "returns undefined if the key is not in hsh", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.get(hsh, 2) ).toBeUndefined()
+
+describe "_h.has_value", ->
+  it "returns true if a value was found in hsh", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.has_value(hsh, 2) ).toBeTrue()
+
+  it 'returns false if a value was not found or not provided', ->
+    hsh = {one: 1, two: 2}
+    expect( _h.has_value(hsh, 'three') ).toBeFalse()
+    expect( _h.has_value(hsh) ).toBeFalse()
+
+describe "_h.has_key", ->
+  it "returns true if key was found in hsh", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.has_key(hsh, 'one') ).toBeTrue()
+
+  it  "returns false if key was not found in hsh", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.has_key(hsh, 1) ).toBeFalse()
+
+describe "_h.keep_if", ->
+  it "removes key-value pairs if block evaluates to false", ->
+    block = (k, v) -> return v == 1
+    hsh = {one: 1, two: 2}
+    expect( _h.keep_if(hsh, block)).toEqual {one: 1}
+
+  it "throws TypeError if no block is passed", ->
+    hsh = {one: 1, two: 2}
+    expect( -> _h.keep_if(hsh) ).toThrow()
+
+describe "_h.key", ->
+  it "returns key from hsh for passed value", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.key(hsh, 1) ).toEqual 'one'
+
+  it "returns null if value was not found in hash or not passed", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.key(hsh, 3) ).toEqual null
+    expect( _h.key(hsh) ).toEqual null
 
