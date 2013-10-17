@@ -307,5 +307,8 @@ describe "_a docs", ->
       _a.union([ "a", "b", "c" ], [ "c", "d", "a" ])
     ).toEqual [ "a", "b", "c", "d" ]
 
-
+  it "_a.min", ->
+    # https://github.com/rubyjs/core-lib/issues/25
+    expect( _a.min([2, 0, 1]) ).toEqual 0
+    expect( _a.max([-2, 0, -1]) ).toEqual 0
 

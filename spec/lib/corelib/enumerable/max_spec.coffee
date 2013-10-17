@@ -60,6 +60,9 @@ describe "Enumerable#max", ->
 
 
 
+  it "doesnt get confused if 0 is max argument", ->
+    expect( R([-1,0]).max() ).toEqual(0)
+
   xit "returns the maximum for enumerables that contain nils", ->
     # arr = EnumerableSpecs.Numerous.new(nil, nil, true)
     # arr.max { |a, b|

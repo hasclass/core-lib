@@ -16,6 +16,10 @@ class ArrayMethods extends EnumerableMethods
   isArray: __isArr
 
 
+  isNativeArray: nativeArray.isArray or (obj) ->
+    nativeToString.call(obj) is '[object Array]'
+
+
 
   # Checks if arrays have the same elements.
   #

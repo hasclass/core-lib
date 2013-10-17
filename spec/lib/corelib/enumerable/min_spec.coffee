@@ -63,6 +63,9 @@ describe "Enumerable#min", ->
     expect( @e_ints.min (a,b) -> a.cmp b               ).toEqual R(22)
     expect( @e_ints.min (a,b) -> a.to_s().cmp b.to_s() ).toEqual R(1010101010)
 
+  it "doesnt get confused if 0 is min argument", ->
+    expect( R([1,0]).min() ).toEqual(0)
+
   xit "returns the minimum for enumerables that contain nils", ->
     # arr = EnumerableSpecs.Numerous.new(nil, nil, true)
     # arr.min { |a, b|

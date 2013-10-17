@@ -1592,7 +1592,10 @@ http://www.rubyjs.org/LICENSE.txt
           }
         }
       });
-      return max || null;
+      if (max === void 0) {
+        return null;
+      }
+      return max;
     };
 
     EnumerableMethods.prototype.max_by = function(coll, block) {
@@ -1609,7 +1612,10 @@ http://www.rubyjs.org/LICENSE.txt
           }
         }
       });
-      return max || null;
+      if (max === void 0) {
+        return null;
+      }
+      return max;
     };
 
     EnumerableMethods.prototype.min = function(coll, block) {
@@ -1630,7 +1636,10 @@ http://www.rubyjs.org/LICENSE.txt
           }
         }
       });
-      return min || null;
+      if (min === void 0) {
+        return null;
+      }
+      return min;
     };
 
     EnumerableMethods.prototype.min_by = function(coll, block) {
@@ -1647,7 +1656,10 @@ http://www.rubyjs.org/LICENSE.txt
           }
         }
       });
-      return min || null;
+      if (min === void 0) {
+        return null;
+      }
+      return min;
     };
 
     EnumerableMethods.prototype.minmax = function(coll, block) {
@@ -1880,6 +1892,10 @@ http://www.rubyjs.org/LICENSE.txt
     }
 
     ArrayMethods.prototype.isArray = __isArr;
+
+    ArrayMethods.prototype.isNativeArray = nativeArray.isArray || function(obj) {
+      return nativeToString.call(obj) === '[object Array]';
+    };
 
     ArrayMethods.prototype.equals = function(arr, other) {
       var i, total;
@@ -4173,8 +4189,6 @@ http://www.rubyjs.org/LICENSE.txt
     return Chain;
 
   })();
-
-  R.Wrapper = Chain;
 
   lookupFunction = function(val, name) {
     var ns;

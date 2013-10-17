@@ -1025,7 +1025,20 @@ class NumericMethods
   #     mod
 
 
-
+  # When passed a block, invokes it with the sequence of numbers
+  # from num to limit that are incremented/decremented by step.
+  # Default step value is 1.
+  # If step is negative then the sequence of numbers from num to limit
+  # will be decremented by step.
+  # When no block is given, an enumerator is returned instead.
+  #
+  # @example
+  #   _n.step(5, 3, -1)   // => [5, 4, 3]
+  #   _n.step(3, 5, 1)    // => [3, 4, 5]
+  #   _n.step(3, 5, 0.5)  // => [3, 3.5, 4, 4.5, 5]
+  #
+  # @return [this] or [Array]
+  #
   step: (num, limit, step = 1, block) ->
     unless block?.call? or step?.call?
       return __enumerate(_num.step, [num, limit, step])
@@ -1087,7 +1100,7 @@ class NumericMethods
   #   _n.upto(1, 3, print) // => 1\n 2\n 3\n 1
   #   _n.upto(1, 3)        // => [1, 2, 3]
   #
-  # @return [Array] or Number
+  # @return [Array] or [Number]
   #
   upto: (num, stop, block) ->
     return __enumerate(_num.upto, [num, stop]) unless block?.call?
@@ -1161,9 +1174,9 @@ class NumericMethods
   # Returns the least common multiple (always positive). 0.lcm(x) and x.lcm(0) return zero.
   #
   # @example
-  #     _n.lcm(2,  2)                   // => 2
-  #     _n.lcm(3, -7)                   // => 21
-  #     _n.lcm((1<<31)-1, (1<<61)-1)    // => 4951760154835678088235319297
+  #   _n.lcm(2,  2)                   // => 2
+  #   _n.lcm(3, -7)                   // => 21
+  #   _n.lcm((1<<31)-1, (1<<61)-1)    // => 4951760154835678088235319297
   #
   # @return [Number]
   #
@@ -1174,6 +1187,14 @@ class NumericMethods
     _num.numerator(lcm)
 
 
+  # Returns int if num is positive number.
+  # Returns positive int if num is negative number.
+  #
+  # @example
+  #   _n.numerator(2)     // => 2
+  #   _n.numerator(-22)   // => 22
+  #
+  # @return [Number]
   numerator: (num) ->
     if num < 0 then (- num) else num
 
@@ -1251,11 +1272,10 @@ class NumericMethods
   # If no block is given, an enumerator is returned instead.
   #
   # @example
+  #   _n.times(5, function(i) { console.log(i) }) // => 0 1 2 3 4
+  #   _n.times(3)                                 // => [0, 1, 2]
   #
-  #     R(5).times(function(i) { R.puts(i) })
-  #     # => 0 1 2 3 4
-  #
-  # @return [this]
+  # @return [this] or [Array]
   #
   times: (num, block) ->
     return __enumerate(_num.times, [num]) unless block?.call?
@@ -1640,8 +1660,8 @@ class EnumerableMethods
         _err.throw_argument() if comp is null
         max = item if comp > 0
 
-    max or null
-
+    return null if max is undefined
+    max
 
   max_by: (coll, block) ->
     max = undefined
@@ -1652,8 +1672,9 @@ class EnumerableMethods
       else
         cmp = __cmpstrict(block(item), block(max))
         max = item if cmp > 0
-    max or null
 
+    return null if max is undefined
+    max
 
   min: (coll, block) ->
     min = undefined
@@ -1672,7 +1693,8 @@ class EnumerableMethods
         _err.throw_argument() if comp is null
         min = item if comp < 0
 
-    min or null
+    return null if min is undefined
+    min
 
 
 
@@ -1685,8 +1707,9 @@ class EnumerableMethods
       else
         cmp = __cmpstrict(block(item), block(min))
         min = item if cmp < 0
-    min or null
 
+    return null if min is undefined
+    min
 
   minmax: (coll, block) ->
     # TODO: optimize
@@ -1893,6 +1916,10 @@ class ArrayMethods extends EnumerableMethods
   #   _a.isArray({valueOf: function(){return [];}}) // => true
   #
   isArray: __isArr
+
+
+  isNativeArray: nativeArray.isArray or (obj) ->
+    nativeToString.call(obj) is '[object Array]'
 
 
 
@@ -4588,9 +4615,6 @@ class Chain
 
   valueOf: ->
     @value
-
-
-R.Wrapper = Chain
 
 
 lookupFunction = (val, name) ->

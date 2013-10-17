@@ -359,8 +359,8 @@ class EnumerableMethods
         _err.throw_argument() if comp is null
         max = item if comp > 0
 
-    max or null
-
+    return null if max is undefined
+    max
 
   max_by: (coll, block) ->
     max = undefined
@@ -371,8 +371,9 @@ class EnumerableMethods
       else
         cmp = __cmpstrict(block(item), block(max))
         max = item if cmp > 0
-    max or null
 
+    return null if max is undefined
+    max
 
   min: (coll, block) ->
     min = undefined
@@ -391,7 +392,8 @@ class EnumerableMethods
         _err.throw_argument() if comp is null
         min = item if comp < 0
 
-    min or null
+    return null if min is undefined
+    min
 
 
 
@@ -404,8 +406,9 @@ class EnumerableMethods
       else
         cmp = __cmpstrict(block(item), block(min))
         min = item if cmp < 0
-    min or null
 
+    return null if min is undefined
+    min
 
   minmax: (coll, block) ->
     # TODO: optimize
