@@ -927,14 +927,17 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     ary = new Array(len)
     idx = -1
-    while ++idx < len
-      rnd = idx + __rand(len - idx)
-      tmp = arr[idx]
-      ary[idx] = arr[rnd]
-      ary[rnd] = tmp
+    _a.each arr, (val) ->
+      rnd = __random(++idx)
+      ary[idx] = ary[rnd]
+      ary[rnd] = val
     ary
 
-
+    # forEach(collection, function(value) {
+    #     var rand = random(++index);
+    #     result[index] = result[rand];
+    #     result[rand] = value;
+    #   });
   # Element Reference—Returns the element at index, or returns a subarray
   # starting at start and continuing for length elements, or returns a
   # subarray specified by range. Negative indices count backward from the end

@@ -469,6 +469,8 @@ __enumerate = (func, args) ->
   func.apply(null, args)
   ary
 
+__random = (limit) ->
+  Math.floor( Math.random() * (limit + 1) )
 
 __rand = RubyJS.Kernel.prototype.rand
 
@@ -2829,14 +2831,17 @@ class ArrayMethods extends EnumerableMethods
     len = arr.length
     ary = new Array(len)
     idx = -1
-    while ++idx < len
-      rnd = idx + __rand(len - idx)
-      tmp = arr[idx]
-      ary[idx] = arr[rnd]
-      ary[rnd] = tmp
+    _a.each arr, (val) ->
+      rnd = __random(++idx)
+      ary[idx] = ary[rnd]
+      ary[rnd] = val
     ary
 
-
+    # forEach(collection, function(value) {
+    #     var rand = random(++index);
+    #     result[index] = result[rand];
+    #     result[rand] = value;
+    #   });
   # Element Reference—Returns the element at index, or returns a subarray
   # starting at start and continuing for length elements, or returns a
   # subarray specified by range. Negative indices count backward from the end
@@ -4150,6 +4155,17 @@ _rgx = R._rgx = (rgx) ->
 R.extend(_rgx, new RegexpMethods())
 
 class HashMethods extends EnumerableMethods
+
+  # Returns array of [ key, value ] if needle equals to a key in the hsh.
+  # Otherwise, returns null.
+  #
+  # @example
+  #   var hsh = {one: 1, two: 2}
+  #   _h.assoc(hsh, 'two')        // => ['two', 2]
+  #   _h.assoc(hsh, 2)            // => null
+  #
+  # @return [Array] or [null]
+  #
   assoc: (hsh, needle) ->
     if typeof needle is 'object' and needle.equals?
       for own k, v of hsh
@@ -4161,6 +4177,20 @@ class HashMethods extends EnumerableMethods
     null
 
 
+  # Deletes key from hsh.
+  # Returns value of the key if the key was found in hsh.
+  # Invokes block if key was not found and block has been passed.
+  # Returns null if key was not found in hsh.
+  #
+  # @example
+  #   var hsh = {one: 1, two: 2}
+  #   var print = function(i) {console.log(i + '..')};
+  #   _h.delete(hsh, 'one')         // => 1
+  #   _h.delete(hsh, 2, print )     // => 2..
+  #   _h.delete(hsh, 'four')        // => null
+  #
+  # @return [String] or [this] or [null]
+  #
   delete: (hsh, key, block) ->
     if `key in hsh`
       value = hsh[key]
@@ -4190,24 +4220,76 @@ class HashMethods extends EnumerableMethods
     hsh
 
 
+  # Invokes block for each key in hsh.
+  # Returns hsh.
+  #
+  # @example
+  #   var print = function(i) {console.log(i + '..')};
+  #   var hsh = {one: 1, two: 2}
+  #   _h.each_key(hsh, print)   // => "one..\ntwo..\n{one: 1, two: 2}"
+  #
+  # @return [Object]
+  #
   each_key: (hsh, block) ->
     for own k,v of hsh
       block(k)
     hsh
 
 
+  # Invokes block for each value in hsh.
+  # Returns hsh.
+  #
+  # @example
+  #   var print = function(i) {console.log(i + '..')};
+  #   var hsh = {one: 1, two: 2}
+  #   _h.each_key(hsh, print)   // => "1..\n2..\n{one: 1, two: 2}"
+  #
+  # @return [Object]
+  #
   each_value: (hsh, block) ->
     for own k,v of hsh
       block(v)
     hsh
 
 
+  # Checks if hsh contains any keys and values.
+  # Returns false if hsh contains any keys and values.
+  # Returns true otherwise.
+  #
+  # @example
+  #   var hsh = {one: 1, two: 2}
+  #   _h.empty(hsh)       // => false
+  #   _h.empty({})        // => true
+  #
+  # @return [Boolean]
+  #
   empty: (hsh) ->
     for own k, v of hsh
       return false
     true
 
 
+  # Returns a value for a passed key in hsh.
+  # Throws ArgumentError if only one or no arguments were passed.
+  # If the key cannot be found on hsh and default_value is not a function, then
+  # value of default_value will be returned.
+  # If the key cannot be found and default_value is a function, then
+  # the function will be executed passing the key as a parameter.
+  # Returns undefined after the execution of the function.
+  # Throws KeyError if default_value was not passed and the key cannot be found
+  # in hsh.
+  #
+  # @example
+  #   var print = function(i) {console.log(i + '..')};
+  #   var hsh = {one: 1, two: 2}
+  #   _h.fetch(hsh, 'one')              // => 1
+  #   _h.fetch(hsh, 'four')             // => Error: KeyError
+  #   _h.fetch(hsh, 'four', 3)          // => 3
+  #   _h.fetch(hsh)                     // => Error: ArgumentError
+  #   _h.fetch(hsh, 'four', print)      // => four..\n undefined
+  #
+  # @return [this] or [String] or [Number] or [Undefined]
+  #
   fetch: (hsh, key, default_value) ->
     if arguments.length <= 1
       _err.throw_argument()
@@ -4222,15 +4304,45 @@ class HashMethods extends EnumerableMethods
       _err.throw_key()
 
 
+  # Flattens a hsh into array.
+  # By default, recursively flattens elements of the hsh and
+  # returns one-dimensional array.
+  # Recursion can be disabled by passing 0 as a second argument.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.flatten(hsh)                     // => ['one', 1, 'two', 2]
+  #   _h.flatten(hsh, 0)                  // => [ ['one', 1], ['two', 2] ]
+  #
+  # @return [Array]
   flatten: (hsh, recursion = 1) ->
     recursion = __int(recursion)
     _arr.flatten(_hsh.to_a(hsh), recursion)
 
 
+  # Returns value of the key in hsh.
+  # Returns undefined If key was not found or not provided.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.get(hsh, 'one')                  // => 1
+  #   _h.get(hsh, 1)                      // => undefined
+  #
+  # @return [Object]
   get: (hsh, key) ->
     hsh[key]
 
 
+  # Returns true if a value is present for some key in hsh.
+  # Returns false otherwise or if a value was not passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.has_value(hsh, 2)               // => true
+  #   _h.has_value(hsh, 'one')           // => false
+  #   _h.has_value(hsh)                  // => false
+  #
+  # @return [Boolean]
   has_value: (hsh, val) ->
     if typeof val is 'object' && val.equals?
       for own k, v of hsh
@@ -4242,6 +4354,15 @@ class HashMethods extends EnumerableMethods
     false
 
 
+  # Returns true if key was found in hsh.
+  # Otherwise, returns false.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.has_key(hsh, 'one')                // => true
+  #   _h.has_key(hsh, 2)                    // => false
+  #
+  # @return [Boolean]
   has_key: (hsh, key) ->
     `key in hsh`
 
@@ -4250,11 +4371,31 @@ class HashMethods extends EnumerableMethods
   member:  @prototype.has_key
 
 
+  # Deletes all key-value pairs from hsh for which block evaluates to false.
+  # Returns hash.
+  # Modifies original hash (destructive).
+  # Throws error if no block was passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.keep_if(hsh, function(k, v) { return v == 1 })     // => {one: 1}
+  #   _h.keep_if(hsh)                                       // => TypeError: undefined is not a function
+  #
+  # @return [Object]
   keep_if: (hsh, block) ->
     _hsh.reject$(hsh, block)
     hsh
 
 
+  # Returns a key from hsh for a given value.
+  # Returns null if the value was not found in hsh or was not passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.key(hsh, 2)                                        // => 'two'
+  #   _h.key(hsh, 'three')                                  // => null
+  #
+  # @return [String] or [Object]
   key: (hsh, value) ->
     if typeof value is 'object' && value.equals?
       for own k, v of hsh

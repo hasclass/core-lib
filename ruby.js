@@ -8,7 +8,7 @@ http://www.rubyjs.org/LICENSE.txt
 
 
 (function() {
-  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, Chain, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RFixnum, RHash, RString, RegexpMethods, SortedElement, StrProto, StringMethods, TimeMethods, callFunctionWithThis, dispatchFunction, error, errors, fn, klass, klasses, lookupFunction, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __cmp, __cmpstrict, __ensure_args_length, __enumerate, __equals, __extract_block, __falsey, __int, __isArr, __isRgx, __isStr, __num, __rand, __str, __truthy, __try_str, _arr, _coerce, _enum, _err, _fn, _fn1, _hsh, _i, _itr, _j, _len, _len1, _num, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _rgx, _str, _time,
+  var ArrProto, ArrayMethods, Block, BlockArgs, BlockMulti, BlockSingle, Chain, EnumerableMethods, HashMethods, NumericMethods, ObjProto, RArray, RCoerce, REnumerable, RFixnum, RHash, RString, RegexpMethods, SortedElement, StrProto, StringMethods, TimeMethods, callFunctionWithThis, dispatchFunction, error, errors, fn, klass, klasses, lookupFunction, method, name, nativeArray, nativeJoin, nativeNumber, nativeObject, nativePush, nativeRegExp, nativeSlice, nativeSort, nativeStrMatch, nativeStrSlice, nativeString, nativeToString, nativeUnshift, previousR, root, __arr, __blockify, __call, __cmp, __cmpstrict, __ensure_args_length, __enumerate, __equals, __extract_block, __falsey, __int, __isArr, __isRgx, __isStr, __num, __rand, __random, __str, __truthy, __try_str, _arr, _coerce, _enum, _err, _fn, _fn1, _hsh, _i, _itr, _j, _len, _len1, _num, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _rgx, _str, _time,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice;
@@ -483,6 +483,10 @@ http://www.rubyjs.org/LICENSE.txt
     });
     func.apply(null, args);
     return ary;
+  };
+
+  __random = function(limit) {
+    return Math.floor(Math.random() * (limit + 1));
   };
 
   __rand = RubyJS.Kernel.prototype.rand;
@@ -2555,16 +2559,16 @@ http://www.rubyjs.org/LICENSE.txt
     };
 
     ArrayMethods.prototype.shuffle = function(arr) {
-      var ary, idx, len, rnd, tmp;
+      var ary, idx, len;
       len = arr.length;
       ary = new Array(len);
       idx = -1;
-      while (++idx < len) {
-        rnd = idx + __rand(len - idx);
-        tmp = arr[idx];
-        ary[idx] = arr[rnd];
-        ary[rnd] = tmp;
-      }
+      _a.each(arr, function(val) {
+        var rnd;
+        rnd = __random(++idx);
+        ary[idx] = ary[rnd];
+        return ary[rnd] = val;
+      });
       return ary;
     };
 

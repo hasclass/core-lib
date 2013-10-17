@@ -312,3 +312,8 @@ describe "_a docs", ->
     expect( _a.min([2, 0, 1]) ).toEqual 0
     expect( _a.max([-2, 0, -1]) ).toEqual 0
 
+
+  it "_a.shuffle", ->
+    arr = [1,2,3]
+    _n.times 10, ->
+      expect( _a.sort( _a.shuffle(arr)) ).toEqual [1,2,3]

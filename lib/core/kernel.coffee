@@ -205,5 +205,7 @@ __enumerate = (func, args) ->
   func.apply(null, args)
   ary
 
+__random = (limit) ->
+  Math.floor( Math.random() * (limit + 1) )
 
 __rand = RubyJS.Kernel.prototype.rand
