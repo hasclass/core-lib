@@ -251,6 +251,16 @@ class HashMethods extends EnumerableMethods
     null
 
 
+  # Returns hash, in which values are keys of hsh
+  # and values are keys of hsh.
+  # Returns empty hash if no argument was passed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.invert(hsh)                              // => {'1': 'one', '2': 'two'}
+  #   _h.invert()                                 // => {}
+  #
+  # @return [Object]
   invert: (hsh) ->
     ret = {}
     for own k, v of hsh
@@ -258,10 +268,34 @@ class HashMethods extends EnumerableMethods
     ret
 
 
+  # Returns a new array containing keys from hsh.
+  # Returns empty array if hsh is empty.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   _h.keys(hsh)                          // => [ 'one', 'two' ]
+  #   _h.keys({})                           // => []
+  #
+  # @return [Object]
   keys: (hsh) ->
     k for own k, v of hsh
 
 
+  # Returns a hash, which contains contents of hsh and other.
+  # If no block is passed then values of duplicate keys will be taken from other.
+  # If block is passed then the value for each duplicate key is determined by
+  # calling a block.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2}
+  #   other = {three: 3}
+  #   _h.merge(hsh, other)                      // => {one: 1, two: 2, three: 3}
+  #
+  #   block = function (key, a, b) { return a + b }
+  #   hash = {two: '5.0'}
+  #   _h.merge(hsh, hash, block)                // => {one: 1, two: '25.0'}
+  #
+  # @return [Object]
   merge: (hsh, other, block) ->
     out = {}
     other = other.__native__ if other.rubyjs?

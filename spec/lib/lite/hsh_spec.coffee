@@ -114,3 +114,38 @@ describe "_h.key", ->
     expect( _h.key(hsh, 3) ).toEqual null
     expect( _h.key(hsh) ).toEqual null
 
+describe "_h.invert", ->
+  it "returns a new hash where keys and values are swaped", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.invert(hsh) ).toEqual {'1': 'one', '2': 'two'}
+
+  it "compares new keys with eql? semantics", ->
+    hsh = {one: '1', two: '1.0'}
+    expect( _h.invert(hsh)['1'] ).toEqual 'one'
+    expect( _h.invert(hsh)['1.0'] ).toEqual 'two'
+
+  it "handles collisions by overriding with keys coming later in keys()", ->
+    hsh = {one: 1, two: 1}
+    keys = Object.keys(hsh)
+    overrideKey = keys[keys.length - 1]
+    expect( _h.invert(hsh)[1] ).toEqual overrideKey
+
+describe "_h.keys", ->
+  it "returns array of keys in the same order as in hsh", ->
+    hsh = {one: 1, two: 2, three: 3}
+    expect( _h.keys(hsh) ).toEqual ["one", "two", "three"]
+
+  it "returns empty array if hsh is empty", ->
+    expect( _h.keys({}) ).toEqual []
+
+describe "_h.merge", ->
+  it "returns a new hash by combining hsh with other", ->
+    hsh = {one: 1, two: 2}
+    other = {three: 3}
+    expect( _h.merge(hsh, other) ).toEqual {one: 1, two: 2, three: 3}
+
+  it "sets any duplicate key to the value of block if passed a block", ->
+    hsh = {one: 1, two: 2}
+    other = {two: '5.0'}
+    block = (key, a, b) -> ( a + b )
+    expect( _h.merge(hsh, other, block) ).toEqual {one: 1, two: '25.0'}
