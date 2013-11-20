@@ -311,6 +311,26 @@ class HashMethods extends EnumerableMethods
     out
 
 
+  # Destructive merge.
+  # Returns a hash, which contains contents of hsh and other.
+  # If no block is passed then values of duplicate keys will be taken from other and
+  # overwritten in hsh.
+  # If block is passed then the value for each duplicate key is determined by
+  # calling a block with a key, it's value in hsh and it's value in other.
+  #
+  # @example
+  #   hsh = {one:1, two:2}
+  #   other = {two: 20, three: 3}
+  #   _h.merge$(hsh, other)                     // => {one: 1, two: 20, three: 3}
+  #   hsh                                       // => {one: 1, two: 20, three: 3}
+  #
+  #   block = function (key, v1, v2) { return v1 + v2 }
+  #   hsh = {one:1, two:2}
+  #   other = {two: 22, three: 3}
+  #   _h.merge$(hsh, other, block)              // => {one: 1, two: 24, three: 3}
+  #   hsh                                       // => {one: 1, two: 24, three: 3}
+  #
+  # @return [Object]
   merge$: (hsh, other, block) ->
     other = other.__native__ if other.rubyjs?
 
@@ -325,6 +345,16 @@ class HashMethods extends EnumerableMethods
     hsh
 
 
+  # Searches through hsh by comparing values to needle.
+  # Returns null if there were no matches.
+  # Returns an array of two elements [key, value] of the first match.
+  #
+  # @example
+  # hsh = {one: 1, two: 2, three:3, five: 3}
+  # _h.rassoc(hsh, 5)                             // => null
+  # _h.rassoc(hsh, 3)                             // => ['three', 3]
+  #
+  # @return [Array] or [null]
   rassoc: (hsh, needle) ->
     if typeof needle is 'object' && needle.equals?
       for own k, v of hsh
@@ -338,6 +368,15 @@ class HashMethods extends EnumerableMethods
     null
 
 
+  # Removes key-value pairs from hsh for which block evaluates to true.
+  # Returns a copy of hsh with key-value pairs removed.
+  #
+  # @example
+  #   hsh = {one: 1, two: 2, three: 3}
+  #   block = function (k, v) { return v < 2 }
+  #   _h.reject(hsh, block)                         // => {two: 2, three: 3}
+  #
+  # @return [Object]
   reject: (hsh, block) ->
     dup = {}
     for own k,v of hsh

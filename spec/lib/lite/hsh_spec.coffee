@@ -149,3 +149,58 @@ describe "_h.merge", ->
     other = {two: '5.0'}
     block = (key, a, b) -> ( a + b )
     expect( _h.merge(hsh, other, block) ).toEqual {one: 1, two: '25.0'}
+
+describe "_h.merge$", ->
+  describe "without block", ->
+    it "returns hsh with contents of hsh and other", ->
+      hsh = {one: 1, two: 2}
+      other = {two: 22, three: 3}
+      expect( _h.merge$(hsh, other) ).toEqual {one: 1, two: 22, three: 3}
+      expect( hsh ).toEqual {one: 1, two: 22, three: 3}
+
+  describe "with block", ->
+    it "returns hsh with contents of hsh and other determined by executing a block", ->
+      hsh = {one: 1, two: 2}
+      other = {two: 22, three: 3}
+      block = (key, v1, v2) -> ( v1 + v2 )
+      expect( _h.merge$(hsh, other, block) ).toEqual {one: 1, two: 24, three: 3}
+      expect( hsh ).toEqual {one: 1, two: 24, three: 3}
+
+describe "_h.rassoc", ->
+  it "returns an Array if there is a match", ->
+    hsh = {one: 1, two: 2, three: 3}
+    expect( _h.rassoc(hsh, 2) ).toBeInstanceOf(Array)
+
+  it "returns 2-elements array if there is a match", ->
+    hsh = {one: 1, two: 2, three: 3}
+    expect( _h.rassoc(hsh, 2).length ).toEqual 2
+
+  it "returns needle as the last element of the array", ->
+    hsh = {one: 1, two: 2, three: 3}
+    needle = 2
+    result = _h.rassoc(hsh, needle)
+    expect( result[result.length - 1] ).toEqual needle
+
+  it "returns first matching key-value pair", ->
+    hsh = {one: 1, two: 2, five: 2}
+    expect( _h.rassoc(hsh, 2) ).toEqual ['two', 2]
+
+  it "uses == to compare needle with values", ->
+    hsh = {one: 1, two: 2.0}
+    expect( _h.rassoc(hsh, 2) ).toEqual ['two', 2.0]
+
+  it "returns null if there was no match", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.rassoc(hsh, 3) ).toBeNull
+
+describe "_h.reject", ->
+  it "returns a hash with elements removed", ->
+    hsh = {one: 1, two: 2, three: 3}
+    block = (k, v) -> (v < 2)
+    expect( _h.reject(hsh, block) ).toEqual {two: 2, three: 3}
+
+  it "throws Error if block wasn't passed", ->
+    expect( -> _h.reject({one: 1, two: 2}) ).toThrow("undefined is not a function")
+
+  it "throws Error if block is not a fuction", ->
+    expect( -> _h.reject({one: 1, two: 2}, {}) ).toThrow("object is not a function")
