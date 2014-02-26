@@ -114,3 +114,93 @@ describe "_h.key", ->
     expect( _h.key(hsh, 3) ).toEqual null
     expect( _h.key(hsh) ).toEqual null
 
+describe "_h.invert", ->
+  it "returns a new hash where keys and values are swaped", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.invert(hsh) ).toEqual {'1': 'one', '2': 'two'}
+
+  it "compares new keys with eql? semantics", ->
+    hsh = {one: '1', two: '1.0'}
+    expect( _h.invert(hsh)['1'] ).toEqual 'one'
+    expect( _h.invert(hsh)['1.0'] ).toEqual 'two'
+
+  it "handles collisions by overriding with keys coming later in keys()", ->
+    hsh = {one: 1, two: 1}
+    keys = Object.keys(hsh)
+    overrideKey = keys[keys.length - 1]
+    expect( _h.invert(hsh)[1] ).toEqual overrideKey
+
+describe "_h.keys", ->
+  it "returns array of keys in the same order as in hsh", ->
+    hsh = {one: 1, two: 2, three: 3}
+    expect( _h.keys(hsh) ).toEqual ["one", "two", "three"]
+
+  it "returns empty array if hsh is empty", ->
+    expect( _h.keys({}) ).toEqual []
+
+describe "_h.merge", ->
+  it "returns a new hash by combining hsh with other", ->
+    hsh = {one: 1, two: 2}
+    other = {three: 3}
+    expect( _h.merge(hsh, other) ).toEqual {one: 1, two: 2, three: 3}
+
+  it "sets any duplicate key to the value of block if passed a block", ->
+    hsh = {one: 1, two: 2}
+    other = {two: '5.0'}
+    block = (key, a, b) -> ( a + b )
+    expect( _h.merge(hsh, other, block) ).toEqual {one: 1, two: '25.0'}
+
+describe "_h.merge$", ->
+  describe "without block", ->
+    it "returns hsh with contents of hsh and other", ->
+      hsh = {one: 1, two: 2}
+      other = {two: 22, three: 3}
+      expect( _h.merge$(hsh, other) ).toEqual {one: 1, two: 22, three: 3}
+      expect( hsh ).toEqual {one: 1, two: 22, three: 3}
+
+  describe "with block", ->
+    it "returns hsh with contents of hsh and other determined by executing a block", ->
+      hsh = {one: 1, two: 2}
+      other = {two: 22, three: 3}
+      block = (key, v1, v2) -> ( v1 + v2 )
+      expect( _h.merge$(hsh, other, block) ).toEqual {one: 1, two: 24, three: 3}
+      expect( hsh ).toEqual {one: 1, two: 24, three: 3}
+
+describe "_h.rassoc", ->
+  it "returns an Array if there is a match", ->
+    hsh = {one: 1, two: 2, three: 3}
+    expect( _h.rassoc(hsh, 2) ).toBeInstanceOf(Array)
+
+  it "returns 2-elements array if there is a match", ->
+    hsh = {one: 1, two: 2, three: 3}
+    expect( _h.rassoc(hsh, 2).length ).toEqual 2
+
+  it "returns needle as the last element of the array", ->
+    hsh = {one: 1, two: 2, three: 3}
+    needle = 2
+    result = _h.rassoc(hsh, needle)
+    expect( result[result.length - 1] ).toEqual needle
+
+  it "returns first matching key-value pair", ->
+    hsh = {one: 1, two: 2, five: 2}
+    expect( _h.rassoc(hsh, 2) ).toEqual ['two', 2]
+
+  it "uses == to compare needle with values", ->
+    hsh = {one: 1, two: 2.0}
+    expect( _h.rassoc(hsh, 2) ).toEqual ['two', 2.0]
+
+  it "returns null if there was no match", ->
+    hsh = {one: 1, two: 2}
+    expect( _h.rassoc(hsh, 3) ).toBeNull
+
+describe "_h.reject", ->
+  it "returns a hash with elements removed", ->
+    hsh = {one: 1, two: 2, three: 3}
+    block = (k, v) -> (v < 2)
+    expect( _h.reject(hsh, block) ).toEqual {two: 2, three: 3}
+
+  it "throws Error if block wasn't passed", ->
+    expect( -> _h.reject({one: 1, two: 2}) ).toThrow("undefined is not a function")
+
+  it "throws Error if block is not a fuction", ->
+    expect( -> _h.reject({one: 1, two: 2}, {}) ).toThrow("object is not a function")
