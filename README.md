@@ -1,3 +1,8 @@
+# Deprecated and unmaintained for years. 
+
+This library is deprecated and hasn't been maintained for years. 
+
+
 # RubyJS Reloaded v0.8.0-beta1
 
 RubyJS got a major overhaul.
